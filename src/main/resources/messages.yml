@@ -1,0 +1,4 @@
+no-permission: "&cVous n'avez pas la permission."
+spawn-set: "&aLe point de spawn du lobby a été défini."
+spawn-teleport: "&aVous avez été téléporté au spawn."
+spawn-not-set: "&cLe spawn n'a pas été défini."
