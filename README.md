@@ -91,6 +91,9 @@ items:
     action: 'server:inedit'
 ```
 
+## Prérequis de build
+- Java 21
+
 ## Comment compiler
 
 Ce projet est basé sur l'API Paper et utilise des dépôts Maven personnalisés pour ses dépendances : PaperMC et PlaceholderAPI. Pour compiler le plugin et exécuter les tests, lancez :
