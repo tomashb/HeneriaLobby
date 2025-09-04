@@ -23,7 +23,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.profile.PlayerProfile;
-import org.bukkit.profile.ProfileProperty;
+import com.mojang.authlib.properties.Property;
 
 import java.io.File;
 import java.util.*;
@@ -65,7 +65,7 @@ public class ServerSelectorManager implements Listener {
             String texture = itemSec.getString("texture-value");
             if (texture != null && !texture.isEmpty()) {
                 PlayerProfile profile = Bukkit.createProfile(UUID.randomUUID());
-                profile.setProperty(new ProfileProperty("textures", texture));
+                profile.setProperty(new Property("textures", texture));
                 ((SkullMeta) meta).setPlayerProfile(profile);
             }
         }
