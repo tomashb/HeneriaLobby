@@ -93,7 +93,7 @@ items:
 
 ## Comment compiler
 
-Ce projet utilise des dépôts Maven personnalisés (PaperMC, PlaceholderAPI) ainsi que la bibliothèque `com.mojang:authlib` fournie par le serveur. Pour compiler le plugin et exécuter les tests, lancez :
+Ce projet utilise des dépôts Maven personnalisés pour ses dépendances : Spigot, PaperMC, PlaceholderAPI et Mojang Libraries (pour `com.mojang:authlib`). Pour compiler le plugin et exécuter les tests, lancez :
 
 ```bash
 mvn clean verify
