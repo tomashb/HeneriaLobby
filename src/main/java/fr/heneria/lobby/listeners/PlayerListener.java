@@ -22,6 +22,7 @@ public class PlayerListener implements Listener {
         if (spawn != null) {
             event.getPlayer().teleport(spawn);
         }
+        plugin.getServerSelectorManager().giveItem(event.getPlayer());
     }
 
     @EventHandler

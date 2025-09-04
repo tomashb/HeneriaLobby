@@ -2,6 +2,7 @@ name: HeneriaLobby
 version: 0.1.0-SNAPSHOT
 main: fr.heneria.lobby.LobbyPlugin
 api-version: '1.20'
+softdepend: [PlaceholderAPI]
 commands:
   lobby:
     description: Commands administratives du lobby
@@ -9,6 +10,9 @@ commands:
   spawn:
     description: Teleporte au spawn du lobby
     permission: lobby.command.spawn
+  servers:
+    description: Ouvre le menu des serveurs
+    permission: lobby.command.servers
 permissions:
   lobby.command.spawn:
     description: Utiliser /spawn
@@ -16,3 +20,6 @@ permissions:
   lobby.admin.setspawn:
     description: Definir le spawn du lobby
     default: op
+  lobby.command.servers:
+    description: Utiliser /servers
+    default: true
