@@ -1,0 +1,18 @@
+name: HeneriaLobby
+version: 0.1.0-SNAPSHOT
+main: fr.heneria.lobby.LobbyPlugin
+api-version: '1.20'
+commands:
+  lobby:
+    description: Commands administratives du lobby
+    permission: lobby.admin.setspawn
+  spawn:
+    description: Teleporte au spawn du lobby
+    permission: lobby.command.spawn
+permissions:
+  lobby.command.spawn:
+    description: Utiliser /spawn
+    default: true
+  lobby.admin.setspawn:
+    description: Definir le spawn du lobby
+    default: op
