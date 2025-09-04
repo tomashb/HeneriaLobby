@@ -1,33 +1,3 @@
-# HeneriaLobby
-
-## Fonctionnalités
-- Sélecteur de serveurs via GUI avec item "Terre" dans le slot 0.
-
-## Commandes
-- `/lobby setspawn` : définit le point de spawn du lobby.
-- `/spawn` : téléporte le joueur au spawn du lobby.
-- `/servers` : ouvre le menu de sélection des serveurs.
-
-## Permissions
-- `lobby.admin.setspawn` : permettre de définir le spawn du lobby.
-- `lobby.command.spawn` : permettre l'utilisation de `/spawn`.
-- `lobby.command.servers` : permettre l'utilisation de `/servers`.
-
-## Configuration
-
-### `config.yml`
-```yaml
-server-selector-item:
-  material: PLAYER_HEAD
-  texture-value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjFkZDRmZTRhNDI5YWJkNjY1ZGZkYjNlMjEzMjFkMjIzNDuhOTE0Y2ZlMjFjZDVlY2Y4ZDk2ZjdjYjhhNTM3In19fQ=="
-  slot: 0
-  name: '&aSélecteur de Jeux'
-  lore:
-    - '&7Cliquez pour choisir votre jeu !'
-```
-
-### `server-selector.yml`
-```yaml
 menu-title: '&6Menu des jeux'
 menu-size: 3
 items:
@@ -89,14 +59,3 @@ items:
       - '&eJoueurs en ligne: &f%bungee_inédit%'
       - '&aCliquez pour rejoindre !'
     action: 'server:inedit'
-```
-
-## Comment compiler
-
-Ce projet utilise Maven. Pour compiler le plugin et exécuter les tests, lancez :
-
-```bash
-mvn clean verify
-```
-
-Le fichier `.jar` généré se trouvera dans le dossier `target`.

@@ -1,0 +1,7 @@
+server-selector-item:
+  material: PLAYER_HEAD
+  texture-value: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjFkZDRmZTRhNDI5YWJkNjY1ZGZkYjNlMjEzMjFkMjIzNDuhOTE0Y2ZlMjFjZDVlY2Y4ZDk2ZjdjYjhhNTM3In19fQ=="
+  slot: 0
+  name: '&aSélecteur de Jeux'
+  lore:
+    - '&7Cliquez pour choisir votre jeu !'
