@@ -93,7 +93,7 @@ items:
 
 ## Comment compiler
 
-Ce projet utilise Maven. Pour compiler le plugin et exécuter les tests, lancez :
+Ce projet utilise des dépôts Maven personnalisés (PaperMC, PlaceholderAPI). Pour compiler le plugin et exécuter les tests, lancez :
 
 ```bash
 mvn clean verify
