@@ -1,5 +1,5 @@
 name: HeneriaLobby
-version: 0.1.1
+version: 0.2.0
 main: com.heneria.lobby.HeneriaLobbyPlugin
 api-version: "1.21"
 commands:
@@ -8,3 +8,12 @@ commands:
     usage: "/lobbyadmin testdb"
     permission: henerialobby.admin
     permission-message: "§cVous n'avez pas la permission."
+  friends:
+    description: Manage your friends
+    usage: "/friends <add|remove|accept|deny|list> [player]"
+  msg:
+    description: Send a private message to a player
+    usage: "/msg <player> <message>"
+  r:
+    description: Reply to the last private message
+    usage: "/r <message>"

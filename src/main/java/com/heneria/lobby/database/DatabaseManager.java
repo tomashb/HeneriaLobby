@@ -73,6 +73,17 @@ public class DatabaseManager {
                             "last_seen TIMESTAMP" +
                             ")"
             );
+            statement.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS player_friends (" +
+                            "id INT AUTO_INCREMENT PRIMARY KEY," +
+                            "player_uuid VARCHAR(36)," +
+                            "friend_uuid VARCHAR(36)," +
+                            "status ENUM('ACCEPTED','PENDING') NOT NULL," +
+                            "created_at TIMESTAMP," +
+                            "INDEX idx_player_uuid (player_uuid)," +
+                            "INDEX idx_friend_uuid (friend_uuid)" +
+                            ")"
+            );
         }
     }
 
