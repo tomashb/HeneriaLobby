@@ -43,15 +43,25 @@ Placeholders disponibles :
 - `{message}` – message envoyé.
 - `{ping}` – ping du joueur pour le format de la tablist.
 
+## Objets de Navigation Persistants
+
+Le fichier `items.yml` distribue des objets permanents aux joueurs à leur connexion.
+Pour chaque objet, on peut définir :
+
+- `material` – type d'objet placé dans la barre d'inventaire.
+- `slot` – position fixe dans l'inventaire.
+- `name` et `lore` – texte supportant les codes couleur.
+- `action` – généralement `open_menu:<nom>` pour ouvrir un menu spécifique.
+
+Les menus correspondants peuvent aussi être ouverts via les commandes `/games` (`/jeux`),
+`/profil`, `/shop` (`/boutique`) et `/activites`.
+
 ## Configuration des Menus
 
-Le fichier `menus.yml` contrôle l'ensemble de la navigation par GUI. Il permet de définir:
+Le fichier `menus.yml` définit chaque interface : titre, taille et items internes avec
+leur matériau, emplacement, nom, description et action au clic.
 
-- L'objet de navigation (matériau, nom, description et emplacement).
-- Chaque menu avec son titre et sa taille.
-- Les items contenus dans un menu avec leur matériau, slot, nom, lore et action au clic.
-
-Actions disponibles:
+Actions disponibles :
 
 - `open_menu:<nom>` – ouvre un autre menu configuré.
 - `connect_server:<serveur>` – envoie le joueur sur le serveur spécifié via Plugin Messages.

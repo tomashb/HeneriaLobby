@@ -3,7 +3,7 @@ package com.heneria.lobby;
 import com.heneria.lobby.commands.FriendsCommand;
 import com.heneria.lobby.commands.LobbyAdminCommand;
 import com.heneria.lobby.commands.MsgCommand;
-import com.heneria.lobby.commands.MenuCommand;
+import com.heneria.lobby.commands.OpenMenuCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
 import com.heneria.lobby.listeners.ChatListener;
@@ -68,10 +68,13 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
-        getCommand("menu").setExecutor(new MenuCommand(guiManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
         getCommand("msg").setExecutor(msgCommand);
         getCommand("r").setExecutor(msgCommand);
+        getCommand("games").setExecutor(new OpenMenuCommand(guiManager, "games"));
+        getCommand("profil").setExecutor(new OpenMenuCommand(guiManager, "profile"));
+        getCommand("shop").setExecutor(new OpenMenuCommand(guiManager, "shop"));
+        getCommand("activites").setExecutor(new OpenMenuCommand(guiManager, "activities"));
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:friends");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:msg");

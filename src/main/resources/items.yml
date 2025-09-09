@@ -1,0 +1,29 @@
+items:
+  games_selector:
+    material: PURPLE_BANNER
+    slot: 0
+    name: "&dSélecteur de Jeux"
+    lore:
+      - "&7Choisir un jeu"
+    action: "open_menu:games"
+  profile:
+    material: PLAYER_HEAD
+    slot: 1
+    name: "&eProfil"
+    lore:
+      - "&7Voir vos informations"
+    action: "open_menu:profile"
+  shop:
+    material: ENDER_CHEST
+    slot: 4
+    name: "&6Boutique Cosmétique"
+    lore:
+      - "&7Acheter des cosmétiques"
+    action: "open_menu:shop"
+  activities:
+    material: FIREWORK_ROCKET
+    slot: 8
+    name: "&bActivités du Lobby"
+    lore:
+      - "&7Mini-jeux du lobby"
+    action: "open_menu:activities"
