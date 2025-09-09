@@ -2,6 +2,7 @@ package com.heneria.lobby;
 
 import com.heneria.lobby.commands.FriendsCommand;
 import com.heneria.lobby.commands.LobbyAdminCommand;
+import com.heneria.lobby.config.ConfigManager;
 import com.heneria.lobby.commands.MsgCommand;
 import com.heneria.lobby.commands.OpenMenuCommand;
 import com.heneria.lobby.database.DatabaseManager;
@@ -43,6 +44,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private GUIManager guiManager;
     private ServerInfoManager serverInfoManager;
     private ParkourManager parkourManager;
+    private ConfigManager activitiesConfigManager;
 
     @Override
     public void onEnable() {
@@ -50,7 +52,8 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         saveResource("messages.yml", false);
         saveResource("activities.yml", false);
         messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
-        FileConfiguration activitiesConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "activities.yml"));
+        activitiesConfigManager = new ConfigManager(this);
+        FileConfiguration activitiesConfig = activitiesConfigManager.getConfig();
 
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.init()) {
@@ -78,7 +81,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
         getServer().getPluginManager().registerEvents(new ParkourListener(parkourManager), this);
         getServer().getPluginManager().registerEvents(new ArcheryListener(activitiesConfig), this);
-        getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
+        getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager, activitiesConfigManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
         getCommand("msg").setExecutor(msgCommand);

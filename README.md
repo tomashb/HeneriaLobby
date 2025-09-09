@@ -79,3 +79,19 @@ affichés aux joueurs.
 
 Les exemples fournis dans `activities.yml` peuvent servir de base et être
 adaptés aux besoins de votre lobby.
+
+## Administration en Jeu
+
+Les administrateurs peuvent configurer les activités directement en jeu via
+la commande `/lobbyadmin` (alias `/la`) :
+
+- `/lobbyadmin parkour setspawn` – définit le point de départ du parkour.
+- `/lobbyadmin parkour setend` – définit la plaque d'arrivée.
+- `/lobbyadmin parkour addcheckpoint` – ajoute un checkpoint.
+- `/lobbyadmin parkour removecheckpoint <numéro>` – supprime un checkpoint.
+- `/lobbyadmin parkour listcheckpoints` – affiche les checkpoints.
+- `/lobbyadmin minifoot setspawn` – définit le point de réapparition du slime.
+- `/lobbyadmin minifoot setgoal1` – définit la première cage de but.
+- `/lobbyadmin minifoot setgoal2` – définit la deuxième cage de but.
+
+Chaque modification est immédiatement enregistrée dans `activities.yml`.

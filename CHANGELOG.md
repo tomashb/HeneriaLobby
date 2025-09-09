@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 - Interface de configuration en jeu
+- Ajout de la commande `/lobbyadmin` pour configurer le parkour et le mini-foot.
+- Sauvegarde immédiate des modifications dans `activities.yml`.
+
 ## 0.5.0 - Implémentation des activités du lobby
 - Ajout du parkour chronométré avec checkpoints et classement holographique.
 - Mini-jeu de mini-foot avec slime et détection de buts.
