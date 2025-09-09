@@ -1,19 +1,32 @@
 package com.heneria.lobby;
 
+import com.heneria.lobby.commands.FriendsCommand;
 import com.heneria.lobby.commands.LobbyAdminCommand;
+import com.heneria.lobby.commands.MsgCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
 import com.heneria.lobby.player.PlayerDataManager;
+import com.heneria.lobby.friends.FriendManager;
+import com.heneria.lobby.friends.PrivateMessageManager;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
 
 public class HeneriaLobbyPlugin extends JavaPlugin {
 
     private DatabaseManager databaseManager;
     private PlayerDataManager playerDataManager;
+    private FriendManager friendManager;
+    private PrivateMessageManager messageManager;
+    private FileConfiguration messages;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        saveResource("messages.yml", false);
+        messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
 
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.init()) {
@@ -23,8 +36,18 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getLogger().info("Connected to the database successfully.");
 
         playerDataManager = new PlayerDataManager(this, databaseManager);
-        getServer().getPluginManager().registerEvents(new PlayerListener(playerDataManager), this);
+        friendManager = new FriendManager(this, databaseManager);
+        messageManager = new PrivateMessageManager();
+
+        getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
+        getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
+        MsgCommand msgCommand = new MsgCommand(this, messageManager);
+        getCommand("msg").setExecutor(msgCommand);
+        getCommand("r").setExecutor(msgCommand);
+
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:friends");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:msg");
     }
 
     @Override
@@ -36,5 +59,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
 
     public PlayerDataManager getPlayerDataManager() {
         return playerDataManager;
+    }
+
+    public FileConfiguration getMessages() {
+        return messages;
     }
 }

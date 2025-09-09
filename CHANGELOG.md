@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0 - Social system
+- Added friend management and private messaging commands.
+- New cross-server notifications for friend requests and status.
+
 ## 0.1.1 - Fix startup crash
 - Shade HikariCP into the plugin jar to ensure database pool classes are available.
 

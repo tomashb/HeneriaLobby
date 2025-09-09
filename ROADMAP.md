@@ -1,6 +1,6 @@
 # Roadmap
 
 - [ ] Economy system
-- [ ] Friends system
+- [x] Friends system
 - [ ] Cosmetics system
 - [ ] Additional lobby features
