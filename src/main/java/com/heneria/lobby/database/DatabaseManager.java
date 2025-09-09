@@ -84,6 +84,12 @@ public class DatabaseManager {
                             "INDEX idx_friend_uuid (friend_uuid)" +
                             ")"
             );
+            statement.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS player_parkour_times (" +
+                            "player_uuid VARCHAR(36) PRIMARY KEY," +
+                            "best_time BIGINT" +
+                            ")"
+            );
         }
     }
 
