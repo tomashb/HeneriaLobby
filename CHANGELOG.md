@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.4.0 - Navigation menus
-- Added configurable GUI navigation system with dynamic server selector.
-- Players receive a permanent item to open the main menu.
-- New `/menu` command to access navigation.
+## 0.4.0 - Navigation par objets dédiés
+- Ajout d'objets persistants configurables via `items.yml` pour ouvrir les menus principaux.
+- Nouveau système de menus de premier niveau : jeux, profil, boutique et activités.
+- Commandes `/games`, `/profil`, `/shop` et `/activites` comme raccourcis.
 
 ## 0.3.0 - Visual interface
 - Added configurable scoreboard, tablist and chat formatting.

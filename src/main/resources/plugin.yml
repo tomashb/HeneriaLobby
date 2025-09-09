@@ -19,6 +19,17 @@ commands:
   r:
     description: Reply to the last private message
     usage: "/r <message>"
-  menu:
-    description: Open the main navigation menu
-    usage: "/menu"
+  games:
+    description: Open the games selector
+    aliases: [jeux]
+    usage: "/games"
+  profil:
+    description: Open your profile menu
+    usage: "/profil"
+  shop:
+    description: Open the cosmetics shop
+    aliases: [boutique]
+    usage: "/shop"
+  activites:
+    description: Open the lobby activities menu
+    usage: "/activites"

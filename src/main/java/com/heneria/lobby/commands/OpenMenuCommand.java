@@ -7,22 +7,23 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
- * Command to open the main navigation menu.
+ * Generic command to open a specific GUI menu.
  */
-public class MenuCommand implements CommandExecutor {
+public class OpenMenuCommand implements CommandExecutor {
 
     private final GUIManager guiManager;
+    private final String menu;
 
-    public MenuCommand(GUIManager guiManager) {
+    public OpenMenuCommand(GUIManager guiManager, String menu) {
         this.guiManager = guiManager;
+        this.menu = menu;
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (sender instanceof Player player) {
-            guiManager.openMenu(player, "main");
+            guiManager.openMenu(player, menu);
         }
         return true;
     }
 }
-

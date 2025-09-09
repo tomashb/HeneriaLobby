@@ -1,36 +1,4 @@
-navigation-item:
-  material: NETHER_STAR
-  slot: 8
-  name: "&aNavigation"
-  lore:
-    - "&7Ouvrir le menu principal"
-
 menus:
-  main:
-    title: "&6Menu Principal"
-    size: 27
-    items:
-      games:
-        material: COMPASS
-        slot: 11
-        name: "&eSélecteur de Jeux"
-        lore:
-          - "&7Rejoindre un serveur"
-        action: "open_menu:games"
-      profile:
-        material: PLAYER_HEAD
-        slot: 13
-        name: "&aProfil"
-        lore:
-          - "&7Voir vos informations"
-        action: "open_menu:profile"
-      cosmetics:
-        material: ENDER_CHEST
-        slot: 15
-        name: "&dBoutique Cosmétique"
-        lore:
-          - "&7Acheter des cosmétiques"
-        action: "run_command:cosmetics"
   games:
     title: "&eSélecteur de Jeux"
     size: 27
@@ -59,3 +27,37 @@ menus:
         lore:
           - "&7Gérer vos amis"
         action: "run_command:friends"
+  shop:
+    title: "&dBoutique Cosmétique"
+    size: 27
+    items:
+      particles:
+        material: BLAZE_POWDER
+        slot: 11
+        name: "&cParticules"
+        lore:
+          - "&7Effets de particules"
+      hats:
+        material: LEATHER_HELMET
+        slot: 15
+        name: "&eChapeaux"
+        lore:
+          - "&7Accessoires de tête"
+  activities:
+    title: "&bActivités du Lobby"
+    size: 27
+    items:
+      parkour:
+        material: SLIME_BLOCK
+        slot: 11
+        name: "&aParkour"
+        lore:
+          - "&7Se téléporter au parkour"
+        action: "run_command:parkour"
+      archery:
+        material: BOW
+        slot: 15
+        name: "&cTir à l'arc"
+        lore:
+          - "&7Lancer le mini-jeu"
+        action: "run_command:archery"

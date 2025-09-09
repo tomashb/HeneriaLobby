@@ -27,8 +27,7 @@ public class GUIManager {
     private final ServerInfoManager serverInfoManager;
     private FileConfiguration config;
     private final Map<String, Menu> menus = new HashMap<>();
-    private ItemStack navigationItem;
-    private int navigationSlot;
+    private final Map<Integer, MenuItem> navigationItems = new HashMap<>();
 
     public GUIManager(HeneriaLobbyPlugin plugin, ServerInfoManager serverInfoManager) {
         this.plugin = plugin;
@@ -38,9 +37,11 @@ public class GUIManager {
 
     public void loadConfig() {
         plugin.saveResource("menus.yml", false);
+        plugin.saveResource("items.yml", false);
         File file = new File(plugin.getDataFolder(), "menus.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
         menus.clear();
+        navigationItems.clear();
         ConfigurationSection menusSec = config.getConfigurationSection("menus");
         if (menusSec != null) {
             for (String key : menusSec.getKeys(false)) {
@@ -62,10 +63,17 @@ public class GUIManager {
                 menus.put(key, menu);
             }
         }
-        ConfigurationSection navSec = config.getConfigurationSection("navigation-item");
+        File itemsFile = new File(plugin.getDataFolder(), "items.yml");
+        FileConfiguration itemsConfig = YamlConfiguration.loadConfiguration(itemsFile);
+        ConfigurationSection navSec = itemsConfig.getConfigurationSection("items");
         if (navSec != null) {
-            navigationItem = buildItem(navSec);
-            navigationSlot = navSec.getInt("slot", 8);
+            for (String key : navSec.getKeys(false)) {
+                ConfigurationSection itemSec = navSec.getConfigurationSection(key);
+                int slot = itemSec.getInt("slot");
+                ItemStack stack = buildItem(itemSec);
+                String action = itemSec.getString("action", "");
+                navigationItems.put(slot, new MenuItem(stack, action));
+            }
         }
     }
 
@@ -123,12 +131,21 @@ public class GUIManager {
         player.openInventory(inv);
     }
 
-    public ItemStack getNavigationItem() {
-        return navigationItem.clone();
+    public Map<Integer, MenuItem> getNavigationItems() {
+        return navigationItems;
     }
 
-    public int getNavigationSlot() {
-        return navigationSlot;
+    public MenuItem getNavigationItem(ItemStack stack) {
+        for (MenuItem item : navigationItems.values()) {
+            if (stack.isSimilar(item.getItemStack())) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    public boolean isNavigationItem(ItemStack stack) {
+        return getNavigationItem(stack) != null;
     }
 
     public Menu getMenuByTitle(String title) {

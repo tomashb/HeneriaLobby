@@ -1,6 +1,7 @@
 package com.heneria.lobby.listeners;
 
 import com.heneria.lobby.menu.GUIManager;
+import com.heneria.lobby.menu.MenuItem;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,7 +12,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 /**
- * Gives players a permanent navigation item to open the main menu.
+ * Handles persistent hotbar navigation items defined in configuration.
  */
 public class NavigationItemListener implements Listener {
 
@@ -24,29 +25,38 @@ public class NavigationItemListener implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        player.getInventory().setItem(guiManager.getNavigationSlot(), guiManager.getNavigationItem());
+        guiManager.getNavigationItems().forEach((slot, item) ->
+                player.getInventory().setItem(slot, item.getItemStack()));
     }
 
     @EventHandler
     public void onDrop(PlayerDropItemEvent event) {
-        if (event.getItemDrop().getItemStack().isSimilar(guiManager.getNavigationItem())) {
+        if (guiManager.isNavigationItem(event.getItemDrop().getItemStack())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getCurrentItem() != null && event.getCurrentItem().isSimilar(guiManager.getNavigationItem())) {
+        if (event.getCurrentItem() != null && guiManager.isNavigationItem(event.getCurrentItem())) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler
     public void onInteract(PlayerInteractEvent event) {
-        if (event.getItem() != null && event.getItem().isSimilar(guiManager.getNavigationItem())) {
+        if (event.getItem() != null && guiManager.isNavigationItem(event.getItem())) {
             if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                 event.setCancelled(true);
-                guiManager.openMenu(event.getPlayer(), "main");
+                MenuItem item = guiManager.getNavigationItem(event.getItem());
+                String action = item.getAction();
+                if (action.startsWith("open_menu:")) {
+                    String name = action.split(":", 2)[1];
+                    guiManager.openMenu(event.getPlayer(), name);
+                } else if (action.startsWith("run_command:")) {
+                    String cmd = action.split(":", 2)[1];
+                    event.getPlayer().performCommand(cmd);
+                }
             }
         }
     }
