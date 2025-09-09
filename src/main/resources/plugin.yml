@@ -5,12 +5,12 @@ api-version: "1.21"
 softdepend:
   - LuckPerms
 commands:
-    lobbyadmin:
-      description: Administrative utilities for HeneriaLobby
-      usage: "/lobbyadmin"
-      aliases: [la]
-      permission: henerialobby.admin
-      permission-message: "§cVous n'avez pas la permission."
+  lobbyadmin:
+    description: Administrative utilities for HeneriaLobby
+    usage: "/lobbyadmin"
+    aliases: [la]
+    permission: henerialobby.admin
+    permission-message: "§cVous n'avez pas la permission."
   friends:
     description: Manage your friends
     usage: "/friends <add|remove|accept|deny|list> [player]"
