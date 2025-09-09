@@ -154,7 +154,7 @@ public class AchievementManager {
                 }
                 meta.setLore(lore);
                 if (has) {
-                    meta.addEnchant(org.bukkit.enchantments.Enchantment.ARROW_DAMAGE, 1, true);
+                    meta.addEnchant(org.bukkit.enchantments.Enchantment.POWER, 1, true);
                     meta.addItemFlags(org.bukkit.inventory.ItemFlag.HIDE_ENCHANTS);
                 }
                 item.setItemMeta(meta);
