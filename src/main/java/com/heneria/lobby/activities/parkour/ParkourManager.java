@@ -1,6 +1,7 @@
 package com.heneria.lobby.activities.parkour;
 
 import com.heneria.lobby.database.DatabaseManager;
+import com.heneria.lobby.achievements.AchievementManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -22,6 +23,7 @@ public class ParkourManager {
     private final JavaPlugin plugin;
     private final DatabaseManager databaseManager;
     private final FileConfiguration config;
+    private final AchievementManager achievementManager;
     private final Location start;
     private final List<Location> checkpoints;
     private final Location finish;
@@ -32,10 +34,11 @@ public class ParkourManager {
     private final Map<UUID, Location> lastCheckpoint = new HashMap<>();
     private final List<ArmorStand> hologramLines = new ArrayList<>();
 
-    public ParkourManager(JavaPlugin plugin, DatabaseManager databaseManager, FileConfiguration config) {
+    public ParkourManager(JavaPlugin plugin, DatabaseManager databaseManager, FileConfiguration config, AchievementManager achievementManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
         this.config = config;
+        this.achievementManager = achievementManager;
 
         this.start = parseLocation(config.getString("parkour.start"));
         this.finish = parseLocation(config.getString("parkour.finish"));
@@ -107,6 +110,9 @@ public class ParkourManager {
         lastCheckpoint.remove(player.getUniqueId());
         if (newRecord) {
             updateLeaderboard();
+        }
+        if (achievementManager != null) {
+            achievementManager.handleParkourFinish(player, time);
         }
     }
 

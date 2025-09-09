@@ -1,6 +1,7 @@
 package com.heneria.lobby.friends;
 
 import com.heneria.lobby.database.DatabaseManager;
+import com.heneria.lobby.achievements.AchievementManager;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -21,11 +22,13 @@ public class FriendManager {
 
     private final JavaPlugin plugin;
     private final DatabaseManager databaseManager;
+    private final AchievementManager achievementManager;
     private final Map<UUID, Set<UUID>> cache = new ConcurrentHashMap<>();
 
-    public FriendManager(JavaPlugin plugin, DatabaseManager databaseManager) {
+    public FriendManager(JavaPlugin plugin, DatabaseManager databaseManager, AchievementManager achievementManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
+        this.achievementManager = achievementManager;
     }
 
     /**
@@ -110,7 +113,7 @@ public class FriendManager {
     public void acceptRequest(UUID player, UUID requester) {
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement ps = connection.prepareStatement(
-                     "UPDATE player_friends SET status='ACCEPTED' WHERE player_uuid=? AND friend_uuid=? AND status='PENDING'")) {
+                    "UPDATE player_friends SET status='ACCEPTED' WHERE player_uuid=? AND friend_uuid=? AND status='PENDING'")) {
             ps.setString(1, requester.toString());
             ps.setString(2, player.toString());
             ps.executeUpdate();
@@ -119,6 +122,16 @@ public class FriendManager {
         }
         reload(player);
         reload(requester);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (achievementManager != null) {
+                int playerCount = getFriends(player).size();
+                int requesterCount = getFriends(requester).size();
+                org.bukkit.entity.Player p = Bukkit.getPlayer(player);
+                if (p != null) achievementManager.handleFriendAdded(p, playerCount);
+                org.bukkit.entity.Player r = Bukkit.getPlayer(requester);
+                if (r != null) achievementManager.handleFriendAdded(r, requesterCount);
+            }
+        }, 20L);
     }
 
     public void denyRequest(UUID player, UUID requester) {
