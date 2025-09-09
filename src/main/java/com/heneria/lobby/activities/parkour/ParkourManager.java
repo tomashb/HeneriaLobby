@@ -181,13 +181,15 @@ public class ParkourManager {
         List<String> top = getTopTimes(leaderboardSize);
         Location base = leaderboardLocation.clone();
         for (int i = 0; i < top.size(); i++) {
-            Location lineLoc = base.clone().add(0, -0.25 * i, 0);
+            final int index = i;
+            final String entry = top.get(i);
+            Location lineLoc = base.clone().add(0, -0.25 * index, 0);
             ArmorStand stand = base.getWorld().spawn(lineLoc, ArmorStand.class, st -> {
                 st.setMarker(true);
                 st.setInvisible(true);
                 st.setCustomNameVisible(true);
                 st.setGravity(false);
-                st.setCustomName("§e" + (i + 1) + ". §f" + top.get(i));
+                st.setCustomName("§e" + (index + 1) + ". §f" + entry);
             });
             hologramLines.add(stand);
         }
