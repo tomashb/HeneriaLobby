@@ -42,3 +42,17 @@ Placeholders disponibles :
 - `{player}` – nom du joueur expéditeur.
 - `{message}` – message envoyé.
 - `{ping}` – ping du joueur pour le format de la tablist.
+
+## Configuration des Menus
+
+Le fichier `menus.yml` contrôle l'ensemble de la navigation par GUI. Il permet de définir:
+
+- L'objet de navigation (matériau, nom, description et emplacement).
+- Chaque menu avec son titre et sa taille.
+- Les items contenus dans un menu avec leur matériau, slot, nom, lore et action au clic.
+
+Actions disponibles:
+
+- `open_menu:<nom>` – ouvre un autre menu configuré.
+- `connect_server:<serveur>` – envoie le joueur sur le serveur spécifié via Plugin Messages.
+- `run_command:<commande>` – exécute une commande en tant que joueur.

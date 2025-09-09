@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 - Navigation menus
+- Added configurable GUI navigation system with dynamic server selector.
+- Players receive a permanent item to open the main menu.
+- New `/menu` command to access navigation.
+
 ## 0.3.0 - Visual interface
 - Added configurable scoreboard, tablist and chat formatting.
 - Integrated LuckPerms for rank prefixes in tablist and chat.
