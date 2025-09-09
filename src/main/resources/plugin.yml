@@ -2,3 +2,9 @@ name: HeneriaLobby
 version: 0.1.1
 main: com.heneria.lobby.HeneriaLobbyPlugin
 api-version: "1.21"
+commands:
+  lobbyadmin:
+    description: Administrative utilities for HeneriaLobby
+    usage: "/lobbyadmin testdb"
+    permission: henerialobby.admin
+    permission-message: "§cVous n'avez pas la permission."

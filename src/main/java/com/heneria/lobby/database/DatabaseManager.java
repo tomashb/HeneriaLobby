@@ -2,6 +2,7 @@ package com.heneria.lobby.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariPool;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,8 +24,10 @@ public class DatabaseManager {
 
     /**
      * Initializes the connection pool and ensures required tables exist.
+     *
+     * @return {@code true} if the initialization succeeded, {@code false} otherwise
      */
-    public void init() throws SQLException {
+    public boolean init() {
         FileConfiguration config = plugin.getConfig();
 
         HikariConfig hikariConfig = new HikariConfig();
@@ -36,9 +39,26 @@ public class DatabaseManager {
         hikariConfig.setMaximumPoolSize(10);
         hikariConfig.setPoolName("HeneriaLobbyPool");
 
-        this.dataSource = new HikariDataSource(hikariConfig);
+        if (config.getBoolean("debug")) {
+            plugin.getLogger().info("Attempting database connection to " + jdbcUrl +
+                    " as user '" + config.getString("database.user") + "'.");
+        }
 
-        createTables();
+        try {
+            this.dataSource = new HikariDataSource(hikariConfig);
+            createTables();
+            return true;
+        } catch (HikariPool.PoolInitializationException e) {
+            plugin.getLogger().severe("[HeneriaLobby] ERREUR: Impossible de se connecter à la base de données !");
+            plugin.getLogger().severe("[HeneriaLobby] Veuillez vérifier les points suivants :");
+            plugin.getLogger().severe("[HeneriaLobby] 1. Les informations dans config.yml (host, port, database, user, password) sont-elles correctes ?");
+            plugin.getLogger().severe("[HeneriaLobby] 2. Votre serveur MySQL/MariaDB est-il bien démarré ?");
+            plugin.getLogger().severe("[HeneriaLobby] 3. Un pare-feu ne bloque-t-il pas la connexion ?");
+            plugin.getLogger().severe("[HeneriaLobby] Le plugin va maintenant se désactiver.");
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Database error: " + e.getMessage());
+        }
+        return false;
     }
 
     private void createTables() throws SQLException {
