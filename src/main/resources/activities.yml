@@ -1,0 +1,29 @@
+parkour:
+  start: world,0,64,0
+  checkpoints:
+    - world,5,64,0
+    - world,10,65,0
+  finish: world,20,70,0
+  leaderboard:
+    location: world,22,72,0
+    size: 5
+  messages:
+    start: "&aDépart du parkour !"
+    checkpoint: "&eCheckpoint atteint !"
+    finish: "&bArrivée en %time%s"
+    best: "&6Nouveau record personnel !"
+
+mini-foot:
+  slime-spawn: world,100,65,100
+  goal-a:
+    min: world,90,64,95
+    max: world,94,68,105
+  goal-b:
+    min: world,106,64,95
+    max: world,110,68,105
+  message: "&aBut de %team%!"
+
+archery:
+  targets:
+    - world,150,70,150
+  message: "&aVous avez marqué %points% points !"

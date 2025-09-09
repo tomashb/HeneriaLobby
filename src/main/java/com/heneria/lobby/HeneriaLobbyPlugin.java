@@ -16,6 +16,11 @@ import com.heneria.lobby.ui.ScoreboardManager;
 import com.heneria.lobby.ui.TablistManager;
 import com.heneria.lobby.menu.GUIManager;
 import com.heneria.lobby.menu.ServerInfoManager;
+import com.heneria.lobby.activities.parkour.ParkourManager;
+import com.heneria.lobby.activities.parkour.ParkourCommand;
+import com.heneria.lobby.activities.parkour.ParkourListener;
+import com.heneria.lobby.activities.football.MiniFootManager;
+import com.heneria.lobby.activities.archery.ArcheryListener;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -37,12 +42,15 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private LuckPerms luckPerms;
     private GUIManager guiManager;
     private ServerInfoManager serverInfoManager;
+    private ParkourManager parkourManager;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         saveResource("messages.yml", false);
+        saveResource("activities.yml", false);
         messages = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "messages.yml"));
+        FileConfiguration activitiesConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "activities.yml"));
 
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.init()) {
@@ -61,11 +69,15 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         tablistManager = new TablistManager(this, luckPerms);
         serverInfoManager = new ServerInfoManager(this);
         guiManager = new GUIManager(this, serverInfoManager);
+        parkourManager = new ParkourManager(this, databaseManager, activitiesConfig);
+        new MiniFootManager(this, activitiesConfig);
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager, scoreboardManager, tablistManager), this);
         getServer().getPluginManager().registerEvents(new ChatListener(this, tablistManager), this);
         getServer().getPluginManager().registerEvents(new NavigationItemListener(guiManager), this);
         getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
+        getServer().getPluginManager().registerEvents(new ParkourListener(parkourManager), this);
+        getServer().getPluginManager().registerEvents(new ArcheryListener(activitiesConfig), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
@@ -75,6 +87,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getCommand("profil").setExecutor(new OpenMenuCommand(guiManager, "profile"));
         getCommand("shop").setExecutor(new OpenMenuCommand(guiManager, "shop"));
         getCommand("activites").setExecutor(new OpenMenuCommand(guiManager, "activities"));
+        getCommand("parkour").setExecutor(new ParkourCommand(parkourManager));
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:friends");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:msg");

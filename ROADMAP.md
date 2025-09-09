@@ -5,4 +5,4 @@
 - [x] Visual interface
 - [x] Navigation (Terminé)
 - [ ] Cosmetics system
-- [ ] Additional lobby features
+- [x] Activités du Lobby (Terminé)

@@ -66,3 +66,16 @@ Actions disponibles :
 - `open_menu:<nom>` – ouvre un autre menu configuré.
 - `connect_server:<serveur>` – envoie le joueur sur le serveur spécifié via Plugin Messages.
 - `run_command:<commande>` – exécute une commande en tant que joueur.
+
+## Configuration des Activités
+
+Le fichier `activities.yml` centralise la configuration des mini-jeux du lobby.
+Pour chaque activité on peut définir les coordonnées des zones et les messages
+affichés aux joueurs.
+
+- **Parkour** : départ, checkpoints, arrivée et emplacement du classement holographique.
+- **Mini-Foot** : point de réapparition du slime et zones de but.
+- **Stand de Tir** : emplacements des blocs cible et message de score.
+
+Les exemples fournis dans `activities.yml` peuvent servir de base et être
+adaptés aux besoins de votre lobby.
