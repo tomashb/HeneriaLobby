@@ -1,0 +1,24 @@
+achievements:
+  parkour_beginner:
+    name: "&aDébutant du Parkour"
+    description: "&7Termine le parkour en moins de 2 minutes."
+    icon:
+      locked: COAL_BLOCK
+      unlocked: EMERALD_BLOCK
+    condition:
+      type: PARKOUR_FINISH_TIME
+      value: 120
+    rewards:
+      coins: 500
+      title: "Le Rapide"
+  first_friend:
+    name: "&bPremier Ami"
+    description: "&7Ajoute un ami au réseau."
+    icon:
+      locked: GRAY_DYE
+      unlocked: LIME_DYE
+    condition:
+      type: ADD_FRIEND
+      value: 1
+    rewards:
+      coins: 100

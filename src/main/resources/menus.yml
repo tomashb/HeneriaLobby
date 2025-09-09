@@ -14,6 +14,13 @@ menus:
     title: "&aProfil"
     size: 27
     items:
+      achievements:
+        material: NETHER_STAR
+        slot: 11
+        name: "&6Succès"
+        lore:
+          - "&7Voir vos succès"
+        action: "run_command:achievements"
       info:
         material: PLAYER_HEAD
         slot: 13

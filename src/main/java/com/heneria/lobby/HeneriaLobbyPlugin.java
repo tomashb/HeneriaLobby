@@ -22,6 +22,8 @@ import com.heneria.lobby.activities.parkour.ParkourCommand;
 import com.heneria.lobby.activities.parkour.ParkourListener;
 import com.heneria.lobby.activities.football.MiniFootManager;
 import com.heneria.lobby.activities.archery.ArcheryListener;
+import com.heneria.lobby.economy.EconomyManager;
+import com.heneria.lobby.achievements.AchievementManager;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -45,6 +47,8 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private ServerInfoManager serverInfoManager;
     private ParkourManager parkourManager;
     private ConfigManager activitiesConfigManager;
+    private EconomyManager economyManager;
+    private AchievementManager achievementManager;
 
     @Override
     public void onEnable() {
@@ -63,7 +67,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getLogger().info("Connected to the database successfully.");
 
         playerDataManager = new PlayerDataManager(this, databaseManager);
-        friendManager = new FriendManager(this, databaseManager);
+        economyManager = new EconomyManager(this, playerDataManager);
+        achievementManager = new AchievementManager(this, databaseManager, economyManager);
+        friendManager = new FriendManager(this, databaseManager, achievementManager);
         messageManager = new PrivateMessageManager();
 
         RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
@@ -72,10 +78,10 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         tablistManager = new TablistManager(this, luckPerms);
         serverInfoManager = new ServerInfoManager(this);
         guiManager = new GUIManager(this, serverInfoManager);
-        parkourManager = new ParkourManager(this, databaseManager, activitiesConfig);
+        parkourManager = new ParkourManager(this, databaseManager, activitiesConfig, achievementManager);
         new MiniFootManager(this, activitiesConfig);
 
-        getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager, scoreboardManager, tablistManager), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager, scoreboardManager, tablistManager, achievementManager), this);
         getServer().getPluginManager().registerEvents(new ChatListener(this, tablistManager), this);
         getServer().getPluginManager().registerEvents(new NavigationItemListener(guiManager), this);
         getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
@@ -91,6 +97,10 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getCommand("shop").setExecutor(new OpenMenuCommand(guiManager, "shop"));
         getCommand("activites").setExecutor(new OpenMenuCommand(guiManager, "activities"));
         getCommand("parkour").setExecutor(new ParkourCommand(parkourManager));
+        getCommand("coins").setExecutor(new com.heneria.lobby.commands.CoinsCommand(economyManager));
+        getCommand("achievements").setExecutor(new com.heneria.lobby.commands.AchievementsCommand(achievementManager));
+
+        economyManager.startPassiveRewardTask(20L * 600, 5);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:friends");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:msg");
@@ -119,5 +129,13 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
 
     public ServerInfoManager getServerInfoManager() {
         return serverInfoManager;
+    }
+
+    public EconomyManager getEconomyManager() {
+        return economyManager;
+    }
+
+    public AchievementManager getAchievementManager() {
+        return achievementManager;
     }
 }

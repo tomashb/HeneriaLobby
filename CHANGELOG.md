@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 - Système de progression
+- Ajout de l'économie de Coins avec gain passif et API interne.
+- Commande `/coins` pour consulter son solde.
+- Système de succès configurable via `achievements.yml` et menu dédié.
+
 ## 0.5.1 - Interface de configuration en jeu
 - Ajout de la commande `/lobbyadmin` pour configurer le parkour et le mini-foot.
 - Sauvegarde immédiate des modifications dans `activities.yml`.

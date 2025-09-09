@@ -25,6 +25,17 @@ The plugin provides network-wide social features:
 - `/msg <player> <message>` – send a private message.
 - `/r <message>` – reply to the last player who messaged you.
 
+## Système de Progression
+
+Les joueurs accumulent des **Coins** en restant connectés ou en participant aux activités du lobby.
+La commande `/coins` affiche le solde actuel.
+
+Un système de **succès** configurable récompense les accomplissements.
+Le fichier `achievements.yml` permet de définir chaque succès : identifiant, nom,
+description, icônes verrouillé/déverrouillé, condition et récompenses (coins, titre, etc.).
+Les joueurs peuvent consulter leur progression via le menu des succès
+ou la commande `/achievements`.
+
 ## Configuration de l'Interface
 
 Les fichiers de configuration permettent de personnaliser l'apparence du serveur :

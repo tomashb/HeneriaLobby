@@ -1,5 +1,5 @@
 name: HeneriaLobby
-version: 0.5.1
+version: 0.6.0
 main: com.heneria.lobby.HeneriaLobbyPlugin
 api-version: "1.21"
 softdepend:
@@ -37,3 +37,9 @@ commands:
   parkour:
     description: Parkour commands
     usage: "/parkour <spawn|checkpoint|top>"
+  coins:
+    description: Display your coin balance
+    usage: "/coins"
+  achievements:
+    description: Open your achievements menu
+    usage: "/achievements"

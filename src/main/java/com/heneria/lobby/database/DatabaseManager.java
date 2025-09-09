@@ -90,6 +90,14 @@ public class DatabaseManager {
                             "best_time BIGINT" +
                             ")"
             );
+            statement.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS player_achievements (" +
+                            "player_uuid VARCHAR(36)," +
+                            "achievement_id VARCHAR(64)," +
+                            "unlock_date TIMESTAMP," +
+                            "PRIMARY KEY (player_uuid, achievement_id)" +
+                            ")"
+            );
         }
     }
 

@@ -6,6 +6,7 @@ import com.heneria.lobby.HeneriaLobbyPlugin;
 import com.heneria.lobby.friends.FriendManager;
 import com.heneria.lobby.friends.PrivateMessageManager;
 import com.heneria.lobby.player.PlayerDataManager;
+import com.heneria.lobby.achievements.AchievementManager;
 import com.heneria.lobby.ui.ScoreboardManager;
 import com.heneria.lobby.ui.TablistManager;
 import org.bukkit.Bukkit;
@@ -24,14 +25,16 @@ public class PlayerListener implements Listener {
     private final PrivateMessageManager messageManager;
     private final ScoreboardManager scoreboardManager;
     private final TablistManager tablistManager;
+    private final AchievementManager achievementManager;
 
-    public PlayerListener(HeneriaLobbyPlugin plugin, PlayerDataManager dataManager, FriendManager friendManager, PrivateMessageManager messageManager, ScoreboardManager scoreboardManager, TablistManager tablistManager) {
+    public PlayerListener(HeneriaLobbyPlugin plugin, PlayerDataManager dataManager, FriendManager friendManager, PrivateMessageManager messageManager, ScoreboardManager scoreboardManager, TablistManager tablistManager, AchievementManager achievementManager) {
         this.plugin = plugin;
         this.dataManager = dataManager;
         this.friendManager = friendManager;
         this.messageManager = messageManager;
         this.scoreboardManager = scoreboardManager;
         this.tablistManager = tablistManager;
+        this.achievementManager = achievementManager;
     }
 
     @EventHandler
@@ -40,6 +43,7 @@ public class PlayerListener implements Listener {
         event.setJoinMessage(plugin.getMessages().getString("join-message").replace("{player}", player.getName()));
         dataManager.load(player.getUniqueId(), player.getName());
         friendManager.loadFriends(player.getUniqueId());
+        achievementManager.loadPlayer(player.getUniqueId());
         scoreboardManager.show(player);
         tablistManager.update(player);
         for (UUID uuid : friendManager.getFriends(player.getUniqueId())) {
