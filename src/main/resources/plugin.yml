@@ -1,7 +1,9 @@
 name: HeneriaLobby
-version: 0.2.0
+version: 0.3.0
 main: com.heneria.lobby.HeneriaLobbyPlugin
 api-version: "1.21"
+softdepend:
+  - LuckPerms
 commands:
   lobbyadmin:
     description: Administrative utilities for HeneriaLobby

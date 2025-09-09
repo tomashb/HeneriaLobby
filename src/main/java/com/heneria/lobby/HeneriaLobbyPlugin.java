@@ -5,12 +5,18 @@ import com.heneria.lobby.commands.LobbyAdminCommand;
 import com.heneria.lobby.commands.MsgCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
+import com.heneria.lobby.listeners.ChatListener;
 import com.heneria.lobby.player.PlayerDataManager;
 import com.heneria.lobby.friends.FriendManager;
 import com.heneria.lobby.friends.PrivateMessageManager;
+import com.heneria.lobby.ui.ScoreboardManager;
+import com.heneria.lobby.ui.TablistManager;
+import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.io.File;
 
@@ -21,6 +27,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private FriendManager friendManager;
     private PrivateMessageManager messageManager;
     private FileConfiguration messages;
+    private ScoreboardManager scoreboardManager;
+    private TablistManager tablistManager;
+    private LuckPerms luckPerms;
 
     @Override
     public void onEnable() {
@@ -39,7 +48,13 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         friendManager = new FriendManager(this, databaseManager);
         messageManager = new PrivateMessageManager();
 
-        getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager), this);
+        RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
+        luckPerms = provider != null ? provider.getProvider() : null;
+        scoreboardManager = new ScoreboardManager(this);
+        tablistManager = new TablistManager(this, luckPerms);
+
+        getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager, scoreboardManager, tablistManager), this);
+        getServer().getPluginManager().registerEvents(new ChatListener(this, tablistManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);

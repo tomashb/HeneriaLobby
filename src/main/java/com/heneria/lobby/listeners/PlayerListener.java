@@ -6,6 +6,8 @@ import com.heneria.lobby.HeneriaLobbyPlugin;
 import com.heneria.lobby.friends.FriendManager;
 import com.heneria.lobby.friends.PrivateMessageManager;
 import com.heneria.lobby.player.PlayerDataManager;
+import com.heneria.lobby.ui.ScoreboardManager;
+import com.heneria.lobby.ui.TablistManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,19 +22,26 @@ public class PlayerListener implements Listener {
     private final PlayerDataManager dataManager;
     private final FriendManager friendManager;
     private final PrivateMessageManager messageManager;
+    private final ScoreboardManager scoreboardManager;
+    private final TablistManager tablistManager;
 
-    public PlayerListener(HeneriaLobbyPlugin plugin, PlayerDataManager dataManager, FriendManager friendManager, PrivateMessageManager messageManager) {
+    public PlayerListener(HeneriaLobbyPlugin plugin, PlayerDataManager dataManager, FriendManager friendManager, PrivateMessageManager messageManager, ScoreboardManager scoreboardManager, TablistManager tablistManager) {
         this.plugin = plugin;
         this.dataManager = dataManager;
         this.friendManager = friendManager;
         this.messageManager = messageManager;
+        this.scoreboardManager = scoreboardManager;
+        this.tablistManager = tablistManager;
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        event.setJoinMessage(plugin.getMessages().getString("join-message").replace("{player}", player.getName()));
         dataManager.load(player.getUniqueId(), player.getName());
         friendManager.loadFriends(player.getUniqueId());
+        scoreboardManager.show(player);
+        tablistManager.update(player);
         for (UUID uuid : friendManager.getFriends(player.getUniqueId())) {
             Player friend = Bukkit.getPlayer(uuid);
             if (friend != null && friend.isOnline()) {
@@ -46,6 +55,7 @@ public class PlayerListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        event.setQuitMessage(plugin.getMessages().getString("quit-message").replace("{player}", player.getName()));
         dataManager.save(player.getUniqueId());
         for (UUID uuid : friendManager.getFriends(player.getUniqueId())) {
             Player friend = Bukkit.getPlayer(uuid);
