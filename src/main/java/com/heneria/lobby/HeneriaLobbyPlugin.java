@@ -3,14 +3,19 @@ package com.heneria.lobby;
 import com.heneria.lobby.commands.FriendsCommand;
 import com.heneria.lobby.commands.LobbyAdminCommand;
 import com.heneria.lobby.commands.MsgCommand;
+import com.heneria.lobby.commands.MenuCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
 import com.heneria.lobby.listeners.ChatListener;
+import com.heneria.lobby.listeners.NavigationItemListener;
+import com.heneria.lobby.listeners.MenuListener;
 import com.heneria.lobby.player.PlayerDataManager;
 import com.heneria.lobby.friends.FriendManager;
 import com.heneria.lobby.friends.PrivateMessageManager;
 import com.heneria.lobby.ui.ScoreboardManager;
 import com.heneria.lobby.ui.TablistManager;
+import com.heneria.lobby.menu.GUIManager;
+import com.heneria.lobby.menu.ServerInfoManager;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -30,6 +35,8 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private ScoreboardManager scoreboardManager;
     private TablistManager tablistManager;
     private LuckPerms luckPerms;
+    private GUIManager guiManager;
+    private ServerInfoManager serverInfoManager;
 
     @Override
     public void onEnable() {
@@ -52,17 +59,24 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         luckPerms = provider != null ? provider.getProvider() : null;
         scoreboardManager = new ScoreboardManager(this);
         tablistManager = new TablistManager(this, luckPerms);
+        serverInfoManager = new ServerInfoManager(this);
+        guiManager = new GUIManager(this, serverInfoManager);
 
         getServer().getPluginManager().registerEvents(new PlayerListener(this, playerDataManager, friendManager, messageManager, scoreboardManager, tablistManager), this);
         getServer().getPluginManager().registerEvents(new ChatListener(this, tablistManager), this);
+        getServer().getPluginManager().registerEvents(new NavigationItemListener(guiManager), this);
+        getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
+        getCommand("menu").setExecutor(new MenuCommand(guiManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
         getCommand("msg").setExecutor(msgCommand);
         getCommand("r").setExecutor(msgCommand);
 
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:friends");
         getServer().getMessenger().registerOutgoingPluginChannel(this, "heneria:msg");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        getServer().getMessenger().registerIncomingPluginChannel(this, "BungeeCord", serverInfoManager);
     }
 
     @Override
@@ -78,5 +92,13 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
 
     public FileConfiguration getMessages() {
         return messages;
+    }
+
+    public GUIManager getGuiManager() {
+        return guiManager;
+    }
+
+    public ServerInfoManager getServerInfoManager() {
+        return serverInfoManager;
     }
 }
