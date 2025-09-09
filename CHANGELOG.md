@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 - Visual interface
+- Added configurable scoreboard, tablist and chat formatting.
+- Integrated LuckPerms for rank prefixes in tablist and chat.
+- Added mention notifications with sound.
+
 ## 0.2.0 - Social system
 - Added friend management and private messaging commands.
 - New cross-server notifications for friend requests and status.

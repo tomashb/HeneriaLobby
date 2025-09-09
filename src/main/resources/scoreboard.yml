@@ -1,0 +1,5 @@
+title: "&5Heneria"
+lines:
+  - "&7Coins: &d%player_coins%"
+  - "&7Lobby: &d%lobby_players%"
+  - "&7Network: &d%total_players%"
