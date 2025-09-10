@@ -53,10 +53,16 @@ public class GUIManager {
                 if (itemsSec != null) {
                     for (String itemKey : itemsSec.getKeys(false)) {
                         ConfigurationSection itemSec = itemsSec.getConfigurationSection(itemKey);
-                        int slot = itemSec.getInt("slot");
                         ItemStack stack = buildItem(itemSec);
                         String action = itemSec.getString("action", "");
-                        items.put(slot, new MenuItem(stack, action));
+                        if (itemSec.isList("slots")) {
+                            for (int slot : itemSec.getIntegerList("slots")) {
+                                items.put(slot, new MenuItem(stack, action));
+                            }
+                        } else {
+                            int slot = itemSec.getInt("slot");
+                            items.put(slot, new MenuItem(stack, action));
+                        }
                     }
                 }
                 Menu menu = new Menu(key, title, size, items);
@@ -69,10 +75,16 @@ public class GUIManager {
         if (navSec != null) {
             for (String key : navSec.getKeys(false)) {
                 ConfigurationSection itemSec = navSec.getConfigurationSection(key);
-                int slot = itemSec.getInt("slot");
                 ItemStack stack = buildItem(itemSec);
                 String action = itemSec.getString("action", "");
-                navigationItems.put(slot, new MenuItem(stack, action));
+                if (itemSec.isList("slots")) {
+                    for (int slot : itemSec.getIntegerList("slots")) {
+                        navigationItems.put(slot, new MenuItem(stack, action));
+                    }
+                } else {
+                    int slot = itemSec.getInt("slot");
+                    navigationItems.put(slot, new MenuItem(stack, action));
+                }
             }
         }
     }
