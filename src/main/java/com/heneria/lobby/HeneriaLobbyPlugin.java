@@ -24,6 +24,7 @@ import com.heneria.lobby.activities.football.MiniFootManager;
 import com.heneria.lobby.activities.archery.ArcheryListener;
 import com.heneria.lobby.economy.EconomyManager;
 import com.heneria.lobby.achievements.AchievementManager;
+import com.heneria.lobby.cosmetics.CosmeticsManager;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -49,6 +50,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     private ConfigManager activitiesConfigManager;
     private EconomyManager economyManager;
     private AchievementManager achievementManager;
+    private CosmeticsManager cosmeticsManager;
 
     @Override
     public void onEnable() {
@@ -71,6 +73,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         achievementManager = new AchievementManager(this, databaseManager, economyManager);
         friendManager = new FriendManager(this, databaseManager, achievementManager);
         messageManager = new PrivateMessageManager();
+        cosmeticsManager = new CosmeticsManager();
 
         RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
         luckPerms = provider != null ? provider.getProvider() : null;
@@ -87,6 +90,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MenuListener(this, guiManager), this);
         getServer().getPluginManager().registerEvents(new ParkourListener(parkourManager), this);
         getServer().getPluginManager().registerEvents(new ArcheryListener(activitiesConfig), this);
+        getServer().getPluginManager().registerEvents(cosmeticsManager, this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager, activitiesConfigManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
@@ -137,5 +141,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
 
     public AchievementManager getAchievementManager() {
         return achievementManager;
+    }
+
+    public CosmeticsManager getCosmeticsManager() {
+        return cosmeticsManager;
     }
 }
