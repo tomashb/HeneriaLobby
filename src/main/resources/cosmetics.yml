@@ -27,6 +27,9 @@ cosmetics:
       lore:
         - "&7Entourez-vous d'un halo de feu."
       material: BLAZE_POWDER
+      particle: FLAME
+      count: 5
+      offset: 0.2
       rarity: EPIC
       price: 7500
     particle_heart_trail:
@@ -34,6 +37,9 @@ cosmetics:
       lore:
         - "&7Laissez une trace de cœurs derrière vous."
       material: POPPY
+      particle: HEART
+      count: 2
+      offset: 0.2
       rarity: RARE
       price: 4000
     particle_matrix_helix:
@@ -41,6 +47,9 @@ cosmetics:
       lore:
         - "&7Êtes-vous l'Élu ?"
       material: LIME_DYE
+      particle: END_ROD
+      count: 3
+      offset: 0.3
       rarity: LEGENDARY
       price: 15000
   titles:

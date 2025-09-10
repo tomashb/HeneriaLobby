@@ -41,7 +41,9 @@ public class MenuListener implements Listener {
         String action = item.getAction();
         if (action.startsWith("open_menu:")) {
             String name = action.split(":", 2)[1];
-            if (!plugin.getCosmeticsManager().openCategoryMenu(player, name)) {
+            if (name.equalsIgnoreCase("unlocked")) {
+                plugin.getCosmeticsManager().openOwnedMenu(player);
+            } else if (!plugin.getCosmeticsManager().openCategoryMenu(player, name)) {
                 guiManager.openMenu(player, name);
             }
         } else if (action.startsWith("run_command:")) {

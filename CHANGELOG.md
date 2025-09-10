@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.0 - Système de cosmétiques entièrement fonctionnel
+- Ajout du menu "Mes Cosmétiques" pour gérer les cosmétiques débloqués.
+- Effets visuels pour chapeaux, particules et titres avec gestion complète.
+
 ## 0.9.1 - Finalisation des cosmétiques et commandes d'administration de l'économie
 - Gestion de l'équipement et du déséquipement des cosmétiques avec sauvegarde.
 - Ajout de la commande `/eco` pour administrer les Coins des joueurs.
