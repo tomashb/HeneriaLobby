@@ -1,67 +1,206 @@
 cosmetics:
   hats:
-    hat_tnt:
-      name: "&cChapeau Explosif"
+    hat_bookshelf:
+      name: "Bibliothèque Ambulante"
       lore:
-        - "&7Un classique pour les joueurs... instables."
-      material: TNT
-      rarity: RARE
-      price: 2500
-    hat_glass:
-      name: "&bCasque de Cristal"
-      lore:
-        - "&7Avoir les idées claires n'a jamais été aussi simple."
-      material: GLASS
+        - "&7Pour les rats de bibliothèque ambulants."
+      material: BOOKSHELF
       rarity: COMMUN
-      price: 1000
-    hat_miner:
-      name: "&eCasque de Spéléologue"
+      price: 1200
+    hat_beehive:
+      name: "Ruche d'Abeilles"
       lore:
-        - "&7Pour éclairer vos idées les plus sombres."
-      material: SEA_LANTERN
+        - "&7Un bourdonnement permanent autour de vous."
+      material: BEEHIVE
+      rarity: RARE
+      price: 2800
+    hat_anvil:
+      name: "Enclume"
+      lore:
+        - "&7La tête bien lourde."
+      material: ANVIL
       rarity: EPIC
-      price: 5000
-  particles:
-    particle_flame_aura:
-      name: "&6Aura Enflammée"
+      price: 6000
+    hat_dragon_head:
+      name: "Tête de Dragon"
       lore:
-        - "&7Entourez-vous d'un halo de feu."
-      material: BLAZE_POWDER
-      particle: FLAME
+        - "&7Imposez le respect des dragons."
+      material: DRAGON_HEAD
+      rarity: LEGENDARY
+      price: 18000
+    hat_beacon:
+      name: "Balise Céleste"
+      lore:
+        - "&7Brillez tel un signal mythique."
+      material: BEACON
+      rarity: MYTHIC
+      price: 40000
+  particles:
+    particle_drip:
+      name: "Goutte à Goutte"
+      lore:
+        - "&7Une pluie légère vous suit."
+      material: WATER_BUCKET
+      particle: WATER_DROP
       count: 5
       offset: 0.2
-      rarity: EPIC
-      price: 7500
-    particle_heart_trail:
-      name: "&cTraînée d'Amour"
+      rarity: COMMUN
+      price: 1500
+    particle_music_notes:
+      name: "Notes de Musique"
       lore:
-        - "&7Laissez une trace de cœurs derrière vous."
-      material: POPPY
-      particle: HEART
-      count: 2
+        - "&7La musique vous accompagne."
+      material: NOTE_BLOCK
+      particle: NOTE
+      count: 5
       offset: 0.2
       rarity: RARE
-      price: 4000
-    particle_matrix_helix:
-      name: "&aHélice Matrix"
+      price: 3500
+    particle_void_dust:
+      name: "Poussière du Néant"
       lore:
-        - "&7Êtes-vous l'Élu ?"
-      material: LIME_DYE
-      particle: END_ROD
-      count: 3
+        - "&7Des particules du vide apparaissent."
+      material: OBSIDIAN
+      particle: PORTAL
+      count: 10
+      offset: 0.3
+      rarity: EPIC
+      price: 8000
+    particle_totem_aura:
+      name: "Aura du Totem"
+      lore:
+        - "&7La puissance du totem vous entoure."
+      material: TOTEM_OF_UNDYING
+      particle: TOTEM
+      count: 10
       offset: 0.3
       rarity: LEGENDARY
-      price: 15000
-  titles:
-    title_artisan:
-      name: "&fTitre : L'Artisan"
-      text: "&fL'Artisan"
-      material: CRAFTING_TABLE
-      rarity: COMMUN
-      price: 2000
-    title_ghost:
-      name: "&7Titre : Le Fantôme"
-      text: "&7Le Fantôme"
-      material: COBWEB
+      price: 20000
+    particle_wither_storm:
+      name: "Tempête du Wither"
+      lore:
+        - "&7Un souffle sombre vous enveloppe."
+      material: WITHER_ROSE
+      particle: SOUL_FIRE_FLAME
+      count: 10
+      offset: 0.4
+      rarity: MYTHIC
+      price: 50000
+  pets:
+    pet_fox:
+      name: "Renard Rusé"
+      lore:
+        - "&7Un renard vous suit partout."
+      material: FOX_SPAWN_EGG
+      rarity: RARE
+      price: 8000
+    pet_iron_golem:
+      name: "Golem de Fer miniature"
+      lore:
+        - "&7Un mini golem protecteur."
+      material: IRON_GOLEM_SPAWN_EGG
       rarity: EPIC
+      price: 16000
+    pet_allay:
+      name: "Allay Bienveillant"
+      lore:
+        - "&7Un allay tourne autour de vous."
+      material: ALLAY_SPAWN_EGG
+      rarity: LEGENDARY
+      price: 30000
+    pet_warden:
+      name: "Mini-Warden"
+      lore:
+        - "&7Un warden miniature et inquiétant."
+      material: WARDEN_SPAWN_EGG
+      rarity: MYTHIC
+      price: 60000
+  titles:
+    title_apprentice:
+      name: "Titre : L'Apprenti"
+      text: "&fL'Apprenti"
+      material: PAPER
+      rarity: COMMUN
+      price: 1000
+    title_conqueror:
+      name: "Titre : Le Conquérant"
+      text: "&9Le Conquérant"
+      material: IRON_SWORD
+      rarity: RARE
+      price: 2500
+    title_titan:
+      name: "Titre : Le Titan"
+      text: "&5Le Titan"
+      material: DIAMOND_SWORD
+      rarity: EPIC
+      price: 7500
+    title_legend:
+      name: "Titre : La Légende"
+      text: "&6La Légende"
+      material: NETHER_STAR
+      rarity: LEGENDARY
+      price: 20000
+    title_chosen:
+      name: "Titre : L'Élu(e)"
+      text: "&c&lL'Élu(e)"
+      material: DRAGON_EGG
+      rarity: MYTHIC
+      price: 50000
+  morphs:
+    morph_pig:
+      name: "Transformation : Cochon"
+      lore:
+        - "&7Prenez la forme d'un cochon."
+      material: PIG_SPAWN_EGG
+      rarity: COMMUN
+      price: 5000
+    morph_villager:
+      name: "Transformation : Villageois"
+      lore:
+        - "&7Adoptez l'apparence d'un villageois."
+      material: VILLAGER_SPAWN_EGG
+      rarity: RARE
       price: 10000
+    morph_enderman:
+      name: "Transformation : Enderman"
+      lore:
+        - "&7Devenez un mystérieux enderman."
+      material: ENDERMAN_SPAWN_EGG
+      rarity: EPIC
+      price: 20000
+    morph_blaze:
+      name: "Transformation : Blaze"
+      lore:
+        - "&7Brûlez d'énergie en blaze."
+      material: BLAZE_SPAWN_EGG
+      rarity: LEGENDARY
+      price: 35000
+    morph_wither_skeleton:
+      name: "Transformation : Wither Squelette"
+      lore:
+        - "&7Semez la peur en tant que wither squelette."
+      material: WITHER_SKELETON_SPAWN_EGG
+      rarity: MYTHIC
+      price: 70000
+  emotes:
+    emote_wave:
+      name: "/vague"
+      lore:
+        - "&7Faites un signe de la main."
+      material: PLAYER_HEAD
+      rarity: COMMUN
+      price: 500
+    emote_facepalm:
+      name: "/facepalm"
+      lore:
+        - "&7Mettez la main sur votre visage."
+      material: PLAYER_HEAD
+      rarity: RARE
+      price: 1500
+    emote_dance:
+      name: "/danse"
+      lore:
+        - "&7Une animation de danse simple."
+      material: PLAYER_HEAD
+      rarity: EPIC
+      price: 4000

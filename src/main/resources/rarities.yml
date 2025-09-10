@@ -1,0 +1,21 @@
+rarities:
+  COMMUN:
+    name: "&aCommun"
+    color: "&a"
+    stars: "&a★&7☆☆☆☆"
+  RARE:
+    name: "&9Rare"
+    color: "&9"
+    stars: "&9★★&7☆☆☆"
+  EPIC:
+    name: "&5Épique"
+    color: "&5"
+    stars: "&5★★★&7☆☆"
+  LEGENDARY:
+    name: "&6Légendaire"
+    color: "&6"
+    stars: "&6★★★★&7☆"
+  MYTHIC:
+    name: "&cMythique"
+    color: "&c"
+    stars: "&c★★★★★"

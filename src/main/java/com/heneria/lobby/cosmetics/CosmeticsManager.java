@@ -45,6 +45,7 @@ public class CosmeticsManager implements Listener {
     private final DatabaseManager databaseManager;
 
     private final Map<String, List<Cosmetic>> cosmetics = new HashMap<>();
+    private final Map<String, Rarity> rarities = new HashMap<>();
     private final Map<UUID, Set<String>> owned = new HashMap<>();
     private final Map<UUID, Map<String, String>> equipped = new HashMap<>();
     private final Map<UUID, String> openCategory = new HashMap<>();
@@ -68,8 +69,27 @@ public class CosmeticsManager implements Listener {
      */
     public void loadConfig() {
         plugin.saveResource("cosmetics.yml", false);
+        plugin.saveResource("rarities.yml", false);
+
         File file = new File(plugin.getDataFolder(), "cosmetics.yml");
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        File rarFile = new File(plugin.getDataFolder(), "rarities.yml");
+        FileConfiguration rarCfg = YamlConfiguration.loadConfiguration(rarFile);
+
+        rarities.clear();
+        ConfigurationSection rarSec = rarCfg.getConfigurationSection("rarities");
+        if (rarSec != null) {
+            for (String key : rarSec.getKeys(false)) {
+                ConfigurationSection r = rarSec.getConfigurationSection(key);
+                if (r == null) continue;
+                String name = color(r.getString("name", key));
+                String color = color(r.getString("color", ""));
+                String stars = color(r.getString("stars", ""));
+                rarities.put(key.toUpperCase(), new Rarity(name, color, stars));
+            }
+        }
+
         cosmetics.clear();
         ConfigurationSection root = config.getConfigurationSection("cosmetics");
         if (root != null) {
@@ -148,30 +168,34 @@ public class CosmeticsManager implements Listener {
                 boolean isEquipped = c.getId().equals(equippedId);
 
                 String baseName = ChatColor.stripColor(c.getName());
+                Rarity r = getRarity(c.getRarity());
+                String rarityColor = r.getColor();
                 List<String> lore = new ArrayList<>(c.getLore());
                 lore.add(ChatColor.DARK_GRAY + "-------------------------");
-                lore.add(ChatColor.WHITE + "Rareté : " + ChatColor.RED + c.getRarity());
+                lore.add(ChatColor.WHITE + "Rareté : " + rarityColor + r.getName() + " " + r.getStars());
+
+                String coloredName = rarityColor + ChatColor.BOLD.toString() + baseName;
 
                 if (!has) {
                     long coins = economyManager.getCoins(uuid);
                     lore.add(ChatColor.WHITE + "Prix : " + ChatColor.GOLD + c.getPrice() + " Coins");
                     lore.add(ChatColor.WHITE + "Votre solde : " + ChatColor.GOLD + coins + " Coins");
-                    lore.add("" );
+                    lore.add("");
                     lore.add(ChatColor.RED + "" + ChatColor.BOLD + "BLOQUÉ");
                     lore.add(ChatColor.YELLOW + "► Cliquez pour acheter");
-                    meta.setDisplayName(ChatColor.RED + baseName);
+                    meta.setDisplayName(coloredName);
                 } else if (isEquipped) {
-                    lore.add("" );
+                    lore.add("");
                     lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "ÉQUIPÉ");
                     lore.add(ChatColor.RED + "► Cliquez pour déséquiper");
-                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName + ChatColor.YELLOW + " (Équipé)");
+                    meta.setDisplayName(coloredName + ChatColor.YELLOW + " (Équipé)");
                     meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 } else {
-                    lore.add("" );
+                    lore.add("");
                     lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "DÉBLOQUÉ");
                     lore.add(ChatColor.YELLOW + "► Cliquez pour équiper");
-                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName);
+                    meta.setDisplayName(coloredName);
                     meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
@@ -250,18 +274,21 @@ public class CosmeticsManager implements Listener {
                 String baseName = ChatColor.stripColor(c.getName());
                 String equippedId = equippedMap.get(c.getCategory());
                 boolean isEquipped = c.getId().equals(equippedId);
+                Rarity r = getRarity(c.getRarity());
+                String rarityColor = r.getColor();
                 List<String> lore = new ArrayList<>(c.getLore());
                 lore.add(ChatColor.DARK_GRAY + "-------------------------");
-                lore.add(ChatColor.WHITE + "Rareté : " + ChatColor.RED + c.getRarity());
+                lore.add(ChatColor.WHITE + "Rareté : " + rarityColor + r.getName() + " " + r.getStars());
                 lore.add("");
+                String coloredName = rarityColor + ChatColor.BOLD.toString() + baseName;
                 if (isEquipped) {
                     lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "ÉQUIPÉ");
                     lore.add(ChatColor.RED + "► Cliquez pour déséquiper");
-                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName + ChatColor.YELLOW + " (Équipé)");
+                    meta.setDisplayName(coloredName + ChatColor.YELLOW + " (Équipé)");
                 } else {
                     lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "DÉBLOQUÉ");
                     lore.add(ChatColor.YELLOW + "► Cliquez pour équiper");
-                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName);
+                    meta.setDisplayName(coloredName);
                 }
                 meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
@@ -358,6 +385,10 @@ public class CosmeticsManager implements Listener {
             return "";
         }
         return Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
+
+    private Rarity getRarity(String key) {
+        return rarities.getOrDefault(key.toUpperCase(), new Rarity(key, "", ""));
     }
 
     public boolean isCosmeticMenu(String title) {
