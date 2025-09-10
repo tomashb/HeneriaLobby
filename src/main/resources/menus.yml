@@ -87,17 +87,16 @@ menus:
           - ""
           - "&e► Cliquez pour voir"
         action: "open_menu:titles"
-      morphs:
-        material: CREEPER_HEAD
+      join_messages:
+        material: WRITABLE_BOOK
         slot: 15
-        name: "&a&lTransformations"
+        name: "&a&lMessages d'Arrivée"
         lore:
-          - "&7Prenez l'apparence de"
-          - "&7différentes créatures et"
-          - "&7surprenez les autres joueurs !"
+          - "&7Annoncez votre connexion"
+          - "&7avec style !"
           - ""
           - "&e► Cliquez pour voir"
-        action: "open_menu:morphs"
+        action: "open_menu:join_messages"
       gestures:
         material: FEATHER
         slot: 16

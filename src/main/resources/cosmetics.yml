@@ -146,42 +146,50 @@ cosmetics:
       material: DRAGON_EGG
       rarity: MYTHIC
       price: 50000
-  morphs:
-    morph_pig:
-      name: "Transformation : Cochon"
+  join_messages:
+    join_classic:
+      name: "&aMessage : Classique"
       lore:
-        - "&7Prenez la forme d'un cochon."
-      material: PIG_SPAWN_EGG
+        - "&7Une connexion simple et élégante."
+      material: PAPER
       rarity: COMMUN
-      price: 5000
-    morph_villager:
-      name: "Transformation : Villageois"
+      price: 1500
+      format: "&e%player% a rejoint le serveur."
+    join_landing:
+      name: "&bMessage : Atterrissage"
       lore:
-        - "&7Adoptez l'apparence d'un villageois."
-      material: VILLAGER_SPAWN_EGG
+        - "&7Annoncez que vous êtes bien arrivé."
+      material: FEATHER
       rarity: RARE
-      price: 10000
-    morph_enderman:
-      name: "Transformation : Enderman"
+      price: 3000
+      format: "&b&l→ &b%player% &7vient d'atterrir dans le lobby !"
+    join_teleport:
+      name: "&dMessage : Téléportation"
       lore:
-        - "&7Devenez un mystérieux enderman."
-      material: ENDERMAN_SPAWN_EGG
+        - "&7Apparaissez comme par magie."
+      material: ENDER_PEARL
       rarity: EPIC
-      price: 20000
-    morph_blaze:
-      name: "Transformation : Blaze"
+      price: 6500
+      format: "&5✧ &d%player% &5s'est matérialisé(e) parmi nous. &5✧"
+    join_royal:
+      name: "&6Message : Annonce Royale"
       lore:
-        - "&7Brûlez d'énergie en blaze."
-      material: BLAZE_SPAWN_EGG
+        - "&7Une arrivée digne des plus grands."
+      material: GOLDEN_HELMET
       rarity: LEGENDARY
-      price: 35000
-    morph_wither_skeleton:
-      name: "Transformation : Wither Squelette"
+      price: 18000
+      format: |-
+        &f&m      &r &6&lARRIVÉE ROYALE&r &f&m      
+
+        &eSa majesté &6%player% &enous fait l'honneur de sa présence !
+    join_rift:
+      name: "&cMessage : Faille Dimensionnelle"
       lore:
-        - "&7Semez la peur en tant que wither squelette."
-      material: WITHER_SKELETON_SPAWN_EGG
+        - "&7Débarquez d'un autre monde."
+      material: OBSIDIAN
       rarity: MYTHIC
-      price: 70000
+      price: 45000
+      format: "&7Une faille s'ouvre... et &c&l%player% &7en émerge !"
   emotes:
     emote_wave:
       name: "/vague"
