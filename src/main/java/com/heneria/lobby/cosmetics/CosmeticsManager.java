@@ -3,6 +3,10 @@ package com.heneria.lobby.cosmetics;
 import com.heneria.lobby.HeneriaLobbyPlugin;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.economy.EconomyManager;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.user.User;
+import net.luckperms.api.node.Node;
+import net.luckperms.api.node.types.PrefixNode;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -12,9 +16,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -27,8 +29,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.io.File;
 import java.sql.*;
@@ -52,15 +52,18 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, Integer> openPage = new HashMap<>();
     private final Map<UUID, ItemStack> savedHelmets = new HashMap<>();
     private final Map<UUID, BukkitTask> particleTasks = new HashMap<>();
-    private final Map<UUID, Entity> titleEntities = new HashMap<>();
+    private final Map<UUID, Node> titleNodes = new HashMap<>();
+    private final LuckPerms luckPerms;
 
     private static final String OWNED_KEY = "unlocked";
     private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
 
-    public CosmeticsManager(HeneriaLobbyPlugin plugin, EconomyManager economyManager, DatabaseManager databaseManager) {
+    public CosmeticsManager(HeneriaLobbyPlugin plugin, EconomyManager economyManager,
+                             DatabaseManager databaseManager, LuckPerms luckPerms) {
         this.plugin = plugin;
         this.economyManager = economyManager;
         this.databaseManager = databaseManager;
+        this.luckPerms = luckPerms;
         loadConfig();
     }
 
@@ -370,9 +373,11 @@ public class CosmeticsManager implements Listener {
         if (task != null) {
             task.cancel();
         }
-        Entity ent = titleEntities.remove(uuid);
-        if (ent != null) {
-            ent.remove();
+        Node node = titleNodes.remove(uuid);
+        if (node != null && luckPerms != null) {
+            User user = luckPerms.getPlayerAdapter(Player.class).getUser(event.getPlayer());
+            user.data().remove(node);
+            luckPerms.getUserManager().saveUser(user);
         }
     }
 
@@ -629,20 +634,30 @@ public class CosmeticsManager implements Listener {
     }
 
     private void showTitle(Player player, Cosmetic cosmetic) {
+        if (luckPerms == null) {
+            return;
+        }
         UUID uuid = player.getUniqueId();
         hideTitle(player);
-        TextDisplay display = player.getWorld().spawn(player.getLocation(), TextDisplay.class);
-        display.text(LegacyComponentSerializer.legacySection().deserialize(color(cosmetic.getText())));
-        display.setShadowed(true);
-        player.addPassenger(display);
-        titleEntities.put(uuid, display);
+        User user = luckPerms.getPlayerAdapter(Player.class).getUser(player);
+        String prefix = color(cosmetic.getText()) + ChatColor.RESET + " ";
+        Node node = PrefixNode.builder(prefix, 1000).build();
+        user.data().add(node);
+        luckPerms.getUserManager().saveUser(user);
+        titleNodes.put(uuid, node);
     }
 
     private void hideTitle(Player player) {
-        UUID uuid = player.getUniqueId();
-        Entity ent = titleEntities.remove(uuid);
-        if (ent != null) {
-            ent.remove();
+        if (luckPerms == null) {
+            return;
         }
+        UUID uuid = player.getUniqueId();
+        Node node = titleNodes.remove(uuid);
+        if (node == null) {
+            return;
+        }
+        User user = luckPerms.getPlayerAdapter(Player.class).getUser(player);
+        user.data().remove(node);
+        luckPerms.getUserManager().saveUser(user);
     }
 }

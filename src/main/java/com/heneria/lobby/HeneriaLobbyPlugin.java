@@ -74,10 +74,11 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         achievementManager = new AchievementManager(this, databaseManager, economyManager);
         friendManager = new FriendManager(this, databaseManager, achievementManager);
         messageManager = new PrivateMessageManager();
-        cosmeticsManager = new CosmeticsManager(this, economyManager, databaseManager);
 
         RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
         luckPerms = provider != null ? provider.getProvider() : null;
+        cosmeticsManager = new CosmeticsManager(this, economyManager, databaseManager, luckPerms);
+
         scoreboardManager = new ScoreboardManager(this);
         tablistManager = new TablistManager(this, luckPerms);
         serverInfoManager = new ServerInfoManager(this);
