@@ -41,7 +41,14 @@ public class MenuListener implements Listener {
             handleMenuAction(player, clicked);
             return;
         }
-        cosmeticsManager.handleCosmeticClick(player, cosmeticId);
+        if (cosmeticsManager.isEquipped(player, cosmeticId)) {
+            cosmeticsManager.unequipCosmetic(player, cosmeticId);
+            player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
+        } else {
+            cosmeticsManager.equipCosmetic(player, cosmeticId);
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
+        }
+        cosmeticsManager.refreshMenu(player);
     }
 
     private boolean isCosmeticMenu(String title) {
