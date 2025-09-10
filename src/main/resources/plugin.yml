@@ -49,3 +49,8 @@ commands:
     permission: heneria.lobby.admin.eco
     permission-message: "§cVous n'avez pas la permission."
     aliases: [economy]
+  cosmeticadmin:
+    description: Administrative cosmetics commands
+    usage: "/cosmeticadmin clear <joueur>"
+    permission: heneria.lobby.admin.cosmetics
+    permission-message: "§cVous n'avez pas la permission."
