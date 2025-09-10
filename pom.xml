@@ -23,7 +23,7 @@
         </repository>
         <repository>
             <id>libsdisguises-repo</id>
-            <url>https://repo.md-5.net/content/repositories/public/</url>
+            <url>https://jenkins.md-5.net/plugin/repository/everything/</url>
         </repository>
         <repository>
             <id>jitpack.io</id>
@@ -59,8 +59,8 @@
         </dependency>
 
         <dependency>
-            <groupId>com.github.libraryaddict</groupId>
-            <artifactId>LibsDisguises</artifactId>
+            <groupId>me.libraryaddict</groupId>
+            <artifactId>libsdisguises</artifactId>
             <version>10.0.33</version>
             <scope>provided</scope>
         </dependency>
