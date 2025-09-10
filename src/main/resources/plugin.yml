@@ -43,3 +43,9 @@ commands:
   achievements:
     description: Open your achievements menu
     usage: "/achievements"
+  eco:
+    description: Administrative economy commands
+    usage: "/eco <give|take|set|look> <joueur> [montant]"
+    permission: heneria.lobby.admin.eco
+    permission-message: "§cVous n'avez pas la permission."
+    aliases: [economy]

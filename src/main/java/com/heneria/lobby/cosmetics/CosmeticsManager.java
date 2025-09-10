@@ -24,6 +24,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -200,12 +201,30 @@ public class CosmeticsManager implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        owned.putIfAbsent(event.getPlayer().getUniqueId(), new HashSet<>());
+        Player player = event.getPlayer();
+        UUID uuid = player.getUniqueId();
+        owned.put(uuid, loadOwnedCosmetics(uuid));
+        Map<String, String> equippedMap = loadEquippedCosmetics(uuid);
+        equipped.put(uuid, equippedMap);
+        // Reapply equipped cosmetics on join
+        for (String cosmeticId : equippedMap.values()) {
+            Cosmetic c = getCosmeticById(cosmeticId);
+            if (c != null) {
+                applyCosmeticEffect(player, c);
+            }
+        }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
+        Map<String, String> eq = equipped.remove(uuid);
+        if (eq != null) {
+            for (String category : eq.keySet()) {
+                removeCosmeticEffect(event.getPlayer(), category);
+            }
+        }
+        owned.remove(uuid);
         openCategory.remove(uuid);
         openPage.remove(uuid);
     }
@@ -255,9 +274,26 @@ public class CosmeticsManager implements Listener {
         }
         UUID uuid = player.getUniqueId();
         Set<String> ownedSet = owned.computeIfAbsent(uuid, k -> new HashSet<>());
+        Map<String, String> equippedMap = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
         if (ownedSet.contains(cosmeticId)) {
-            player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Vous possédez déjà ce cosmétique.");
-            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+            String category = cosmetic.getCategory();
+            String current = equippedMap.get(category);
+            if (cosmeticId.equals(current)) {
+                removeCosmeticEffect(player, category);
+                equippedMap.remove(category);
+                deleteEquipped(uuid, category);
+                player.sendMessage(ChatColor.RED + "✔ " + ChatColor.GRAY + "Vous avez déséquipé : " + ChatColor.YELLOW + cosmetic.getName());
+            } else {
+                if (current != null) {
+                    removeCosmeticEffect(player, category);
+                }
+                applyCosmeticEffect(player, cosmetic);
+                equippedMap.put(category, cosmeticId);
+                saveEquipped(uuid, category, cosmeticId);
+                player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY + "Vous avez équipé : " + ChatColor.YELLOW + cosmetic.getName());
+            }
+            int page = openPage.getOrDefault(uuid, 0);
+            Bukkit.getScheduler().runTask(plugin, () -> openCategoryMenu(player, category, page));
             return;
         }
         int price = cosmetic.getPrice();
@@ -299,5 +335,73 @@ public class CosmeticsManager implements Listener {
         } catch (java.sql.SQLException e) {
             plugin.getLogger().severe("Failed to save cosmetic purchase: " + e.getMessage());
         }
+    }
+
+    private void saveEquipped(UUID uuid, String category, String cosmeticId) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "REPLACE INTO player_equipped_cosmetics (player_uuid, category, cosmetic_id) VALUES (?, ?, ?)")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, category);
+            ps.setString(3, cosmeticId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to save equipped cosmetic: " + e.getMessage());
+        }
+    }
+
+    private void deleteEquipped(UUID uuid, String category) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "DELETE FROM player_equipped_cosmetics WHERE player_uuid=? AND category=?")) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, category);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to delete equipped cosmetic: " + e.getMessage());
+        }
+    }
+
+    private Set<String> loadOwnedCosmetics(UUID uuid) {
+        Set<String> set = new HashSet<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "SELECT cosmetic_id FROM player_cosmetics WHERE player_uuid=?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    set.add(rs.getString("cosmetic_id"));
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to load cosmetics: " + e.getMessage());
+        }
+        return set;
+    }
+
+    private Map<String, String> loadEquippedCosmetics(UUID uuid) {
+        Map<String, String> map = new HashMap<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "SELECT category, cosmetic_id FROM player_equipped_cosmetics WHERE player_uuid=?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    map.put(rs.getString("category"), rs.getString("cosmetic_id"));
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to load equipped cosmetics: " + e.getMessage());
+        }
+        return map;
+    }
+
+    private void applyCosmeticEffect(Player player, Cosmetic cosmetic) {
+        // Placeholder for actual cosmetic application logic.
+        player.sendMessage(ChatColor.YELLOW + cosmetic.getText());
+    }
+
+    private void removeCosmeticEffect(Player player, String category) {
+        // Placeholder for actual cosmetic removal logic.
     }
 }

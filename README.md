@@ -128,3 +128,14 @@ la commande `/lobbyadmin` (alias `/la`) :
 - `/lobbyadmin minifoot setgoal2` – définit la deuxième cage de but.
 
 Chaque modification est immédiatement enregistrée dans `activities.yml`.
+
+## Commandes d'Administration
+
+Les administrateurs disposant de la permission `heneria.lobby.admin.eco` peuvent gérer la monnaie des joueurs via `/eco` :
+
+- `/eco give <joueur> <montant>` – ajoute des Coins au joueur.
+- `/eco take <joueur> <montant>` – retire des Coins au joueur.
+- `/eco set <joueur> <montant>` – définit le solde exact du joueur.
+- `/eco look <joueur>` – affiche le solde actuel du joueur.
+
+Ces sous-commandes fonctionnent aussi bien pour les joueurs en ligne qu'hors ligne.
