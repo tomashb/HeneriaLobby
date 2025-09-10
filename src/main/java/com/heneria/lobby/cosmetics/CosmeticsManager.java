@@ -38,9 +38,6 @@ import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Transformation;
 import org.bukkit.util.Vector3f;
 
-import me.libraryaddict.disguise.DisguiseAPI;
-import me.libraryaddict.disguise.disguisetypes.DisguiseType;
-import me.libraryaddict.disguise.disguisetypes.MobDisguise;
 
 import java.io.File;
 import java.sql.*;
@@ -125,7 +122,7 @@ public class CosmeticsManager implements Listener {
                     }
                     String rarity = cSec.getString("rarity", "COMMUN");
                     int price = cSec.getInt("price", 0);
-                    String text = color(cSec.getString("text", ""));
+                    String text = color(cSec.getString("text", cSec.getString("format", "")));
                     Particle particle = null;
                     int particleCount = cSec.getInt("count", 1);
                     double particleOffset = cSec.getDouble("offset", 0.0);
@@ -470,6 +467,14 @@ public class CosmeticsManager implements Listener {
         return cosmeticId.equals(equippedMap.get(cosmetic.getCategory()));
     }
 
+    public String getEquippedCosmeticId(Player player, String category) {
+        Map<String, String> equippedMap = equipped.get(player.getUniqueId());
+        if (equippedMap == null) {
+            return null;
+        }
+        return equippedMap.get(category);
+    }
+
     public void equipCosmetic(Player player, String cosmeticId) {
         Cosmetic cosmetic = getCosmeticById(cosmeticId);
         if (cosmetic == null) {
@@ -540,7 +545,7 @@ public class CosmeticsManager implements Listener {
         });
     }
 
-    private Cosmetic getCosmeticById(String id) {
+    public Cosmetic getCosmeticById(String id) {
         for (List<Cosmetic> list : cosmetics.values()) {
             for (Cosmetic c : list) {
                 if (c.getId().equals(id)) {
@@ -674,7 +679,6 @@ public class CosmeticsManager implements Listener {
             case "particles" -> activateParticles(player, cosmetic);
             case "titles" -> showTitle(player, cosmetic);
             case "pets" -> equipPet(player, cosmetic);
-            case "morphs" -> applyMorph(player, cosmetic);
         }
     }
 
@@ -684,7 +688,6 @@ public class CosmeticsManager implements Listener {
             case "particles" -> deactivateParticles(player);
             case "titles" -> hideTitle(player);
             case "pets" -> unequipPet(player);
-            case "morphs" -> removeMorph(player);
         }
     }
 
@@ -779,23 +782,6 @@ public class CosmeticsManager implements Listener {
         if (entity != null) {
             entity.remove();
         }
-    }
-
-    private void applyMorph(Player player, Cosmetic cosmetic) {
-        String id = cosmetic.getId();
-        String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
-        DisguiseType type;
-        try {
-            type = DisguiseType.valueOf(typeName);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-        MobDisguise disguise = new MobDisguise(type);
-        DisguiseAPI.disguiseToAll(player, disguise);
-    }
-
-    private void removeMorph(Player player) {
-        DisguiseAPI.undisguise(player);
     }
 
     private void showTitle(Player player, Cosmetic cosmetic) {

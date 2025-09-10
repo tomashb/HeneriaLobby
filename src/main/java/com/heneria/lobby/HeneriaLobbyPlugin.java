@@ -27,6 +27,7 @@ import com.heneria.lobby.activities.archery.ArcheryListener;
 import com.heneria.lobby.economy.EconomyManager;
 import com.heneria.lobby.achievements.AchievementManager;
 import com.heneria.lobby.cosmetics.CosmeticsManager;
+import com.heneria.lobby.listeners.JoinMessageListener;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -96,6 +97,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(cosmeticsManager, this);
         getServer().getPluginManager().registerEvents(
                 new com.heneria.lobby.cosmetics.MenuListener(this, cosmeticsManager), this);
+        getServer().getPluginManager().registerEvents(new JoinMessageListener(cosmeticsManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager, activitiesConfigManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
