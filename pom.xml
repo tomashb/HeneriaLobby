@@ -25,6 +25,10 @@
             <id>libsdisguises-repo</id>
             <url>https://repo.md-5.net/content/repositories/public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
