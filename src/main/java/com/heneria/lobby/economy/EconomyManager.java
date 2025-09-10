@@ -37,6 +37,14 @@ public class EconomyManager {
         }
     }
 
+    public boolean hasEnoughCoins(Player player, long amount) {
+        return getCoins(player.getUniqueId()) >= amount;
+    }
+
+    public void removeCoins(Player player, long amount) {
+        addCoins(player.getUniqueId(), -amount);
+    }
+
     public void startPassiveRewardTask(long intervalTicks, long rewardAmount) {
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {

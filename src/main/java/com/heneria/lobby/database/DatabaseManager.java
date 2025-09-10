@@ -98,6 +98,13 @@ public class DatabaseManager {
                             "PRIMARY KEY (player_uuid, achievement_id)" +
                             ")"
             );
+            statement.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS player_cosmetics (" +
+                            "player_uuid VARCHAR(36)," +
+                            "cosmetic_id VARCHAR(64)," +
+                            "PRIMARY KEY (player_uuid, cosmetic_id)" +
+                            ")"
+            );
         }
     }
 
