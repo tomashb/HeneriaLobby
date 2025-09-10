@@ -3,12 +3,10 @@ package com.heneria.lobby.cosmetics;
 import com.heneria.lobby.HeneriaLobbyPlugin;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.economy.EconomyManager;
-import net.luckperms.api.LuckPerms;
-import net.luckperms.api.model.user.User;
-import net.luckperms.api.node.Node;
-import net.luckperms.api.node.types.PrefixNode;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -17,16 +15,20 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -52,18 +54,16 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, Integer> openPage = new HashMap<>();
     private final Map<UUID, ItemStack> savedHelmets = new HashMap<>();
     private final Map<UUID, BukkitTask> particleTasks = new HashMap<>();
-    private final Map<UUID, Node> titleNodes = new HashMap<>();
-    private final LuckPerms luckPerms;
+    private final Map<UUID, TextDisplay> titleDisplays = new HashMap<>();
 
     private static final String OWNED_KEY = "unlocked";
     private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
 
     public CosmeticsManager(HeneriaLobbyPlugin plugin, EconomyManager economyManager,
-                             DatabaseManager databaseManager, LuckPerms luckPerms) {
+                             DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.economyManager = economyManager;
         this.databaseManager = databaseManager;
-        this.luckPerms = luckPerms;
         loadConfig();
     }
 
@@ -373,11 +373,9 @@ public class CosmeticsManager implements Listener {
         if (task != null) {
             task.cancel();
         }
-        Node node = titleNodes.remove(uuid);
-        if (node != null && luckPerms != null) {
-            User user = luckPerms.getPlayerAdapter(Player.class).getUser(event.getPlayer());
-            user.data().remove(node);
-            luckPerms.getUserManager().saveUser(user);
+        TextDisplay display = titleDisplays.remove(uuid);
+        if (display != null) {
+            display.remove();
         }
     }
 
@@ -434,63 +432,90 @@ public class CosmeticsManager implements Listener {
         }
     }
 
-    public void handleCosmeticClick(Player player, String cosmeticId) {
+    public boolean isOwned(Player player, String cosmeticId) {
+        UUID uuid = player.getUniqueId();
+        return owned.computeIfAbsent(uuid, k -> new HashSet<>()).contains(cosmeticId);
+    }
+
+    public boolean isEquipped(Player player, String cosmeticId) {
+        Cosmetic cosmetic = getCosmeticById(cosmeticId);
+        if (cosmetic == null) {
+            return false;
+        }
+        UUID uuid = player.getUniqueId();
+        Map<String, String> equippedMap = equipped.get(uuid);
+        if (equippedMap == null) {
+            return false;
+        }
+        return cosmeticId.equals(equippedMap.get(cosmetic.getCategory()));
+    }
+
+    public void equipCosmetic(Player player, String cosmeticId) {
         Cosmetic cosmetic = getCosmeticById(cosmeticId);
         if (cosmetic == null) {
             return;
         }
         UUID uuid = player.getUniqueId();
         Set<String> ownedSet = owned.computeIfAbsent(uuid, k -> new HashSet<>());
-        Map<String, String> equippedMap = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
-        if (ownedSet.contains(cosmeticId)) {
-            String category = cosmetic.getCategory();
-            String current = equippedMap.get(category);
-            if (cosmeticId.equals(current)) {
-                removeCosmeticEffect(player, category);
-                equippedMap.remove(category);
-                deleteEquipped(uuid, category);
-                player.sendMessage(ChatColor.RED + "✔ " + ChatColor.GRAY + "Vous avez déséquipé : " + ChatColor.YELLOW + cosmetic.getName());
-            } else {
-                if (current != null) {
-                    removeCosmeticEffect(player, category);
-                }
-                applyCosmeticEffect(player, cosmetic);
-                equippedMap.put(category, cosmeticId);
-                saveEquipped(uuid, category, cosmeticId);
-                player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY + "Vous avez équipé : " + ChatColor.YELLOW + cosmetic.getName());
+        if (!ownedSet.contains(cosmeticId)) {
+            int price = cosmetic.getPrice();
+            if (!economyManager.hasEnoughCoins(player, price)) {
+                long missing = price - economyManager.getCoins(uuid);
+                player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Fonds insuffisants. Il vous manque " +
+                        ChatColor.GOLD + missing + ChatColor.GRAY + " Coins.");
+                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+                return;
             }
-            int page = openPage.getOrDefault(uuid, 0);
-            String open = openCategory.get(uuid);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (OWNED_KEY.equals(open)) {
-                    openOwnedMenu(player, page);
-                } else {
-                    openCategoryMenu(player, category, page);
-                }
-            });
+            economyManager.removeCoins(player, price);
+            ownedSet.add(cosmeticId);
+            saveCosmetic(uuid, cosmeticId);
+            player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
+                    "Vous avez acheté : " + ChatColor.YELLOW + cosmetic.getName());
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        }
+        Map<String, String> equippedMap = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
+        String category = cosmetic.getCategory();
+        String current = equippedMap.get(category);
+        if (current != null && !current.equals(cosmeticId)) {
+            removeCosmeticEffect(player, category);
+        }
+        applyCosmeticEffect(player, cosmetic);
+        equippedMap.put(category, cosmeticId);
+        saveEquipped(uuid, category, cosmeticId);
+        player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY + "Vous avez équipé : " + ChatColor.YELLOW + cosmetic.getName());
+    }
+
+    public void unequipCosmetic(Player player, String cosmeticId) {
+        Cosmetic cosmetic = getCosmeticById(cosmeticId);
+        if (cosmetic == null) {
             return;
         }
-        int price = cosmetic.getPrice();
-        if (!economyManager.hasEnoughCoins(player, price)) {
-            long missing = price - economyManager.getCoins(uuid);
-            player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Fonds insuffisants. Il vous manque " +
-                    ChatColor.GOLD + missing + ChatColor.GRAY + " Coins.");
-            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+        UUID uuid = player.getUniqueId();
+        Map<String, String> equippedMap = equipped.get(uuid);
+        if (equippedMap == null) {
             return;
         }
-        economyManager.removeCoins(player, price);
-        ownedSet.add(cosmeticId);
-        saveCosmetic(uuid, cosmeticId);
-        player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
-                "Vous avez acheté : " + ChatColor.YELLOW + cosmetic.getName());
-        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+        String category = cosmetic.getCategory();
+        String current = equippedMap.get(category);
+        if (!cosmeticId.equals(current)) {
+            return;
+        }
+        removeCosmeticEffect(player, category);
+        equippedMap.remove(category);
+        deleteEquipped(uuid, category);
+        player.sendMessage(ChatColor.RED + "✔ " + ChatColor.GRAY + "Vous avez déséquipé : " + ChatColor.YELLOW + cosmetic.getName());
+    }
+
+    public void refreshMenu(Player player) {
+        UUID uuid = player.getUniqueId();
         int page = openPage.getOrDefault(uuid, 0);
         String open = openCategory.get(uuid);
+        player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> {
             if (OWNED_KEY.equals(open)) {
                 openOwnedMenu(player, page);
-            } else {
-                openCategoryMenu(player, cosmetic.getCategory(), page);
+            } else if (open != null) {
+                openCategoryMenu(player, open, page);
             }
         });
     }
@@ -606,7 +631,11 @@ public class CosmeticsManager implements Listener {
     private void unequipHat(Player player) {
         UUID uuid = player.getUniqueId();
         ItemStack previous = savedHelmets.remove(uuid);
-        player.getInventory().setHelmet(previous);
+        if (previous != null && previous.getType() != Material.AIR) {
+            player.getInventory().setHelmet(previous);
+        } else {
+            player.getInventory().setHelmet(null);
+        }
     }
 
     private void activateParticles(Player player, Cosmetic cosmetic) {
@@ -634,30 +663,47 @@ public class CosmeticsManager implements Listener {
     }
 
     private void showTitle(Player player, Cosmetic cosmetic) {
-        if (luckPerms == null) {
-            return;
-        }
         UUID uuid = player.getUniqueId();
         hideTitle(player);
-        User user = luckPerms.getPlayerAdapter(Player.class).getUser(player);
-        String prefix = color(cosmetic.getText()) + ChatColor.RESET + " ";
-        Node node = PrefixNode.builder(prefix, 1000).build();
-        user.data().add(node);
-        luckPerms.getUserManager().saveUser(user);
-        titleNodes.put(uuid, node);
+        Location loc = player.getLocation().add(0, 2.4, 0);
+        TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class, td -> {
+            td.text(Component.text(color(cosmetic.getText())));
+            td.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+            td.setPersistent(false);
+            td.setShadowed(true);
+            td.setInvisible(player.isInvisible() || player.isSneaking());
+        });
+        player.addPassenger(display);
+        titleDisplays.put(uuid, display);
     }
 
     private void hideTitle(Player player) {
-        if (luckPerms == null) {
-            return;
-        }
         UUID uuid = player.getUniqueId();
-        Node node = titleNodes.remove(uuid);
-        if (node == null) {
+        TextDisplay display = titleDisplays.remove(uuid);
+        if (display != null) {
+            display.remove();
+        }
+    }
+
+    @EventHandler
+    public void onSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        TextDisplay display = titleDisplays.get(player.getUniqueId());
+        if (display != null) {
+            boolean invisible = event.isSneaking() || player.hasPotionEffect(PotionEffectType.INVISIBILITY);
+            display.setInvisible(invisible);
+        }
+    }
+
+    @EventHandler
+    public void onPotionEffect(EntityPotionEffectEvent event) {
+        if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        User user = luckPerms.getPlayerAdapter(Player.class).getUser(player);
-        user.data().remove(node);
-        luckPerms.getUserManager().saveUser(user);
+        TextDisplay display = titleDisplays.get(player.getUniqueId());
+        if (display != null) {
+            boolean invisible = player.hasPotionEffect(PotionEffectType.INVISIBILITY) || player.isSneaking();
+            display.setInvisible(invisible);
+        }
     }
 }

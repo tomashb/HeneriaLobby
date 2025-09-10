@@ -77,7 +77,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
 
         RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
         luckPerms = provider != null ? provider.getProvider() : null;
-        cosmeticsManager = new CosmeticsManager(this, economyManager, databaseManager, luckPerms);
+        cosmeticsManager = new CosmeticsManager(this, economyManager, databaseManager);
 
         scoreboardManager = new ScoreboardManager(this);
         tablistManager = new TablistManager(this, luckPerms);
