@@ -72,11 +72,16 @@ Les menus correspondants peuvent aussi être ouverts via les commandes `/games` 
 Le fichier `menus.yml` définit chaque interface : titre, taille et items internes avec
 leur matériau, emplacement, nom, description et action au clic.
 
+Chaque item peut spécifier un `slot` unique ou une liste `slots` pour être placé à
+plusieurs positions. Les descriptions (`lore`) se définissent sur plusieurs lignes
+grâce à une liste YAML et supportent les codes couleur.
+
 Actions disponibles :
 
 - `open_menu:<nom>` – ouvre un autre menu configuré.
 - `connect_server:<serveur>` – envoie le joueur sur le serveur spécifié via Plugin Messages.
 - `run_command:<commande>` – exécute une commande en tant que joueur.
+- `close` – ferme simplement l'inventaire.
 
 ## Configuration des Activités
 

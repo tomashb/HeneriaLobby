@@ -53,6 +53,8 @@ public class MenuListener implements Listener {
             out.writeUTF(server);
             player.closeInventory();
             player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
+        } else if (action.equalsIgnoreCase("close")) {
+            player.closeInventory();
         }
     }
 }

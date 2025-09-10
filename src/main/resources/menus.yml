@@ -35,21 +35,113 @@ menus:
           - "&7Gérer vos amis"
         action: "run_command:friends"
   shop:
-    title: "&dBoutique Cosmétique"
-    size: 27
+    title: "&5&lBoutique Cosmétique"
+    size: 45
     items:
+      filler:
+        material: PURPLE_STAINED_GLASS_PANE
+        slots: [0,1,2,3,4,5,6,7,8,9,13,17,27,28,29,31,33,34,35,36,37,38,39,41,42,43,44]
+        name: " "
+        lore: []
       particles:
-        material: BLAZE_POWDER
-        slot: 11
-        name: "&cParticules"
+        material: NETHER_STAR
+        slot: 10
+        name: "&d&lParticules"
         lore:
-          - "&7Effets de particules"
+          - "&7Débloquez des effets visuels"
+          - "&7uniques qui vous suivront"
+          - "&7partout où vous irez."
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:particles"
       hats:
-        material: LEATHER_HELMET
-        slot: 15
-        name: "&eChapeaux"
+        material: CARVED_PUMPKIN
+        slot: 11
+        name: "&6&lChapeaux"
         lore:
-          - "&7Accessoires de tête"
+          - "&7Portez des blocs et des"
+          - "&7objets amusants sur"
+          - "&7votre tête !"
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:hats"
+      pets:
+        material: BONE
+        slot: 12
+        name: "&f&lFamiliers"
+        lore:
+          - "&7Soyez accompagné par une"
+          - "&7adorable créature durant"
+          - "&7vos aventures dans le lobby."
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:pets"
+      titles:
+        material: NAME_TAG
+        slot: 14
+        name: "&b&lTitres"
+        lore:
+          - "&7Affichez un titre prestigieux"
+          - "&7au-dessus de votre tête pour"
+          - "&7montrer votre statut."
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:titles"
+      morphs:
+        material: CREEPER_HEAD
+        slot: 15
+        name: "&a&lTransformations"
+        lore:
+          - "&7Prenez l'apparence de"
+          - "&7différentes créatures et"
+          - "&7surprenez les autres joueurs !"
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:morphs"
+      gestures:
+        material: FEATHER
+        slot: 16
+        name: "&e&lGestes (Emotes)"
+        lore:
+          - "&7Exprimez-vous avec des"
+          - "&7animations uniques comme"
+          - "&7s'asseoir ou danser."
+          - ""
+          - "&e► Cliquez pour voir"
+        action: "open_menu:gestures"
+      separator:
+        material: BLACK_STAINED_GLASS_PANE
+        slots: [18,19,20,21,22,23,24,25,26]
+        name: " "
+        lore: []
+      unlocked:
+        material: CHEST
+        slot: 30
+        name: "&a&lMes Cosmétiques"
+        lore:
+          - "&7Consultez et gérez tous"
+          - "&7les cosmétiques que"
+          - "&7vous avez débloqués."
+          - ""
+          - "&e► Cliquez pour ouvrir"
+        action: "open_menu:unlocked"
+      crate:
+        material: TRIPWIRE_HOOK
+        slot: 32
+        name: "&6&lOuvrir une Caisse"
+        lore:
+          - "&7Utilisez une clé de caisse"
+          - "&7pour obtenir un cosmétique"
+          - "&7aléatoire !"
+          - ""
+          - "&c(Bientôt disponible)"
+      back:
+        material: BARRIER
+        slot: 40
+        name: "&c&lRetour"
+        lore:
+          - "&7Ferme le menu actuel."
+        action: "close"
   activities:
     title: "&bActivités du Lobby"
     size: 27

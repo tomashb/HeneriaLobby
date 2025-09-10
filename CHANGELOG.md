@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 - Refonte visuelle du menu cosmétique principal
+- Menu de boutique cosmétique étendu à 45 slots avec bordures décoratives.
+- Configuration des items entièrement personnalisable (matériaux, noms, lores).
+- Ajout de l'action `close` et prise en charge de l'attribut `slots` dans `menus.yml`.
+
 ## 0.6.0 - Système de progression
 - Ajout de l'économie de Coins avec gain passif et API interne.
 - Commande `/coins` pour consulter son solde.
