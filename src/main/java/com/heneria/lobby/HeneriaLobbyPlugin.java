@@ -73,7 +73,7 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         achievementManager = new AchievementManager(this, databaseManager, economyManager);
         friendManager = new FriendManager(this, databaseManager, achievementManager);
         messageManager = new PrivateMessageManager();
-        cosmeticsManager = new CosmeticsManager(this, economyManager);
+        cosmeticsManager = new CosmeticsManager(this, economyManager, databaseManager);
 
         RegisteredServiceProvider<LuckPerms> provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
         luckPerms = provider != null ? provider.getProvider() : null;
@@ -91,6 +91,8 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ParkourListener(parkourManager), this);
         getServer().getPluginManager().registerEvents(new ArcheryListener(activitiesConfig), this);
         getServer().getPluginManager().registerEvents(cosmeticsManager, this);
+        getServer().getPluginManager().registerEvents(
+                new com.heneria.lobby.cosmetics.MenuListener(this, cosmeticsManager), this);
         getCommand("lobbyadmin").setExecutor(new LobbyAdminCommand(databaseManager, activitiesConfigManager));
         getCommand("friends").setExecutor(new FriendsCommand(this, friendManager));
         MsgCommand msgCommand = new MsgCommand(this, messageManager);
