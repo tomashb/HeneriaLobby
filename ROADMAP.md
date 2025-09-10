@@ -4,6 +4,7 @@
 - [x] Friends system
 - [x] Visual interface
 - [x] Navigation (Terminé)
-- [ ] Cosmetics system
+ - [ ] Cosmetics system
+   - [x] Sous-Menus et Logique (Terminé)
 - [x] Activités du Lobby (Terminé)
   - [x] Configuration en Jeu

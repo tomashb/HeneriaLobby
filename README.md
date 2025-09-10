@@ -83,6 +83,23 @@ Actions disponibles :
 - `run_command:<commande>` – exécute une commande en tant que joueur.
 - `close` – ferme simplement l'inventaire.
 
+## Boutique de Cosmétiques
+
+Le menu principal de la boutique regroupe plusieurs catégories
+(Particules, Chapeaux, etc.). Cliquer sur une catégorie ouvre un
+sous-menu paginé listant les cosmétiques définis dans `cosmetics.yml`.
+
+Chaque item s'adapte à l'état du joueur :
+
+- **Non possédé** – affiche la rareté, le prix en Coins et invite à
+  acheter.
+- **Débloqué** – l'item est enchanté, indique le statut "Débloqué" et
+  permet de l'équiper ou de le déséquiper.
+
+Le bouton **Mes Cosmétiques** ouvre l'inventaire personnel du joueur.
+Seuls les cosmétiques possédés y apparaissent, triés par catégorie et
+équipables d'un simple clic.
+
 ## Configuration des Activités
 
 Le fichier `activities.yml` centralise la configuration des mini-jeux du lobby.
