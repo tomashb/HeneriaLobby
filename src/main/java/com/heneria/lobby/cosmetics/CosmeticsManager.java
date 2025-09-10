@@ -223,7 +223,7 @@ public class CosmeticsManager implements Listener {
 
     public boolean isCosmeticMenu(String title) {
         for (String category : cosmetics.keySet()) {
-            if (ChatColor.GOLD + "" + ChatColor.BOLD + capitalize(category)).equals(title)) {
+            if ((ChatColor.GOLD + "" + ChatColor.BOLD + capitalize(category)).equals(title)) {
                 return true;
             }
         }
