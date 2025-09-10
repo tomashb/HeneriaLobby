@@ -5,6 +5,7 @@ import com.heneria.lobby.commands.LobbyAdminCommand;
 import com.heneria.lobby.config.ConfigManager;
 import com.heneria.lobby.commands.MsgCommand;
 import com.heneria.lobby.commands.OpenMenuCommand;
+import com.heneria.lobby.commands.EconomyAdminCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
 import com.heneria.lobby.listeners.ChatListener;
@@ -105,6 +106,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         getCommand("parkour").setExecutor(new ParkourCommand(parkourManager));
         getCommand("coins").setExecutor(new com.heneria.lobby.commands.CoinsCommand(economyManager));
         getCommand("achievements").setExecutor(new com.heneria.lobby.commands.AchievementsCommand(achievementManager));
+        EconomyAdminCommand ecoCommand = new EconomyAdminCommand(economyManager, playerDataManager);
+        getCommand("eco").setExecutor(ecoCommand);
+        getCommand("eco").setTabCompleter(ecoCommand);
 
         economyManager.startPassiveRewardTask(20L * 600, 5);
 

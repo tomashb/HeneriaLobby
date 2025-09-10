@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.1 - Finalisation des cosmétiques et commandes d'administration de l'économie
+- Gestion de l'équipement et du déséquipement des cosmétiques avec sauvegarde.
+- Ajout de la commande `/eco` pour administrer les Coins des joueurs.
+
 ## 0.9.0 - Finalisation et refonte complète des sous-menus cosmétiques
 - Sécurisation des menus cosmétiques et gestion complète des clics.
 - Design dynamique des items selon l'état (bloqué, débloqué, équipé) avec enchantements et messages.

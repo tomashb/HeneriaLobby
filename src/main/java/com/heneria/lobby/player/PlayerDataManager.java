@@ -67,6 +67,37 @@ public class PlayerDataManager {
         return data;
     }
 
+    /**
+     * Loads player data by username without updating the last seen timestamp.
+     * This is used for offline lookups where only the name is known.
+     *
+     * @param username the name of the player to load
+     * @return the loaded {@link PlayerData} or {@code null} if not found
+     */
+    public PlayerData loadByUsername(String username) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement("SELECT * FROM players WHERE username=?")) {
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    UUID uuid = UUID.fromString(rs.getString("uuid"));
+                    PlayerData data = new PlayerData(
+                            uuid,
+                            rs.getString("username"),
+                            rs.getLong("coins"),
+                            rs.getTimestamp("first_join") != null ? rs.getTimestamp("first_join").toInstant() : Instant.now(),
+                            rs.getTimestamp("last_seen") != null ? rs.getTimestamp("last_seen").toInstant() : Instant.now()
+                    );
+                    cache.put(uuid, data);
+                    return data;
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to load player data for " + username + ": " + e.getMessage());
+        }
+        return null;
+    }
+
     public void save(UUID uuid) {
         PlayerData data = cache.get(uuid);
         if (data == null) {

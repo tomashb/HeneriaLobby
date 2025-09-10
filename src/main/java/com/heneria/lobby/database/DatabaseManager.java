@@ -105,6 +105,14 @@ public class DatabaseManager {
                             "PRIMARY KEY (player_uuid, cosmetic_id)" +
                             ")"
             );
+            statement.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS player_equipped_cosmetics (" +
+                            "player_uuid VARCHAR(36)," +
+                            "category VARCHAR(64)," +
+                            "cosmetic_id VARCHAR(64)," +
+                            "PRIMARY KEY (player_uuid, category)" +
+                            ")"
+            );
         }
     }
 
