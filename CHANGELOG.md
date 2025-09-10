@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 - Refonte du système de rareté et ajout massif de contenu cosmétique
+- Ajout de la rareté **Mythique** et configuration des couleurs/étoiles via `rarities.yml`.
+- Les cosmétiques affichent désormais leur rareté colorée et une ligne d'étoiles.
+- Ajout d'un grand nombre de nouveaux cosmétiques (chapeaux, particules, familiers, titres, transformations et emotes).
+
 ## 1.0.0 - Système de cosmétiques entièrement fonctionnel
 - Ajout du menu "Mes Cosmétiques" pour gérer les cosmétiques débloqués.
 - Effets visuels pour chapeaux, particules et titres avec gestion complète.

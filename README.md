@@ -100,6 +100,18 @@ Le bouton **Mes Cosmétiques** ouvre l'inventaire personnel du joueur.
 Seuls les cosmétiques possédés y apparaissent, triés par catégorie et
 équipables d'un simple clic.
 
+### Raretés des Cosmétiques
+
+Un système visuel de rareté colore le nom de chaque item et affiche une
+ligne d'étoiles dans sa description. Les valeurs par défaut sont définies
+dans `rarities.yml` :
+
+- **Commun** – `§a` : `§a★§7☆☆☆☆`
+- **Rare** – `§9` : `§9★★§7☆☆☆`
+- **Épique** – `§5` : `§5★★★§7☆☆`
+- **Légendaire** – `§6` : `§6★★★★§7☆`
+- **Mythique** – `§c` : `§c★★★★★`
+
 ## Configuration des Activités
 
 Le fichier `activities.yml` centralise la configuration des mini-jeux du lobby.
