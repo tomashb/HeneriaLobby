@@ -5,6 +5,7 @@ import com.heneria.lobby.economy.EconomyManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -20,6 +21,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.io.File;
 import java.util.*;
@@ -36,7 +38,6 @@ public class CosmeticsManager implements Listener {
     private final Map<String, List<Cosmetic>> cosmetics = new HashMap<>();
     private final Map<UUID, Set<String>> owned = new HashMap<>();
     private final Map<UUID, Map<String, String>> equipped = new HashMap<>();
-    private final Map<UUID, Map<Integer, Cosmetic>> openMenus = new HashMap<>();
     private final Map<UUID, String> openCategory = new HashMap<>();
     private final Map<UUID, Integer> openPage = new HashMap<>();
 
@@ -107,41 +108,59 @@ public class CosmeticsManager implements Listener {
             page = maxPage - 1;
         }
         Inventory inv = Bukkit.createInventory(null, 54,
-                ChatColor.DARK_PURPLE + capitalize(category) + " " + (page + 1) + "/" + maxPage);
-        Map<Integer, Cosmetic> map = new HashMap<>();
+                ChatColor.GOLD + "" + ChatColor.BOLD + capitalize(category));
         int start = page * perPage;
         for (int i = 0; i < perPage && start + i < list.size(); i++) {
             Cosmetic c = list.get(start + i);
             ItemStack item = new ItemStack(c.getMaterial());
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setDisplayName(c.getName());
-                List<String> lore = new ArrayList<>(c.getLore());
-                lore.add("");
-                boolean has = owned.getOrDefault(player.getUniqueId(), Collections.emptySet()).contains(c.getId());
-                String equippedId = equipped.getOrDefault(player.getUniqueId(), Collections.emptyMap()).get(category);
+                UUID uuid = player.getUniqueId();
+                boolean has = owned.getOrDefault(uuid, Collections.emptySet()).contains(c.getId());
+                String equippedId = equipped.getOrDefault(uuid, Collections.emptyMap()).get(category);
                 boolean isEquipped = c.getId().equals(equippedId);
-                if (has) {
-                    lore.add(ChatColor.GREEN + "Débloqué");
-                    lore.add(isEquipped ? ChatColor.YELLOW + "Cliquez pour déséquiper" : ChatColor.YELLOW + "Cliquez pour équiper");
+
+                String baseName = ChatColor.stripColor(c.getName());
+                List<String> lore = new ArrayList<>(c.getLore());
+                lore.add(ChatColor.DARK_GRAY + "-------------------------");
+                lore.add(ChatColor.WHITE + "Rareté : " + ChatColor.RED + c.getRarity());
+
+                if (!has) {
+                    long coins = economyManager.getCoins(uuid);
+                    lore.add(ChatColor.WHITE + "Prix : " + ChatColor.GOLD + c.getPrice() + " Coins");
+                    lore.add(ChatColor.WHITE + "Votre solde : " + ChatColor.GOLD + coins + " Coins");
+                    lore.add("" );
+                    lore.add(ChatColor.RED + "" + ChatColor.BOLD + "BLOQUÉ");
+                    lore.add(ChatColor.YELLOW + "► Cliquez pour acheter");
+                    meta.setDisplayName(ChatColor.RED + baseName);
+                } else if (isEquipped) {
+                    lore.add("" );
+                    lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "ÉQUIPÉ");
+                    lore.add(ChatColor.RED + "► Cliquez pour déséquiper");
+                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName + ChatColor.YELLOW + " (Équipé)");
                     meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 } else {
-                    lore.add(ChatColor.GRAY + c.getRarity());
-                    lore.add(ChatColor.GOLD + String.valueOf(c.getPrice()) + " Coins");
-                    lore.add(ChatColor.YELLOW + "Cliquez pour acheter");
+                    lore.add("" );
+                    lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "DÉBLOQUÉ");
+                    lore.add(ChatColor.YELLOW + "► Cliquez pour équiper");
+                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 }
+                lore.add(ChatColor.DARK_GRAY + "-------------------------");
                 meta.setLore(lore);
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "cosmetic_id"),
+                        PersistentDataType.STRING, c.getId());
                 item.setItemMeta(meta);
             }
             inv.setItem(i, item);
-            map.put(i, c);
         }
         // back to shop
-        ItemStack back = new ItemStack(Material.ARROW);
+        ItemStack back = new ItemStack(Material.BARRIER);
         ItemMeta backMeta = back.getItemMeta();
         if (backMeta != null) {
-            backMeta.setDisplayName(ChatColor.RED + "Retour");
+            backMeta.setDisplayName(ChatColor.RED + "" + ChatColor.BOLD + "Retour");
             back.setItemMeta(backMeta);
         }
         inv.setItem(49, back);
@@ -164,7 +183,6 @@ public class CosmeticsManager implements Listener {
             }
             inv.setItem(53, next);
         }
-        openMenus.put(player.getUniqueId(), map);
         openCategory.put(player.getUniqueId(), category);
         openPage.put(player.getUniqueId(), page);
         player.openInventory(inv);
@@ -177,45 +195,62 @@ public class CosmeticsManager implements Listener {
             return;
         }
         UUID uuid = player.getUniqueId();
-        Map<Integer, Cosmetic> map = openMenus.get(uuid);
-        if (map == null) {
+        String category = openCategory.get(uuid);
+        if (category == null) {
             return;
         }
         event.setCancelled(true);
         int slot = event.getRawSlot();
-        String category = openCategory.get(uuid);
         int page = openPage.getOrDefault(uuid, 0);
         if (slot < 45) {
-            Cosmetic cosmetic = map.get(slot);
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null) {
+                return;
+            }
+            ItemMeta meta = clicked.getItemMeta();
+            if (meta == null) {
+                return;
+            }
+            String id = meta.getPersistentDataContainer().get(new NamespacedKey(plugin, "cosmetic_id"),
+                    PersistentDataType.STRING);
+            if (id == null) {
+                return;
+            }
+            Cosmetic cosmetic = cosmetics.getOrDefault(category, Collections.emptyList()).stream()
+                    .filter(c -> c.getId().equals(id))
+                    .findFirst().orElse(null);
             if (cosmetic == null) {
                 return;
             }
             Set<String> ownedSet = owned.computeIfAbsent(uuid, k -> new HashSet<>());
-            if (!ownedSet.contains(cosmetic.getId())) {
+            Map<String, String> eq = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
+            boolean has = ownedSet.contains(cosmetic.getId());
+            String current = eq.get(category);
+            boolean isEquipped = cosmetic.getId().equals(current);
+            if (!has) {
                 long coins = economyManager.getCoins(uuid);
                 if (coins < cosmetic.getPrice()) {
-                    player.sendMessage(ChatColor.RED + "Vous n'avez pas assez de Coins.");
+                    player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Vous n'avez pas assez de Coins !");
                     return;
                 }
                 economyManager.addCoins(uuid, -cosmetic.getPrice());
                 ownedSet.add(cosmetic.getId());
-                player.sendMessage(ChatColor.GREEN + "Vous avez acheté " + cosmetic.getName());
-            } else {
-                Map<String, String> eq = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
-                String current = eq.get(category);
-                if (cosmetic.getId().equals(current)) {
-                    eq.remove(category);
-                    if (category.equalsIgnoreCase("hats")) {
-                        player.getInventory().setHelmet(null);
-                    }
-                    player.sendMessage(ChatColor.YELLOW + "Cosmétique retiré.");
-                } else {
-                    eq.put(category, cosmetic.getId());
-                    if (category.equalsIgnoreCase("hats")) {
-                        player.getInventory().setHelmet(new ItemStack(cosmetic.getMaterial()));
-                    }
-                    player.sendMessage(ChatColor.YELLOW + "Cosmétique équipé.");
+                player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
+                        "Vous avez débloqué le cosmétique : " + ChatColor.YELLOW + cosmetic.getName());
+            } else if (!isEquipped) {
+                eq.put(category, cosmetic.getId());
+                if (category.equalsIgnoreCase("hats")) {
+                    player.getInventory().setHelmet(new ItemStack(cosmetic.getMaterial()));
                 }
+                player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
+                        "Vous avez équipé le cosmétique : " + ChatColor.YELLOW + cosmetic.getName());
+            } else {
+                eq.remove(category);
+                if (category.equalsIgnoreCase("hats")) {
+                    player.getInventory().setHelmet(null);
+                }
+                player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
+                        "Vous avez déséquipé le cosmétique : " + ChatColor.YELLOW + cosmetic.getName());
             }
             openCategoryMenu(player, category, page);
         } else if (slot == 45) {
@@ -231,7 +266,6 @@ public class CosmeticsManager implements Listener {
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
-        openMenus.remove(uuid);
         openCategory.remove(uuid);
         openPage.remove(uuid);
     }
@@ -244,7 +278,6 @@ public class CosmeticsManager implements Listener {
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
-        openMenus.remove(uuid);
         openCategory.remove(uuid);
         openPage.remove(uuid);
     }

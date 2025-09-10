@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0 - Finalisation et refonte complète des sous-menus cosmétiques
+- Sécurisation des menus cosmétiques et gestion complète des clics.
+- Design dynamique des items selon l'état (bloqué, débloqué, équipé) avec enchantements et messages.
+- Implémentation de l'achat et de l'équipement/déséquipement avec mise à jour instantanée.
+
 ## 0.8.0 - Ajout du contenu initial et finalisation des menus cosmétiques
 - Ajout des sous-menus paginés pour chaque catégorie de cosmétiques.
 - Possibilité d'acheter et d'équiper les cosmétiques directement depuis l'interface.
