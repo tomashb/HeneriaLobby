@@ -124,7 +124,7 @@ public class CosmeticsManager implements Listener {
                 if (has) {
                     lore.add(ChatColor.GREEN + "Débloqué");
                     lore.add(isEquipped ? ChatColor.YELLOW + "Cliquez pour déséquiper" : ChatColor.YELLOW + "Cliquez pour équiper");
-                    meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                     meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 } else {
                     lore.add(ChatColor.GRAY + c.getRarity());
