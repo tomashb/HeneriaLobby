@@ -14,8 +14,12 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
+import org.bukkit.entity.Display;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -31,6 +35,12 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.util.Transformation;
+import org.bukkit.util.Vector3f;
+
+import me.libraryaddict.disguise.DisguiseAPI;
+import me.libraryaddict.disguise.disguisetypes.DisguiseType;
+import me.libraryaddict.disguise.disguisetypes.MobDisguise;
 
 import java.io.File;
 import java.sql.*;
@@ -55,6 +65,8 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, ItemStack> savedHelmets = new HashMap<>();
     private final Map<UUID, BukkitTask> particleTasks = new HashMap<>();
     private final Map<UUID, TextDisplay> titleDisplays = new HashMap<>();
+    private final Map<UUID, Entity> pets = new HashMap<>();
+    private final Map<UUID, BukkitTask> petTasks = new HashMap<>();
 
     private static final String OWNED_KEY = "unlocked";
     private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
@@ -377,6 +389,14 @@ public class CosmeticsManager implements Listener {
         if (display != null) {
             display.remove();
         }
+        BukkitTask petTask = petTasks.remove(uuid);
+        if (petTask != null) {
+            petTask.cancel();
+        }
+        Entity pet = pets.remove(uuid);
+        if (pet != null) {
+            pet.remove();
+        }
     }
 
     private String color(String text) {
@@ -602,12 +622,59 @@ public class CosmeticsManager implements Listener {
         return map;
     }
 
+    public void clearCosmetics(UUID uuid) {
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement ps = connection.prepareStatement(
+                     "DELETE FROM player_cosmetics WHERE player_uuid=?");
+             PreparedStatement ps2 = connection.prepareStatement(
+                     "DELETE FROM player_equipped_cosmetics WHERE player_uuid=?")) {
+            ps.setString(1, uuid.toString());
+            ps.executeUpdate();
+            ps2.setString(1, uuid.toString());
+            ps2.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Failed to clear cosmetics: " + e.getMessage());
+        }
+
+        owned.remove(uuid);
+        Map<String, String> eq = equipped.remove(uuid);
+        Player player = Bukkit.getPlayer(uuid);
+        if (player != null && eq != null) {
+            for (String category : eq.keySet()) {
+                removeCosmeticEffect(player, category);
+            }
+        }
+        savedHelmets.remove(uuid);
+        BukkitTask task = particleTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+        TextDisplay display = titleDisplays.remove(uuid);
+        if (display != null) {
+            display.remove();
+        }
+        BukkitTask petTask = petTasks.remove(uuid);
+        if (petTask != null) {
+            petTask.cancel();
+        }
+        Entity pet = pets.remove(uuid);
+        if (pet != null) {
+            pet.remove();
+        }
+    }
+
+    public void clearCosmetics(Player player) {
+        clearCosmetics(player.getUniqueId());
+    }
+
     private void applyCosmeticEffect(Player player, Cosmetic cosmetic) {
         String category = cosmetic.getCategory().toLowerCase();
         switch (category) {
             case "hats" -> equipHat(player, cosmetic);
             case "particles" -> activateParticles(player, cosmetic);
             case "titles" -> showTitle(player, cosmetic);
+            case "pets" -> equipPet(player, cosmetic);
+            case "morphs" -> applyMorph(player, cosmetic);
         }
     }
 
@@ -616,6 +683,8 @@ public class CosmeticsManager implements Listener {
             case "hats" -> unequipHat(player);
             case "particles" -> deactivateParticles(player);
             case "titles" -> hideTitle(player);
+            case "pets" -> unequipPet(player);
+            case "morphs" -> removeMorph(player);
         }
     }
 
@@ -625,7 +694,14 @@ public class CosmeticsManager implements Listener {
         if (current != null && current.getType() != Material.AIR) {
             savedHelmets.put(uuid, current.clone());
         }
-        player.getInventory().setHelmet(new ItemStack(cosmetic.getMaterial()));
+        ItemStack hat = new ItemStack(cosmetic.getMaterial());
+        ItemMeta meta = hat.getItemMeta();
+        if (meta != null) {
+            meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "cosmetic_hat"),
+                    PersistentDataType.STRING, cosmetic.getId());
+            hat.setItemMeta(meta);
+        }
+        player.getInventory().setHelmet(hat);
     }
 
     private void unequipHat(Player player) {
@@ -662,17 +738,82 @@ public class CosmeticsManager implements Listener {
         }
     }
 
+    private void equipPet(Player player, Cosmetic cosmetic) {
+        UUID uuid = player.getUniqueId();
+        unequipPet(player);
+        String id = cosmetic.getId();
+        String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
+        EntityType type;
+        try {
+            type = EntityType.valueOf(typeName);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        Entity entity = player.getWorld().spawnEntity(player.getLocation(), type);
+        entity.setInvulnerable(true);
+        entity.setSilent(true);
+        entity.setPersistent(false);
+        if (entity instanceof Mob mob) {
+            BukkitTask follow = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (!player.isOnline() || !mob.isValid()) {
+                        cancel();
+                        return;
+                    }
+                    mob.getPathfinder().moveTo(player);
+                }
+            }.runTaskTimer(plugin, 0L, 20L);
+            petTasks.put(uuid, follow);
+        }
+        pets.put(uuid, entity);
+    }
+
+    private void unequipPet(Player player) {
+        UUID uuid = player.getUniqueId();
+        BukkitTask task = petTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+        Entity entity = pets.remove(uuid);
+        if (entity != null) {
+            entity.remove();
+        }
+    }
+
+    private void applyMorph(Player player, Cosmetic cosmetic) {
+        String id = cosmetic.getId();
+        String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
+        DisguiseType type;
+        try {
+            type = DisguiseType.valueOf(typeName);
+        } catch (IllegalArgumentException e) {
+            return;
+        }
+        MobDisguise disguise = new MobDisguise(type);
+        DisguiseAPI.disguiseToAll(player, disguise);
+    }
+
+    private void removeMorph(Player player) {
+        DisguiseAPI.undisguise(player);
+    }
+
     private void showTitle(Player player, Cosmetic cosmetic) {
         UUID uuid = player.getUniqueId();
         hideTitle(player);
-        Location loc = player.getLocation().add(0, 2.4, 0);
-        TextDisplay display = player.getWorld().spawn(loc, TextDisplay.class, td -> {
+        TextDisplay display = player.getWorld().spawn(player.getLocation(), TextDisplay.class, td -> {
             td.text(Component.text(color(cosmetic.getText())));
-            td.setBillboard(org.bukkit.entity.Display.Billboard.CENTER);
+            td.setBillboard(Display.Billboard.CENTER);
             td.setPersistent(false);
             td.setShadowed(true);
             td.setInvisible(player.isInvisible() || player.isSneaking());
         });
+        Transformation transformation = display.getTransformation();
+        display.setTransformation(new Transformation(
+                transformation.getTranslation().add(new Vector3f(0f, 0.35f, 0f)),
+                transformation.getLeftRotation(),
+                transformation.getScale(),
+                transformation.getRightRotation()));
         player.addPassenger(display);
         titleDisplays.put(uuid, display);
     }

@@ -6,6 +6,7 @@ import com.heneria.lobby.config.ConfigManager;
 import com.heneria.lobby.commands.MsgCommand;
 import com.heneria.lobby.commands.OpenMenuCommand;
 import com.heneria.lobby.commands.EconomyAdminCommand;
+import com.heneria.lobby.commands.CosmeticAdminCommand;
 import com.heneria.lobby.database.DatabaseManager;
 import com.heneria.lobby.listeners.PlayerListener;
 import com.heneria.lobby.listeners.ChatListener;
@@ -110,6 +111,9 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
         EconomyAdminCommand ecoCommand = new EconomyAdminCommand(economyManager, playerDataManager);
         getCommand("eco").setExecutor(ecoCommand);
         getCommand("eco").setTabCompleter(ecoCommand);
+        CosmeticAdminCommand cosmeticAdmin = new CosmeticAdminCommand(cosmeticsManager, playerDataManager);
+        getCommand("cosmeticadmin").setExecutor(cosmeticAdmin);
+        getCommand("cosmeticadmin").setTabCompleter(cosmeticAdmin);
 
         economyManager.startPassiveRewardTask(20L * 600, 5);
 

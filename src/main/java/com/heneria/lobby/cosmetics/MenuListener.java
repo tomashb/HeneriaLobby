@@ -8,6 +8,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -49,6 +50,22 @@ public class MenuListener implements Listener {
             player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1f, 1f);
         }
         cosmeticsManager.refreshMenu(player);
+    }
+
+    @EventHandler
+    public void onArmorSlotClick(InventoryClickEvent event) {
+        if (event.getSlotType() != InventoryType.SlotType.ARMOR || event.getSlot() != 39) {
+            return;
+        }
+        ItemStack item = event.getCurrentItem();
+        if (item == null || item.getType().isAir()) {
+            return;
+        }
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null && meta.getPersistentDataContainer().has(new NamespacedKey(plugin, "cosmetic_hat"),
+                PersistentDataType.STRING)) {
+            event.setCancelled(true);
+        }
     }
 
     private boolean isCosmeticMenu(String title) {
