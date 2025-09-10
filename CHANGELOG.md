@@ -1,8 +1,9 @@
 # Changelog
 
-## 0.8.0 - Sous-menus de boutique et logique d'achat/équipement
+## 0.8.0 - Ajout du contenu initial et finalisation des menus cosmétiques
 - Ajout des sous-menus paginés pour chaque catégorie de cosmétiques.
 - Possibilité d'acheter et d'équiper les cosmétiques directement depuis l'interface.
+- Contenu initial des chapeaux, particules et titres.
 
 ## 0.7.2 - Refonte visuelle du menu cosmétique principal
 - Menu de boutique cosmétique étendu à 45 slots avec bordures décoratives.

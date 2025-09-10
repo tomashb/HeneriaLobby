@@ -1,0 +1,58 @@
+cosmetics:
+  hats:
+    hat_tnt:
+      name: "&cChapeau Explosif"
+      lore:
+        - "&7Un classique pour les joueurs... instables."
+      material: TNT
+      rarity: RARE
+      price: 2500
+    hat_glass:
+      name: "&bCasque de Cristal"
+      lore:
+        - "&7Avoir les idées claires n'a jamais été aussi simple."
+      material: GLASS
+      rarity: COMMUN
+      price: 1000
+    hat_miner:
+      name: "&eCasque de Spéléologue"
+      lore:
+        - "&7Pour éclairer vos idées les plus sombres."
+      material: SEA_LANTERN
+      rarity: EPIC
+      price: 5000
+  particles:
+    particle_flame_aura:
+      name: "&6Aura Enflammée"
+      lore:
+        - "&7Entourez-vous d'un halo de feu."
+      material: BLAZE_POWDER
+      rarity: EPIC
+      price: 7500
+    particle_heart_trail:
+      name: "&cTraînée d'Amour"
+      lore:
+        - "&7Laissez une trace de cœurs derrière vous."
+      material: POPPY
+      rarity: RARE
+      price: 4000
+    particle_matrix_helix:
+      name: "&aHélice Matrix"
+      lore:
+        - "&7Êtes-vous l'Élu ?"
+      material: LIME_DYE
+      rarity: LEGENDARY
+      price: 15000
+  titles:
+    title_artisan:
+      name: "&fTitre : L'Artisan"
+      text: "&fL'Artisan"
+      material: CRAFTING_TABLE
+      rarity: COMMUN
+      price: 2000
+    title_ghost:
+      name: "&7Titre : Le Fantôme"
+      text: "&7Le Fantôme"
+      material: COBWEB
+      rarity: EPIC
+      price: 10000
