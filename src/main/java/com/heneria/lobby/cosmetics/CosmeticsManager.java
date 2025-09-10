@@ -602,7 +602,7 @@ public class CosmeticsManager implements Listener {
         hideTitle(player);
         TextDisplay display = player.getWorld().spawn(player.getLocation(), TextDisplay.class);
         display.text(LegacyComponentSerializer.legacySection().deserialize(color(cosmetic.getText())));
-        display.setShadow(true);
+        display.setShadowed(true);
         player.addPassenger(display);
         titleEntities.put(uuid, display);
     }
