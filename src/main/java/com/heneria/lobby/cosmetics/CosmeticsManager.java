@@ -7,11 +7,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -22,6 +25,10 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.io.File;
 import java.sql.*;
@@ -42,6 +49,12 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, Map<String, String>> equipped = new HashMap<>();
     private final Map<UUID, String> openCategory = new HashMap<>();
     private final Map<UUID, Integer> openPage = new HashMap<>();
+    private final Map<UUID, ItemStack> savedHelmets = new HashMap<>();
+    private final Map<UUID, BukkitTask> particleTasks = new HashMap<>();
+    private final Map<UUID, Entity> titleEntities = new HashMap<>();
+
+    private static final String OWNED_KEY = "unlocked";
+    private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
 
     public CosmeticsManager(HeneriaLobbyPlugin plugin, EconomyManager economyManager, DatabaseManager databaseManager) {
         this.plugin = plugin;
@@ -78,7 +91,18 @@ public class CosmeticsManager implements Listener {
                     String rarity = cSec.getString("rarity", "COMMUN");
                     int price = cSec.getInt("price", 0);
                     String text = color(cSec.getString("text", ""));
-                    list.add(new Cosmetic(id, name, lore, mat, rarity, price, category, text));
+                    Particle particle = null;
+                    int particleCount = cSec.getInt("count", 1);
+                    double particleOffset = cSec.getDouble("offset", 0.0);
+                    String particleName = cSec.getString("particle");
+                    if (particleName != null) {
+                        try {
+                            particle = Particle.valueOf(particleName.toUpperCase());
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
+                    list.add(new Cosmetic(id, name, lore, mat, rarity, price, category, text,
+                            particle, particleCount, particleOffset));
                 }
                 cosmetics.put(category, list);
             }
@@ -192,6 +216,93 @@ public class CosmeticsManager implements Listener {
         return true;
     }
 
+    public void openOwnedMenu(Player player) {
+        openOwnedMenu(player, 0);
+    }
+
+    public void openOwnedMenu(Player player, int page) {
+        UUID uuid = player.getUniqueId();
+        Set<String> ownedIds = loadOwnedCosmetics(uuid);
+        owned.put(uuid, ownedIds);
+        List<Cosmetic> list = ownedIds.stream()
+                .map(this::getCosmeticById)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        int perPage = 45;
+        int maxPage = (list.size() + perPage - 1) / perPage;
+        if (maxPage == 0) {
+            maxPage = 1;
+        }
+        if (page < 0) {
+            page = 0;
+        }
+        if (page >= maxPage) {
+            page = maxPage - 1;
+        }
+        Inventory inv = Bukkit.createInventory(null, 54, OWNED_TITLE);
+        Map<String, String> equippedMap = equipped.getOrDefault(uuid, Collections.emptyMap());
+        int start = page * perPage;
+        for (int i = 0; i < perPage && start + i < list.size(); i++) {
+            Cosmetic c = list.get(start + i);
+            ItemStack item = new ItemStack(c.getMaterial());
+            ItemMeta meta = item.getItemMeta();
+            if (meta != null) {
+                String baseName = ChatColor.stripColor(c.getName());
+                String equippedId = equippedMap.get(c.getCategory());
+                boolean isEquipped = c.getId().equals(equippedId);
+                List<String> lore = new ArrayList<>(c.getLore());
+                lore.add(ChatColor.DARK_GRAY + "-------------------------");
+                lore.add(ChatColor.WHITE + "Rareté : " + ChatColor.RED + c.getRarity());
+                lore.add("");
+                if (isEquipped) {
+                    lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "ÉQUIPÉ");
+                    lore.add(ChatColor.RED + "► Cliquez pour déséquiper");
+                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName + ChatColor.YELLOW + " (Équipé)");
+                } else {
+                    lore.add(ChatColor.GREEN + "" + ChatColor.BOLD + "DÉBLOQUÉ");
+                    lore.add(ChatColor.YELLOW + "► Cliquez pour équiper");
+                    meta.setDisplayName(ChatColor.GREEN + "" + ChatColor.BOLD + baseName);
+                }
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                lore.add(ChatColor.DARK_GRAY + "-------------------------");
+                meta.setLore(lore);
+                meta.getPersistentDataContainer().set(new NamespacedKey(plugin, "cosmetic_id"),
+                        PersistentDataType.STRING, c.getId());
+                item.setItemMeta(meta);
+            }
+            inv.setItem(i, item);
+        }
+        ItemStack back = new ItemStack(Material.BARRIER);
+        ItemMeta backMeta = back.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(ChatColor.RED + "" + ChatColor.BOLD + "Retour");
+            back.setItemMeta(backMeta);
+        }
+        inv.setItem(49, back);
+        if (page > 0) {
+            ItemStack prev = new ItemStack(Material.ARROW);
+            ItemMeta pm = prev.getItemMeta();
+            if (pm != null) {
+                pm.setDisplayName(ChatColor.YELLOW + "Page précédente");
+                prev.setItemMeta(pm);
+            }
+            inv.setItem(45, prev);
+        }
+        if (page < maxPage - 1) {
+            ItemStack next = new ItemStack(Material.ARROW);
+            ItemMeta nm = next.getItemMeta();
+            if (nm != null) {
+                nm.setDisplayName(ChatColor.YELLOW + "Page suivante");
+                next.setItemMeta(nm);
+            }
+            inv.setItem(53, next);
+        }
+        openCategory.put(uuid, OWNED_KEY);
+        openPage.put(uuid, page);
+        player.openInventory(inv);
+    }
+
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
         UUID uuid = event.getPlayer().getUniqueId();
@@ -227,6 +338,15 @@ public class CosmeticsManager implements Listener {
         owned.remove(uuid);
         openCategory.remove(uuid);
         openPage.remove(uuid);
+        savedHelmets.remove(uuid);
+        BukkitTask task = particleTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+        Entity ent = titleEntities.remove(uuid);
+        if (ent != null) {
+            ent.remove();
+        }
     }
 
     private String color(String text) {
@@ -241,6 +361,9 @@ public class CosmeticsManager implements Listener {
     }
 
     public boolean isCosmeticMenu(String title) {
+        if (OWNED_TITLE.equals(title)) {
+            return true;
+        }
         for (String category : cosmetics.keySet()) {
             if ((ChatColor.GOLD + "" + ChatColor.BOLD + capitalize(category)).equals(title)) {
                 return true;
@@ -254,7 +377,11 @@ public class CosmeticsManager implements Listener {
         String category = openCategory.get(uuid);
         if (category != null) {
             int page = openPage.getOrDefault(uuid, 0);
-            openCategoryMenu(player, category, page + 1);
+            if (OWNED_KEY.equals(category)) {
+                openOwnedMenu(player, page + 1);
+            } else {
+                openCategoryMenu(player, category, page + 1);
+            }
         }
     }
 
@@ -263,7 +390,11 @@ public class CosmeticsManager implements Listener {
         String category = openCategory.get(uuid);
         if (category != null) {
             int page = openPage.getOrDefault(uuid, 0);
-            openCategoryMenu(player, category, page - 1);
+            if (OWNED_KEY.equals(category)) {
+                openOwnedMenu(player, page - 1);
+            } else {
+                openCategoryMenu(player, category, page - 1);
+            }
         }
     }
 
@@ -293,7 +424,14 @@ public class CosmeticsManager implements Listener {
                 player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY + "Vous avez équipé : " + ChatColor.YELLOW + cosmetic.getName());
             }
             int page = openPage.getOrDefault(uuid, 0);
-            Bukkit.getScheduler().runTask(plugin, () -> openCategoryMenu(player, category, page));
+            String open = openCategory.get(uuid);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (OWNED_KEY.equals(open)) {
+                    openOwnedMenu(player, page);
+                } else {
+                    openCategoryMenu(player, category, page);
+                }
+            });
             return;
         }
         int price = cosmetic.getPrice();
@@ -311,7 +449,14 @@ public class CosmeticsManager implements Listener {
                 "Vous avez acheté : " + ChatColor.YELLOW + cosmetic.getName());
         player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         int page = openPage.getOrDefault(uuid, 0);
-        Bukkit.getScheduler().runTask(plugin, () -> openCategoryMenu(player, cosmetic.getCategory(), page));
+        String open = openCategory.get(uuid);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (OWNED_KEY.equals(open)) {
+                openOwnedMenu(player, page);
+            } else {
+                openCategoryMenu(player, cosmetic.getCategory(), page);
+            }
+        });
     }
 
     private Cosmetic getCosmeticById(String id) {
@@ -397,11 +542,76 @@ public class CosmeticsManager implements Listener {
     }
 
     private void applyCosmeticEffect(Player player, Cosmetic cosmetic) {
-        // Placeholder for actual cosmetic application logic.
-        player.sendMessage(ChatColor.YELLOW + cosmetic.getText());
+        String category = cosmetic.getCategory().toLowerCase();
+        switch (category) {
+            case "hats" -> equipHat(player, cosmetic);
+            case "particles" -> activateParticles(player, cosmetic);
+            case "titles" -> showTitle(player, cosmetic);
+        }
     }
 
     private void removeCosmeticEffect(Player player, String category) {
-        // Placeholder for actual cosmetic removal logic.
+        switch (category.toLowerCase()) {
+            case "hats" -> unequipHat(player);
+            case "particles" -> deactivateParticles(player);
+            case "titles" -> hideTitle(player);
+        }
+    }
+
+    private void equipHat(Player player, Cosmetic cosmetic) {
+        UUID uuid = player.getUniqueId();
+        ItemStack current = player.getInventory().getHelmet();
+        if (current != null && current.getType() != Material.AIR) {
+            savedHelmets.put(uuid, current.clone());
+        }
+        player.getInventory().setHelmet(new ItemStack(cosmetic.getMaterial()));
+    }
+
+    private void unequipHat(Player player) {
+        UUID uuid = player.getUniqueId();
+        ItemStack previous = savedHelmets.remove(uuid);
+        player.getInventory().setHelmet(previous);
+    }
+
+    private void activateParticles(Player player, Cosmetic cosmetic) {
+        UUID uuid = player.getUniqueId();
+        deactivateParticles(player);
+        Particle particle = cosmetic.getParticle() != null ? cosmetic.getParticle() : Particle.FLAME;
+        int count = Math.max(1, cosmetic.getParticleCount());
+        double offset = cosmetic.getParticleOffset();
+        BukkitTask task = new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.getWorld().spawnParticle(particle, player.getLocation().add(0, 1, 0), count,
+                        offset, offset, offset, 0);
+            }
+        }.runTaskTimer(plugin, 0L, 5L);
+        particleTasks.put(uuid, task);
+    }
+
+    private void deactivateParticles(Player player) {
+        UUID uuid = player.getUniqueId();
+        BukkitTask task = particleTasks.remove(uuid);
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private void showTitle(Player player, Cosmetic cosmetic) {
+        UUID uuid = player.getUniqueId();
+        hideTitle(player);
+        TextDisplay display = player.getWorld().spawn(player.getLocation(), TextDisplay.class);
+        display.text(LegacyComponentSerializer.legacySection().deserialize(color(cosmetic.getText())));
+        display.setShadow(true);
+        player.addPassenger(display);
+        titleEntities.put(uuid, display);
+    }
+
+    private void hideTitle(Player player) {
+        UUID uuid = player.getUniqueId();
+        Entity ent = titleEntities.remove(uuid);
+        if (ent != null) {
+            ent.remove();
+        }
     }
 }
