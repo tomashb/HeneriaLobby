@@ -112,10 +112,16 @@ dans `rarities.yml` :
 - **Légendaire** – `§6` : `§6★★★★§7☆`
 - **Mythique** – `§c` : `§c★★★★★`
 
-### Familiers
+### Ballons
+
+Un ballon décoratif flotte derrière le joueur, attaché par une laisse à une
+entité invisible qui le maintient en place.
+
+### Familiers Animés
 
 Les familiers apparaissent en version miniature lorsqu'une variante bébé existe
-et sont totalement inoffensifs. Ils suivent naturellement leur propriétaire.
+et possèdent désormais des animations uniques (vol en cercle, pluie, particules,
+etc.). Ils restent totalement inoffensifs.
 
 ### Titres
 
