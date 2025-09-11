@@ -1,7 +1,6 @@
 package com.heneria.lobby.listeners;
 
 import com.heneria.lobby.menu.GUIManager;
-import com.heneria.lobby.menu.MenuItem;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,7 +26,7 @@ public class NavigationItemListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         guiManager.getNavigationItems().forEach((slot, item) ->
-                player.getInventory().setItem(slot, item.getItemStack()));
+                player.getInventory().setItem(slot, item.getItemStack().clone()));
     }
 
     @EventHandler
@@ -50,16 +49,8 @@ public class NavigationItemListener implements Listener {
             if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                 event.setCancelled(true);
                 Player player = event.getPlayer();
-                MenuItem item = guiManager.getNavigationItem(event.getItem());
-                String action = item.getAction();
                 player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                if (action.startsWith("open_menu:")) {
-                    String name = action.split(":", 2)[1];
-                    guiManager.openMenu(player, name);
-                } else if (action.startsWith("run_command:")) {
-                    String cmd = action.split(":", 2)[1];
-                    player.performCommand(cmd);
-                }
+                guiManager.executeNavigationAction(player, event.getItem());
             }
         }
     }
