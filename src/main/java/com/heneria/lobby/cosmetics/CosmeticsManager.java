@@ -14,12 +14,14 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -483,20 +485,9 @@ public class CosmeticsManager implements Listener {
         UUID uuid = player.getUniqueId();
         Set<String> ownedSet = owned.computeIfAbsent(uuid, k -> new HashSet<>());
         if (!ownedSet.contains(cosmeticId)) {
-            int price = cosmetic.getPrice();
-            if (!economyManager.hasEnoughCoins(player, price)) {
-                long missing = price - economyManager.getCoins(uuid);
-                player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Fonds insuffisants. Il vous manque " +
-                        ChatColor.GOLD + missing + ChatColor.GRAY + " Coins.");
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
-                return;
-            }
-            economyManager.removeCoins(player, price);
-            ownedSet.add(cosmeticId);
-            saveCosmetic(uuid, cosmeticId);
-            player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
-                    "Vous avez acheté : " + ChatColor.YELLOW + cosmetic.getName());
-            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+            player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Cosmétique non débloqué.");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+            return;
         }
         Map<String, String> equippedMap = equipped.computeIfAbsent(uuid, k -> new HashMap<>());
         String category = cosmetic.getCategory();
@@ -508,6 +499,32 @@ public class CosmeticsManager implements Listener {
         equippedMap.put(category, cosmeticId);
         saveEquipped(uuid, category, cosmeticId);
         player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY + "Vous avez équipé : " + ChatColor.YELLOW + cosmetic.getName());
+    }
+
+    public void purchaseCosmetic(Player player, String cosmeticId) {
+        Cosmetic cosmetic = getCosmeticById(cosmeticId);
+        if (cosmetic == null) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        Set<String> ownedSet = owned.computeIfAbsent(uuid, k -> new HashSet<>());
+        if (ownedSet.contains(cosmeticId)) {
+            return;
+        }
+        int price = cosmetic.getPrice();
+        if (!economyManager.hasEnoughCoins(player, price)) {
+            long missing = price - economyManager.getCoins(uuid);
+            player.sendMessage(ChatColor.RED + "✖ " + ChatColor.GRAY + "Fonds insuffisants. Il vous manque " +
+                    ChatColor.GOLD + missing + ChatColor.GRAY + " Coins.");
+            player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+            return;
+        }
+        economyManager.removeCoins(player, price);
+        ownedSet.add(cosmeticId);
+        saveCosmetic(uuid, cosmeticId);
+        player.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.GRAY +
+                "Vous avez débloqué : " + ChatColor.YELLOW + cosmetic.getName());
+        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
     }
 
     public void unequipCosmetic(Player player, String cosmeticId) {
@@ -756,7 +773,15 @@ public class CosmeticsManager implements Listener {
         entity.setInvulnerable(true);
         entity.setSilent(true);
         entity.setPersistent(false);
+        if (entity instanceof Ageable ageable) {
+            ageable.setBaby();
+        }
         if (entity instanceof Mob mob) {
+            var attack = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
+            if (attack != null) {
+                attack.setBaseValue(0);
+            }
+            mob.setTarget(null);
             BukkitTask follow = new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -766,7 +791,7 @@ public class CosmeticsManager implements Listener {
                     }
                     mob.getPathfinder().moveTo(player);
                 }
-            }.runTaskTimer(plugin, 0L, 20L);
+            }.runTaskTimer(plugin, 0L, 10L);
             petTasks.put(uuid, follow);
         }
         pets.put(uuid, entity);
@@ -796,7 +821,7 @@ public class CosmeticsManager implements Listener {
         });
         Transformation transformation = display.getTransformation();
         display.setTransformation(new Transformation(
-                transformation.getTranslation().add(new Vector3f(0f, 0.35f, 0f)),
+                transformation.getTranslation().add(new Vector3f(0f, 0.6f, 0f)),
                 transformation.getLeftRotation(),
                 transformation.getScale(),
                 transformation.getRightRotation()));

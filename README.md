@@ -112,6 +112,16 @@ dans `rarities.yml` :
 - **Légendaire** – `§6` : `§6★★★★§7☆`
 - **Mythique** – `§c` : `§c★★★★★`
 
+### Familiers
+
+Les familiers apparaissent en version miniature lorsqu'une variante bébé existe
+et sont totalement inoffensifs. Ils suivent naturellement leur propriétaire.
+
+### Titres
+
+Lorsqu'un titre est équipé, il s'affiche au-dessus du pseudo du joueur sans
+masquer le nametag vanilla.
+
 ## Configuration des Activités
 
 Le fichier `activities.yml` centralise la configuration des mini-jeux du lobby.
