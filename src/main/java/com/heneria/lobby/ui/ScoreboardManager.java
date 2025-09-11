@@ -2,6 +2,8 @@ package com.heneria.lobby.ui;
 
 import com.heneria.lobby.HeneriaLobbyPlugin;
 import com.heneria.lobby.player.PlayerData;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -36,17 +38,33 @@ public class ScoreboardManager {
         plugin.saveResource("scoreboard.yml", false);
         File file = new File(plugin.getDataFolder(), "scoreboard.yml");
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        this.title = ChatColor.translateAlternateColorCodes('&', config.getString("title", "&5Heneria"));
+        this.title = ChatColor.translateAlternateColorCodes('&', config.getString("title", "&d&lHENERIA"));
         this.lines = config.getStringList("lines");
     }
 
     private String applyPlaceholders(Player player, String line) {
         PlayerData data = plugin.getPlayerDataManager().getPlayerData(player.getUniqueId());
         long coins = data != null ? data.getCoins() : 0L;
+        int online = Bukkit.getOnlinePlayers().size();
+        int maxPlayers = Bukkit.getMaxPlayers();
+
+        String prefix = "";
+        LuckPerms lp = plugin.getLuckPerms();
+        if (lp != null) {
+            User user = lp.getUserManager().getUser(player.getUniqueId());
+            if (user != null) {
+                String metaPrefix = user.getCachedData().getMetaData().getPrefix();
+                if (metaPrefix != null) {
+                    prefix = metaPrefix;
+                }
+            }
+        }
+
         String result = line
                 .replace("%player_coins%", String.valueOf(coins))
-                .replace("%lobby_players%", String.valueOf(Bukkit.getOnlinePlayers().size()))
-                .replace("%total_players%", String.valueOf(Bukkit.getOnlinePlayers().size()));
+                .replace("%luckperms_prefix%", prefix)
+                .replace("%server_online%", String.valueOf(online))
+                .replace("%server_max_players%", String.valueOf(maxPlayers));
         return ChatColor.translateAlternateColorCodes('&', result);
     }
 

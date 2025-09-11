@@ -40,15 +40,30 @@ ou la commande `/achievements`.
 
 Les fichiers de configuration permettent de personnaliser l'apparence du serveur :
 
-- `scoreboard.yml` – titre et lignes du scoreboard.
+- `scoreboard.yml` – titre et lignes du scoreboard. Exemple :
+
+  ```yml
+  title: "&d&lHENERIA"
+  lines:
+    - "&7&m------------"
+    - "&fGrade: &d%luckperms_prefix%"
+    - ""
+    - "&fCoins: &6%player_coins%"
+    - ""
+    - "&fJoueurs: &a%server_online%/%server_max_players%"
+    - ""
+    - "&bplay.heneria.net"
+    - "&7&m------------"
+  ```
 - `tablist.yml` – header, footer et format du nom dans la liste des joueurs.
 - `messages.yml` – format du chat ainsi que les messages de connexion et de déconnexion.
 
 Placeholders disponibles :
 
 - `%player_coins%` – pièces du joueur.
-- `%total_players%` – nombre total de joueurs sur le réseau.
-- `%lobby_players%` – joueurs connectés au lobby actuel.
+- `%luckperms_prefix%` – préfixe de grade principal.
+- `%server_online%` – joueurs connectés au lobby actuel.
+- `%server_max_players%` – nombre maximum de joueurs du lobby.
 - `{prefix}` – préfixe de grade fourni par LuckPerms.
 - `{player}` – nom du joueur expéditeur.
 - `{message}` – message envoyé.
