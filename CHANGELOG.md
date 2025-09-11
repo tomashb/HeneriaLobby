@@ -1,5 +1,8 @@
 # Changelog
 
+### Version 1.3.1 - Corrections de Compilation
+- Correction de plusieurs erreurs de compilation dans le CosmeticsManager liées à l'utilisation de l'API (Particules, Spawn d'entités, Leashes).
+
 ### Version 1.3.0 - Refonte Cosmétique Majeure
 - **CORRECTION CRITIQUE :** Le titre cosmétique s'affiche désormais correctement au-dessus du pseudo sans le masquer.
 - **REWORK :** La catégorie "Gestes" a été supprimée et remplacée par la nouvelle catégorie "Ballons".
