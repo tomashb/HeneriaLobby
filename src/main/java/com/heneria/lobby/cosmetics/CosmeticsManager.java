@@ -18,7 +18,7 @@ import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Bat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Leashable;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
@@ -922,7 +922,7 @@ public class CosmeticsManager implements Listener {
             mob.setPersistent(false);
             mob.getEquipment().setHelmet(new ItemStack(cosmetic.getMaterial()));
         }
-        ((Leashable) balloon).setLeashHolder(holder);
+        ((LivingEntity) balloon).setLeashHolder(holder);
         balloons.put(uuid, balloon);
         balloonHolders.put(uuid, holder);
     }
