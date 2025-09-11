@@ -15,12 +15,16 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Ageable;
+import org.bukkit.entity.Bat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Rabbit;
+import org.bukkit.entity.Sheep;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display;
+import org.bukkit.entity.Vex;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,6 +38,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
@@ -66,6 +71,8 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, TextDisplay> titleDisplays = new HashMap<>();
     private final Map<UUID, Entity> pets = new HashMap<>();
     private final Map<UUID, BukkitTask> petTasks = new HashMap<>();
+    private final Map<UUID, Entity> balloons = new HashMap<>();
+    private final Map<UUID, Entity> balloonHolders = new HashMap<>();
 
     private static final String OWNED_KEY = "unlocked";
     private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
@@ -396,6 +403,14 @@ public class CosmeticsManager implements Listener {
         if (pet != null) {
             pet.remove();
         }
+        Entity balloon = balloons.remove(uuid);
+        if (balloon != null) {
+            balloon.remove();
+        }
+        Entity holder = balloonHolders.remove(uuid);
+        if (holder != null) {
+            holder.remove();
+        }
     }
 
     private String color(String text) {
@@ -696,6 +711,7 @@ public class CosmeticsManager implements Listener {
             case "particles" -> activateParticles(player, cosmetic);
             case "titles" -> showTitle(player, cosmetic);
             case "pets" -> equipPet(player, cosmetic);
+            case "balloons" -> equipBalloon(player, cosmetic);
         }
     }
 
@@ -705,6 +721,7 @@ public class CosmeticsManager implements Listener {
             case "particles" -> deactivateParticles(player);
             case "titles" -> hideTitle(player);
             case "pets" -> unequipPet(player);
+            case "balloons" -> unequipBalloon(player);
         }
     }
 
@@ -762,6 +779,82 @@ public class CosmeticsManager implements Listener {
         UUID uuid = player.getUniqueId();
         unequipPet(player);
         String id = cosmetic.getId();
+
+        switch (id) {
+            case "pet_fairy" -> {
+                Bat bat = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Bat.class, b -> {
+                    b.setInvulnerable(true);
+                    b.setSilent(true);
+                    b.setPersistent(false);
+                    b.setAI(false);
+                });
+                BukkitTask task = new BukkitRunnable() {
+                    double angle = 0;
+
+                    @Override
+                    public void run() {
+                        if (!player.isOnline() || !bat.isValid()) {
+                            cancel();
+                            return;
+                        }
+                        angle += 0.3;
+                        Location loc = player.getLocation().add(Math.cos(angle) * 1.5, 1.2, Math.sin(angle) * 1.5);
+                        bat.teleport(loc);
+                    }
+                }.runTaskTimer(plugin, 0L, 1L);
+                petTasks.put(uuid, task);
+                pets.put(uuid, bat);
+                return;
+            }
+            case "pet_rain_cloud" -> {
+                Sheep sheep = player.getWorld().spawn(player.getLocation().add(0, 2, 0), Sheep.class, s -> {
+                    s.setInvulnerable(true);
+                    s.setSilent(true);
+                    s.setPersistent(false);
+                    s.setAI(false);
+                    s.setCustomName("jeb_");
+                    s.setCustomNameVisible(false);
+                });
+                BukkitTask task = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!player.isOnline() || !sheep.isValid()) {
+                            cancel();
+                            return;
+                        }
+                        Location loc = player.getLocation().add(0, 2, 0);
+                        sheep.teleport(loc);
+                        player.getWorld().spawnParticle(Particle.WATER_DROP, loc.clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
+                    }
+                }.runTaskTimer(plugin, 0L, 10L);
+                petTasks.put(uuid, task);
+                pets.put(uuid, sheep);
+                return;
+            }
+            case "pet_soul" -> {
+                Vex vex = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Vex.class, v -> {
+                    v.setInvulnerable(true);
+                    v.setSilent(true);
+                    v.setPersistent(false);
+                    v.setAI(false);
+                });
+                BukkitTask task = new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!player.isOnline() || !vex.isValid()) {
+                            cancel();
+                            return;
+                        }
+                        vex.teleport(player.getLocation().add(0, 1, 0));
+                        player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, vex.getLocation(), 3, 0.2, 0.2, 0.2, 0);
+                    }
+                }.runTaskTimer(plugin, 0L, 10L);
+                petTasks.put(uuid, task);
+                pets.put(uuid, vex);
+                return;
+            }
+        }
+
         String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
         EntityType type;
         try {
@@ -809,6 +902,42 @@ public class CosmeticsManager implements Listener {
         }
     }
 
+    private void equipBalloon(Player player, Cosmetic cosmetic) {
+        UUID uuid = player.getUniqueId();
+        unequipBalloon(player);
+
+        Rabbit holder = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Rabbit.class, r -> {
+            r.setSilent(true);
+            r.setInvulnerable(true);
+            r.setPersistent(false);
+            r.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
+        });
+        player.addPassenger(holder);
+
+        Entity balloon = player.getWorld().spawn(player.getLocation().add(0, 2, 0), EntityType.CHICKEN);
+        if (balloon instanceof Mob mob) {
+            mob.setSilent(true);
+            mob.setInvulnerable(true);
+            mob.setPersistent(false);
+            mob.getEquipment().setHelmet(new ItemStack(cosmetic.getMaterial()));
+        }
+        balloon.setLeashHolder(holder);
+        balloons.put(uuid, balloon);
+        balloonHolders.put(uuid, holder);
+    }
+
+    private void unequipBalloon(Player player) {
+        UUID uuid = player.getUniqueId();
+        Entity balloon = balloons.remove(uuid);
+        if (balloon != null) {
+            balloon.remove();
+        }
+        Entity holder = balloonHolders.remove(uuid);
+        if (holder != null) {
+            holder.remove();
+        }
+    }
+
     private void showTitle(Player player, Cosmetic cosmetic) {
         UUID uuid = player.getUniqueId();
         hideTitle(player);
@@ -821,7 +950,7 @@ public class CosmeticsManager implements Listener {
         });
         Transformation transformation = display.getTransformation();
         display.setTransformation(new Transformation(
-                transformation.getTranslation().add(new Vector3f(0f, 0.6f, 0f)),
+                transformation.getTranslation().add(new Vector3f(0f, 0.35f, 0f)),
                 transformation.getLeftRotation(),
                 transformation.getScale(),
                 transformation.getRightRotation()));

@@ -1,120 +1,84 @@
 cosmetics:
   hats:
-    hat_bookshelf:
-      name: "Bibliothèque Ambulante"
+    hat_cake:
+      name: "Chapeau Gâteau"
       lore:
-        - "&7Pour les rats de bibliothèque ambulants."
-      material: BOOKSHELF
-      rarity: COMMUN
-      price: 1200
-    hat_beehive:
-      name: "Ruche d'Abeilles"
-      lore:
-        - "&7Un bourdonnement permanent autour de vous."
-      material: BEEHIVE
+        - "&7Une part pour la route."
+      material: CAKE
       rarity: RARE
-      price: 2800
-    hat_anvil:
-      name: "Enclume"
+      price: 3000
+    hat_enderman:
+      name: "Chapeau Enderman"
       lore:
-        - "&7La tête bien lourde."
-      material: ANVIL
+        - "&7Un regard venu de l'End."
+      material: PLAYER_HEAD
       rarity: EPIC
-      price: 6000
-    hat_dragon_head:
-      name: "Tête de Dragon"
-      lore:
-        - "&7Imposez le respect des dragons."
-      material: DRAGON_HEAD
-      rarity: LEGENDARY
-      price: 18000
-    hat_beacon:
-      name: "Balise Céleste"
-      lore:
-        - "&7Brillez tel un signal mythique."
-      material: BEACON
-      rarity: MYTHIC
-      price: 40000
+      price: 7000
   particles:
-    particle_drip:
-      name: "Goutte à Goutte"
+    particle_magic_aura:
+      name: "Aura Magique"
       lore:
-        - "&7Une pluie légère vous suit."
-      material: WATER_BUCKET
-      particle: WATER_DROP
-      count: 5
-      offset: 0.2
-      rarity: COMMUN
-      price: 1500
-    particle_music_notes:
-      name: "Notes de Musique"
+        - "&7Des particules mystiques vous entourent."
+      material: ENCHANTING_TABLE
+      particle: ENCHANTING_TABLE
+      count: 10
+      offset: 0.3
+      rarity: EPIC
+      price: 8500
+    particle_void_vortex:
+      name: "Vortex du Néant"
       lore:
-        - "&7La musique vous accompagne."
-      material: NOTE_BLOCK
-      particle: NOTE
-      count: 5
-      offset: 0.2
-      rarity: RARE
-      price: 3500
-    particle_void_dust:
-      name: "Poussière du Néant"
-      lore:
-        - "&7Des particules du vide apparaissent."
+        - "&7Une spirale obscure vous suit."
       material: OBSIDIAN
       particle: PORTAL
-      count: 10
-      offset: 0.3
-      rarity: EPIC
-      price: 8000
-    particle_totem_aura:
-      name: "Aura du Totem"
-      lore:
-        - "&7La puissance du totem vous entoure."
-      material: TOTEM_OF_UNDYING
-      particle: TOTEM
-      count: 10
-      offset: 0.3
-      rarity: LEGENDARY
-      price: 20000
-    particle_wither_storm:
-      name: "Tempête du Wither"
-      lore:
-        - "&7Un souffle sombre vous enveloppe."
-      material: WITHER_ROSE
-      particle: SOUL_FIRE_FLAME
-      count: 10
+      count: 20
       offset: 0.4
-      rarity: MYTHIC
-      price: 50000
-  pets:
-    pet_fox:
-      name: "Renard Rusé"
-      lore:
-        - "&7Un renard vous suit partout."
-      material: FOX_SPAWN_EGG
-      rarity: RARE
-      price: 8000
-    pet_iron_golem:
-      name: "Golem de Fer miniature"
-      lore:
-        - "&7Un mini golem protecteur."
-      material: IRON_GOLEM_SPAWN_EGG
-      rarity: EPIC
-      price: 16000
-    pet_allay:
-      name: "Allay Bienveillant"
-      lore:
-        - "&7Un allay tourne autour de vous."
-      material: ALLAY_SPAWN_EGG
       rarity: LEGENDARY
-      price: 30000
-    pet_warden:
-      name: "Mini-Warden"
+      price: 21000
+  pets:
+    pet_fairy:
+      name: "Fée Tournoyante"
       lore:
-        - "&7Un warden miniature et inquiétant."
-      material: WARDEN_SPAWN_EGG
+        - "&7Une fée lumineuse vole autour de vous."
+      material: BAT_SPAWN_EGG
+      rarity: EPIC
+      price: 12000
+    pet_rain_cloud:
+      name: "Nuage de Pluie"
+      lore:
+        - "&7Un mouton arc-en-ciel qui fait pleuvoir."
+      material: SHEEP_SPAWN_EGG
+      rarity: LEGENDARY
+      price: 25000
+    pet_soul:
+      name: "Âme en Peine"
+      lore:
+        - "&7Un vex paisible laisse des flammes d'âme."
+      material: VEX_SPAWN_EGG
       rarity: MYTHIC
-      price: 60000
+      price: 55000
+  balloons:
+    balloon_redstone:
+      name: "Ballon en Redstone"
+      lore:
+        - "&7La technologie vous accompagne."
+      material: REDSTONE_BLOCK
+      rarity: RARE
+      price: 4500
+    balloon_amethyst:
+      name: "Ballon Géode d'Améthyste"
+      lore:
+        - "&7Un cristal flottant étincelant."
+      material: AMETHYST_BLOCK
+      rarity: EPIC
+      price: 9000
+    balloon_rainbow:
+      name: "Ballon Arc-en-ciel"
+      lore:
+        - "&7Un ballon qui change de couleur."
+      material: WHITE_WOOL
+      rarity: LEGENDARY
+      price: 22000
   titles:
     title_apprentice:
       name: "Titre : L'Apprenti"
@@ -179,7 +143,7 @@ cosmetics:
       rarity: LEGENDARY
       price: 18000
       format: |-
-        &f&m      &r &6&lARRIVÉE ROYALE&r &f&m      
+        &f&m      &r &6&lARRIVÉE ROYALE&r &f&m
 
         &eSa majesté &6%player% &enous fait l'honneur de sa présence !
     join_rift:
@@ -190,25 +154,3 @@ cosmetics:
       rarity: MYTHIC
       price: 45000
       format: "&7Une faille s'ouvre... et &c&l%player% &7en émerge !"
-  emotes:
-    emote_wave:
-      name: "/vague"
-      lore:
-        - "&7Faites un signe de la main."
-      material: PLAYER_HEAD
-      rarity: COMMUN
-      price: 500
-    emote_facepalm:
-      name: "/facepalm"
-      lore:
-        - "&7Mettez la main sur votre visage."
-      material: PLAYER_HEAD
-      rarity: RARE
-      price: 1500
-    emote_dance:
-      name: "/danse"
-      lore:
-        - "&7Une animation de danse simple."
-      material: PLAYER_HEAD
-      rarity: EPIC
-      price: 4000

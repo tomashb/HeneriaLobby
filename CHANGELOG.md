@@ -1,5 +1,11 @@
 # Changelog
 
+### Version 1.3.0 - Refonte Cosmétique Majeure
+- **CORRECTION CRITIQUE :** Le titre cosmétique s'affiche désormais correctement au-dessus du pseudo sans le masquer.
+- **REWORK :** La catégorie "Gestes" a été supprimée et remplacée par la nouvelle catégorie "Ballons".
+- **AJOUT :** Implémentation des Familiers Animés avec des comportements uniques.
+- **CONTENU :** Ajout de nombreux nouveaux cosmétiques dans la boutique.
+
 ### Version 1.2.1 - Corrections Critiques des Cosmétiques
 - L'achat d'un cosmétique ne l'équipe plus automatiquement.
 - Correction majeure du bug où le titre masquait le pseudo du joueur.

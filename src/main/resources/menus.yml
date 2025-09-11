@@ -68,11 +68,11 @@ menus:
       pets:
         material: BONE
         slot: 12
-        name: "&f&lFamiliers"
+        name: "&f&lFamiliers Animés"
         lore:
           - "&7Soyez accompagné par une"
-          - "&7adorable créature durant"
-          - "&7vos aventures dans le lobby."
+          - "&7créature animée unique"
+          - "&7durant vos aventures."
           - ""
           - "&e► Cliquez pour voir"
         action: "open_menu:pets"
@@ -97,17 +97,16 @@ menus:
           - ""
           - "&e► Cliquez pour voir"
         action: "open_menu:join_messages"
-      gestures:
-        material: FEATHER
+      balloons:
+        material: LEAD
         slot: 16
-        name: "&e&lGestes (Emotes)"
+        name: "&e&lBallons"
         lore:
-          - "&7Exprimez-vous avec des"
-          - "&7animations uniques comme"
-          - "&7s'asseoir ou danser."
+          - "&7Un ballon coloré flottant"
+          - "&7attaché derrière vous."
           - ""
           - "&e► Cliquez pour voir"
-        action: "open_menu:gestures"
+        action: "open_menu:balloons"
       separator:
         material: BLACK_STAINED_GLASS_PANE
         slots: [18,19,20,21,22,23,24,25,26]
