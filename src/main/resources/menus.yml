@@ -1,19 +1,91 @@
 menus:
   games:
-    title: "Sélecteur de Jeux"
-    size: 27
+    title: "&5&lSÉLECTEUR DE JEUX"
+    size: 54
     items:
+      corner_tl:
+        material: AMETHYST_BLOCK
+        slot: 0
+        name: " "
+        lore: []
+      corner_tr:
+        material: AMETHYST_BLOCK
+        slot: 8
+        name: " "
+        lore: []
+      filler:
+        material: PURPLE_STAINED_GLASS_PANE
+        slots: [1,2,3,5,6,7,9,10,11,12,13,14,15,16,17,18,19,21,22,23,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,49,51,52]
+        name: " "
+        lore: []
+      title_item:
+        material: NETHER_STAR
+        slot: 4
+        name: "&5&lSÉLECTEUR DE JEUX"
+        lore: []
       bedwars:
         material: RED_BED
-        slot: 11
-        name: "Bedwars"
+        slot: 20
+        name: "&c&lBedwars"
         lore:
-          - "&7Défendez votre lit..."
-          - " "
-          - "&8Joueurs: &b%bungee_bedwars%"
-          - " "
-          - "&a► Cliquez pour rejoindre"
+          - "&7Un jeu de stratégie où vous devez"
+          - "&7protéger votre lit et détruire"
+          - "&7celui de vos ennemis."
+          - ""
+          - "&fStatut: &aOuvert"
+          - "&fJoueurs: &b%bungee_bedwars%"
+          - ""
+          - "&e► Cliquez pour jouer !"
         action: "connect_server:bedwars"
+      zombie:
+        material: ZOMBIE_HEAD
+        slot: 24
+        name: "&2&lSurvie Zombie"
+        lore:
+          - "&7Survivez à des vagues de"
+          - "&7morts-vivants de plus en plus"
+          - "&7puissantes. Seul ou en équipe !"
+          - ""
+          - "&fStatut: &aOuvert"
+          - "&fJoueurs: &b%bungee_zombie%"
+          - ""
+          - "&e► Cliquez pour jouer !"
+        action: "connect_server:zombie"
+      nav_close:
+        material: BARRIER
+        slot: 45
+        name: "&c&lFermer"
+        lore:
+          - "&7Ferme le menu actuel."
+        action: "close"
+      nav_profile:
+        material: PLAYER_HEAD
+        slot: 48
+        name: "&aVotre Profil"
+        lore:
+          - "&7Grade: &d%luckperms_prefix%"
+          - "&7Succès: &e%player_achievements%/%total_achievements%"
+          - ""
+          - "&e► Cliquez pour voir vos stats"
+        action: "open_menu:profile"
+      nav_shop:
+        material: EMERALD
+        slot: 50
+        name: "&6Boutique & Cosmétiques"
+        lore:
+          - "&7Solde: &6%player_coins% Coins"
+          - ""
+          - "&e► Cliquez pour dépenser vos Coins"
+        action: "open_menu:shop"
+      nav_social:
+        material: WRITABLE_BOOK
+        slot: 53
+        name: "&bNos Réseaux"
+        lore:
+          - "&7Rejoignez notre communauté !"
+          - ""
+          - "&9Discord: &fdiscord.gg/heneria"
+          - "&bSite: &fplay.heneria.net"
   profile:
     title: "Profil"
     size: 27
@@ -42,111 +114,89 @@ menus:
           - "&7Gérer vos amis"
         action: "run_command:friends"
   shop:
-    title: "&5&lBoutique Cosmétique"
-    size: 45
+    title: "&5&lBOUTIQUE COSMÉTIQUE"
+    size: 54
     items:
+      corner_tl:
+        material: AMETHYST_BLOCK
+        slot: 0
+        name: " "
+        lore: []
+      corner_tr:
+        material: AMETHYST_BLOCK
+        slot: 8
+        name: " "
+        lore: []
       filler:
         material: PURPLE_STAINED_GLASS_PANE
-        slots: [0,1,2,3,4,5,6,7,8,9,13,17,27,28,29,31,33,34,35,36,37,38,39,41,42,43,44]
+        slots: [1,2,3,5,6,7,9,10,11,12,13,14,15,16,17,18,19,21,22,23,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,46,47,49,51,52]
         name: " "
+        lore: []
+      title_item:
+        material: NETHER_STAR
+        slot: 4
+        name: "&5&lBOUTIQUE COSMÉTIQUE"
         lore: []
       particles:
         material: NETHER_STAR
-        slot: 10
-        name: "&d&lParticules"
+        slot: 20
+        name: "&d&lCatégorie : Particules"
         lore:
-          - "&7Débloquez des effets visuels"
-          - "&7uniques qui vous suivront"
-          - "&7partout où vous irez."
+          - "&7Entourez-vous d'effets visuels"
+          - "&7uniques et spectaculaires."
           - ""
-          - "&e► Cliquez pour voir"
+          - "&fCosmétiques possédés: &b%cosmetics_unlocked_particles%"
+          - ""
+          - "&e► Cliquez pour explorer"
         action: "open_menu:particles"
-      hats:
-        material: CARVED_PUMPKIN
-        slot: 11
-        name: "&6&lChapeaux"
-        lore:
-          - "&7Portez des blocs et des"
-          - "&7objets amusants sur"
-          - "&7votre tête !"
-          - ""
-          - "&e► Cliquez pour voir"
-        action: "open_menu:hats"
-      pets:
-        material: BONE
-        slot: 12
-        name: "&f&lFamiliers Animés"
-        lore:
-          - "&7Soyez accompagné par une"
-          - "&7créature animée unique"
-          - "&7durant vos aventures."
-          - ""
-          - "&e► Cliquez pour voir"
-        action: "open_menu:pets"
-      titles:
-        material: NAME_TAG
-        slot: 14
-        name: "&b&lTitres"
-        lore:
-          - "&7Affichez un titre prestigieux"
-          - "&7au-dessus de votre tête pour"
-          - "&7montrer votre statut."
-          - ""
-          - "&e► Cliquez pour voir"
-        action: "open_menu:titles"
-      join_messages:
-        material: WRITABLE_BOOK
-        slot: 15
-        name: "&a&lMessages d'Arrivée"
-        lore:
-          - "&7Annoncez votre connexion"
-          - "&7avec style !"
-          - ""
-          - "&e► Cliquez pour voir"
-        action: "open_menu:join_messages"
       balloons:
         material: LEAD
-        slot: 16
-        name: "&e&lBallons"
+        slot: 24
+        name: "&b&lCatégorie : Ballons"
         lore:
-          - "&7Un ballon coloré flottant"
-          - "&7attaché derrière vous."
+          - "&7Laissez un ballon coloré flotter"
+          - "&7derrière vous et montrez"
+          - "&7votre style !"
           - ""
-          - "&e► Cliquez pour voir"
+          - "&fCosmétiques possédés: &b%cosmetics_unlocked_balloons%"
+          - ""
+          - "&e► Cliquez pour explorer"
         action: "open_menu:balloons"
-      separator:
-        material: BLACK_STAINED_GLASS_PANE
-        slots: [18,19,20,21,22,23,24,25,26]
-        name: " "
-        lore: []
-      unlocked:
-        material: CHEST
-        slot: 30
-        name: "&a&lMes Cosmétiques"
-        lore:
-          - "&7Consultez et gérez tous"
-          - "&7les cosmétiques que"
-          - "&7vous avez débloqués."
-          - ""
-          - "&e► Cliquez pour ouvrir"
-        action: "open_menu:unlocked"
-      crate:
-        material: TRIPWIRE_HOOK
-        slot: 32
-        name: "&6&lOuvrir une Caisse"
-        lore:
-          - "&7Utilisez une clé de caisse"
-          - "&7pour obtenir un cosmétique"
-          - "&7aléatoire !"
-          - ""
-          - "&c(Bientôt disponible)"
-      back:
+      nav_close:
         material: BARRIER
-        slot: 40
-        name: "&c&lRetour"
+        slot: 45
+        name: "&c&lFermer"
         lore:
           - "&7Ferme le menu actuel."
         action: "close"
+      nav_profile:
+        material: PLAYER_HEAD
+        slot: 48
+        name: "&aVotre Profil"
+        lore:
+          - "&7Grade: &d%luckperms_prefix%"
+          - "&7Succès: &e%player_achievements%/%total_achievements%"
+          - ""
+          - "&e► Cliquez pour voir vos stats"
+        action: "open_menu:profile"
+      nav_shop:
+        material: EMERALD
+        slot: 50
+        name: "&6Boutique & Cosmétiques"
+        lore:
+          - "&7Solde: &6%player_coins% Coins"
+          - ""
+          - "&e► Cliquez pour dépenser vos Coins"
+        action: "open_menu:shop"
+      nav_social:
+        material: WRITABLE_BOOK
+        slot: 53
+        name: "&bNos Réseaux"
+        lore:
+          - "&7Rejoignez notre communauté !"
+          - ""
+          - "&9Discord: &fdiscord.gg/heneria"
+          - "&bSite: &fplay.heneria.net"
   activities:
     title: "&bActivités du Lobby"
     size: 27

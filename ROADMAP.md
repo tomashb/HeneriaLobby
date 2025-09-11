@@ -3,7 +3,8 @@
  - [x] Progression & Économie (Terminé)
 - [x] Friends system
  - [x] Visual interface
-   - [x] Refonte du Scoreboard (Terminée)
+  - [x] Refonte du Scoreboard (Terminée)
+  - [x] Refonte Visuelle Complète (Terminée)
  - [x] Navigation (Terminé)
  - [ ] Cosmetics system
    - [x] Sous-Menus et Logique (Terminé)
