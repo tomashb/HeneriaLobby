@@ -85,6 +85,7 @@ public class MenuListener implements Listener {
 
     private void handleMenuAction(Player player, ItemStack item) {
         Material type = item.getType();
+        player.playSound(player.getLocation(), org.bukkit.Sound.UI_BUTTON_CLICK, 1f, 1f);
         if (type == Material.BARRIER) {
             player.closeInventory();
             plugin.getGuiManager().openMenu(player, "shop");

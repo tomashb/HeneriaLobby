@@ -11,12 +11,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
+
+import com.heneria.lobby.util.Utils;
 
 /**
  * Loads menus from configuration and builds inventories dynamically.
@@ -28,6 +33,7 @@ public class GUIManager {
     private FileConfiguration config;
     private final Map<String, Menu> menus = new HashMap<>();
     private final Map<Integer, MenuItem> navigationItems = new HashMap<>();
+    private final Map<UUID, BukkitTask> borderTasks = new HashMap<>();
 
     public GUIManager(HeneriaLobbyPlugin plugin, ServerInfoManager serverInfoManager) {
         this.plugin = plugin;
@@ -46,7 +52,8 @@ public class GUIManager {
         if (menusSec != null) {
             for (String key : menusSec.getKeys(false)) {
                 ConfigurationSection sec = menusSec.getConfigurationSection(key);
-                String title = color(sec.getString("title", key));
+                String rawTitle = sec.getString("title", key);
+                String title = Utils.format("&5&l" + ChatColor.stripColor(Utils.format(rawTitle)));
                 int size = sec.getInt("size", 27);
                 Map<Integer, MenuItem> items = new HashMap<>();
                 ConfigurationSection itemsSec = sec.getConfigurationSection("items");
@@ -97,9 +104,14 @@ public class GUIManager {
         ItemStack stack = new ItemStack(mat);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(color(sec.getString("name", "")));
+            String rawName = sec.getString("name", "");
+            if (!rawName.isBlank()) {
+                meta.setDisplayName(Utils.format("&d&l" + ChatColor.stripColor(Utils.format(rawName))));
+            } else {
+                meta.setDisplayName(Utils.format(rawName));
+            }
             List<String> lore = sec.getStringList("lore").stream()
-                    .map(this::color)
+                    .map(Utils::format)
                     .collect(Collectors.toList());
             meta.setLore(lore);
             stack.setItemMeta(meta);
@@ -140,7 +152,9 @@ public class GUIManager {
             }
             inv.setItem(entry.getKey(), stack);
         }
+        addStandardItems(player, inv);
         player.openInventory(inv);
+        startBorderAnimation(player, inv);
     }
 
     public Map<Integer, MenuItem> getNavigationItems() {
@@ -169,8 +183,98 @@ public class GUIManager {
         return null;
     }
 
-    private String color(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text);
+    private void addStandardItems(Player player, Inventory inv) {
+        int base = inv.getSize() - 9;
+
+        ItemStack back = new ItemStack(Material.BARRIER);
+        ItemMeta backMeta = back.getItemMeta();
+        if (backMeta != null) {
+            backMeta.setDisplayName(Utils.format("&c&lRetour"));
+            backMeta.setLore(List.of(Utils.format("&7Ferme le menu actuel.")));
+            back.setItemMeta(backMeta);
+        }
+        inv.setItem(base, back);
+
+        ItemStack prev = new ItemStack(Material.ARROW);
+        ItemMeta prevMeta = prev.getItemMeta();
+        if (prevMeta != null) {
+            prevMeta.setDisplayName(Utils.format("&d&lPage précédente"));
+            prevMeta.setLore(List.of(Utils.format("&7Aller à la page précédente")));
+            prev.setItemMeta(prevMeta);
+        }
+        inv.setItem(base + 3, prev);
+
+        ItemStack info = new ItemStack(Material.PLAYER_HEAD);
+        ItemMeta infoMeta = info.getItemMeta();
+        if (infoMeta != null) {
+            infoMeta.setDisplayName(Utils.format("&d&lProfil"));
+            long coins = plugin.getEconomyManager().getCoins(player.getUniqueId());
+            List<String> lore = List.of(
+                    Utils.format("&7Grade: &6" + player.getDisplayName()),
+                    Utils.format("&7Coins: &b" + coins)
+            );
+            infoMeta.setLore(lore);
+            info.setItemMeta(infoMeta);
+        }
+        inv.setItem(base + 4, info);
+
+        ItemStack next = new ItemStack(Material.ARROW);
+        ItemMeta nextMeta = next.getItemMeta();
+        if (nextMeta != null) {
+            nextMeta.setDisplayName(Utils.format("&d&lPage suivante"));
+            nextMeta.setLore(List.of(Utils.format("&7Aller à la page suivante")));
+            next.setItemMeta(nextMeta);
+        }
+        inv.setItem(base + 5, next);
     }
+
+    private void startBorderAnimation(Player player, Inventory inv) {
+        stopBorderAnimation(player);
+        BukkitTask task = new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (int slot = 0; slot < inv.getSize(); slot++) {
+                    if (!isBorderSlot(slot, inv.getSize())) {
+                        continue;
+                    }
+                    ItemStack item = inv.getItem(slot);
+                    if (item == null) {
+                        continue;
+                    }
+                    if (item.getType() == Material.MAGENTA_STAINED_GLASS_PANE) {
+                        inv.setItem(slot, createPane(Material.PURPLE_STAINED_GLASS_PANE));
+                    } else if (item.getType() == Material.PURPLE_STAINED_GLASS_PANE) {
+                        inv.setItem(slot, createPane(Material.MAGENTA_STAINED_GLASS_PANE));
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
+        borderTasks.put(player.getUniqueId(), task);
+    }
+
+    public void stopBorderAnimation(Player player) {
+        BukkitTask task = borderTasks.remove(player.getUniqueId());
+        if (task != null) {
+            task.cancel();
+        }
+    }
+
+    private boolean isBorderSlot(int slot, int size) {
+        int rows = size / 9;
+        int row = slot / 9;
+        int col = slot % 9;
+        return row == 0 || row == rows - 1 || col == 0 || col == 8;
+    }
+
+    private ItemStack createPane(Material mat) {
+        ItemStack pane = new ItemStack(mat);
+        ItemMeta meta = pane.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            pane.setItemMeta(meta);
+        }
+        return pane;
+    }
+
 }
 
