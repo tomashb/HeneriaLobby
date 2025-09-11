@@ -18,6 +18,7 @@ import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Bat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Leashable;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Rabbit;
@@ -824,7 +825,7 @@ public class CosmeticsManager implements Listener {
                         }
                         Location loc = player.getLocation().add(0, 2, 0);
                         sheep.teleport(loc);
-                        player.getWorld().spawnParticle(Particle.WATER_DROP, loc.clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
+                        player.getWorld().spawnParticle(Particle.DRIPPING_WATER, loc.clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
                     }
                 }.runTaskTimer(plugin, 0L, 10L);
                 petTasks.put(uuid, task);
@@ -914,14 +915,14 @@ public class CosmeticsManager implements Listener {
         });
         player.addPassenger(holder);
 
-        Entity balloon = player.getWorld().spawn(player.getLocation().add(0, 2, 0), EntityType.CHICKEN);
+        Entity balloon = player.getWorld().spawn(player.getLocation().add(0, 2, 0), EntityType.CHICKEN.getEntityClass());
         if (balloon instanceof Mob mob) {
             mob.setSilent(true);
             mob.setInvulnerable(true);
             mob.setPersistent(false);
             mob.getEquipment().setHelmet(new ItemStack(cosmetic.getMaterial()));
         }
-        balloon.setLeashHolder(holder);
+        ((Leashable) balloon).setLeashHolder(holder);
         balloons.put(uuid, balloon);
         balloonHolders.put(uuid, holder);
     }
