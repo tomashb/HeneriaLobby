@@ -831,6 +831,9 @@ public class CosmeticsManager implements Listener {
             if (speed != null) {
                 speed.setBaseValue(speed.getBaseValue() * petSpeedMultiplier);
             }
+            final boolean finalRainCloud = rainCloud;
+            final boolean finalSoul = soul;
+            final boolean finalFairy = fairy;
             BukkitTask task = new BukkitRunnable() {
                 @Override
                 public void run() {
@@ -839,13 +842,13 @@ public class CosmeticsManager implements Listener {
                         return;
                     }
                     mob.getPathfinder().moveTo(player);
-                    if (rainCloud) {
+                    if (finalRainCloud) {
                         player.getWorld().spawnParticle(Particle.DRIPPING_WATER,
                                 mob.getLocation().clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
-                    } else if (soul) {
+                    } else if (finalSoul) {
                         player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME,
                                 mob.getLocation(), 3, 0.2, 0.2, 0.2, 0);
-                    } else if (fairy) {
+                    } else if (finalFairy) {
                         player.getWorld().spawnParticle(Particle.END_ROD,
                                 mob.getLocation(), 1, 0, 0, 0, 0);
                     }

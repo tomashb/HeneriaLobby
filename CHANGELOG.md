@@ -1,5 +1,8 @@
 # Changelog
 
+### Version 1.3.3 - Patch Technique
+- Correction d'une erreur de compilation dans le CosmeticsManager liée à l'utilisation de variables non-finales dans les tâches d'animation.
+
 ### Version 1.3.3 - Améliorations des Ballons et Familiers
 - Correction d'un bug affichant toujours un poulet comme ballon quelle que soit la sélection.
 - Les familiers suivent désormais le joueur via leur IA native avec une vitesse configurable, sans téléportation.
