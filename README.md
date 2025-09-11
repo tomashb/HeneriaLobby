@@ -120,13 +120,57 @@ entité invisible qui le maintient en place.
 ### Familiers Animés
 
 Les familiers apparaissent en version miniature lorsqu'une variante bébé existe
-et possèdent désormais des animations uniques (vol en cercle, pluie, particules,
-etc.). Ils restent totalement inoffensifs.
+et suivent désormais naturellement le joueur grâce à leur IA interne. Leur
+vitesse de déplacement peut être augmentée via la configuration
+(`pets.speed-multiplier`) afin de suivre un joueur qui court. Ils restent
+totalement inoffensifs et continuent d'afficher leurs effets visuels (pluie,
+particules, etc.).
 
 ### Titres
 
 Lorsqu'un titre est équipé, il s'affiche au-dessus du pseudo du joueur sans
 masquer le nametag vanilla.
+
+### Liste des Cosmétiques Disponibles
+
+**Chapeaux**
+- Commun : Bibliothèque, Casque de Cristal
+- Rare : Chapeau Gâteau, Ruche d'Abeilles, Chapeau Explosif (TNT)
+- Épique : Chapeau de Mineur, Enclume, Tête d'Enderman
+- Légendaire : Tête de Dragon
+- Mythique : Balise Céleste
+
+**Particules**
+- Commune : Goutte à Goutte
+- Rare : Traînée de Cœurs, Notes de Musique
+- Épique : Aura Enflammée, Poussière du Néant, Aura Magique
+- Légendaire : Code Matrix, Vortex du Néant, Aura du Totem
+- Mythique : Tempête du Wither
+
+**Titres**
+- Commun : L'Artisan, L'Apprenti
+- Rare : Le Conquérant
+- Épique : Le Fantôme, Le Titan
+- Légendaire : La Légende
+- Mythique : L'Élu(e)
+
+**Familiers**
+- Rare : Renard Rusé
+- Épique : Golem de Fer miniature, Fée Tournoyante (animé)
+- Légendaire : Allay Bienveillant, Nuage de Pluie (animé)
+- Mythique : Âme en Peine (animé)
+
+**Ballons**
+- Rare : Ballon en Redstone
+- Épique : Ballon Géode d'Améthyste
+- Légendaire : Ballon Arc-en-ciel
+
+**Messages d'Arrivée**
+- Commun : Arrivée Classique
+- Rare : Atterrissage
+- Épique : Téléportation
+- Légendaire : Annonce Royale
+- Mythique : Faille Dimensionnelle
 
 ## Configuration des Activités
 

@@ -15,7 +15,6 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Ageable;
-import org.bukkit.entity.Bat;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -25,7 +24,6 @@ import org.bukkit.entity.Rabbit;
 import org.bukkit.entity.Sheep;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Vex;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -75,6 +73,8 @@ public class CosmeticsManager implements Listener {
     private final Map<UUID, Entity> balloons = new HashMap<>();
     private final Map<UUID, Entity> balloonHolders = new HashMap<>();
 
+    private final double petSpeedMultiplier;
+
     private static final String OWNED_KEY = "unlocked";
     private static final String OWNED_TITLE = ChatColor.GREEN + "" + ChatColor.BOLD + "Mes Cosmétiques";
 
@@ -84,6 +84,7 @@ public class CosmeticsManager implements Listener {
         this.economyManager = economyManager;
         this.databaseManager = databaseManager;
         loadConfig();
+        this.petSpeedMultiplier = plugin.getConfig().getDouble("pets.speed-multiplier", 1.5);
     }
 
     /**
@@ -781,102 +782,56 @@ public class CosmeticsManager implements Listener {
         unequipPet(player);
         String id = cosmetic.getId();
 
+        EntityType type;
+        boolean rainCloud = false;
+        boolean soul = false;
+        boolean fairy = false;
         switch (id) {
             case "pet_fairy" -> {
-                Bat bat = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Bat.class, b -> {
-                    b.setInvulnerable(true);
-                    b.setSilent(true);
-                    b.setPersistent(false);
-                    b.setAI(false);
-                });
-                BukkitTask task = new BukkitRunnable() {
-                    double angle = 0;
-
-                    @Override
-                    public void run() {
-                        if (!player.isOnline() || !bat.isValid()) {
-                            cancel();
-                            return;
-                        }
-                        angle += 0.3;
-                        Location loc = player.getLocation().add(Math.cos(angle) * 1.5, 1.2, Math.sin(angle) * 1.5);
-                        bat.teleport(loc);
-                    }
-                }.runTaskTimer(plugin, 0L, 1L);
-                petTasks.put(uuid, task);
-                pets.put(uuid, bat);
-                return;
+                type = EntityType.BAT;
+                fairy = true;
             }
             case "pet_rain_cloud" -> {
-                Sheep sheep = player.getWorld().spawn(player.getLocation().add(0, 2, 0), Sheep.class, s -> {
-                    s.setInvulnerable(true);
-                    s.setSilent(true);
-                    s.setPersistent(false);
-                    s.setAI(false);
-                    s.setCustomName("jeb_");
-                    s.setCustomNameVisible(false);
-                });
-                BukkitTask task = new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!player.isOnline() || !sheep.isValid()) {
-                            cancel();
-                            return;
-                        }
-                        Location loc = player.getLocation().add(0, 2, 0);
-                        sheep.teleport(loc);
-                        player.getWorld().spawnParticle(Particle.DRIPPING_WATER, loc.clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
-                    }
-                }.runTaskTimer(plugin, 0L, 10L);
-                petTasks.put(uuid, task);
-                pets.put(uuid, sheep);
-                return;
+                type = EntityType.SHEEP;
+                rainCloud = true;
             }
             case "pet_soul" -> {
-                Vex vex = player.getWorld().spawn(player.getLocation().add(0, 1, 0), Vex.class, v -> {
-                    v.setInvulnerable(true);
-                    v.setSilent(true);
-                    v.setPersistent(false);
-                    v.setAI(false);
-                });
-                BukkitTask task = new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        if (!player.isOnline() || !vex.isValid()) {
-                            cancel();
-                            return;
-                        }
-                        vex.teleport(player.getLocation().add(0, 1, 0));
-                        player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, vex.getLocation(), 3, 0.2, 0.2, 0.2, 0);
-                    }
-                }.runTaskTimer(plugin, 0L, 10L);
-                petTasks.put(uuid, task);
-                pets.put(uuid, vex);
-                return;
+                type = EntityType.VEX;
+                soul = true;
+            }
+            default -> {
+                String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
+                try {
+                    type = EntityType.valueOf(typeName);
+                } catch (IllegalArgumentException e) {
+                    return;
+                }
             }
         }
 
-        String typeName = id.substring(id.indexOf('_') + 1).toUpperCase(Locale.ROOT);
-        EntityType type;
-        try {
-            type = EntityType.valueOf(typeName);
-        } catch (IllegalArgumentException e) {
-            return;
-        }
         Entity entity = player.getWorld().spawnEntity(player.getLocation(), type);
         entity.setInvulnerable(true);
         entity.setSilent(true);
         entity.setPersistent(false);
+        if (entity instanceof Sheep sheep && rainCloud) {
+            sheep.setCustomName("jeb_");
+            sheep.setCustomNameVisible(false);
+        }
         if (entity instanceof Ageable ageable) {
             ageable.setBaby();
         }
+
         if (entity instanceof Mob mob) {
             var attack = mob.getAttribute(Attribute.GENERIC_ATTACK_DAMAGE);
             if (attack != null) {
                 attack.setBaseValue(0);
             }
             mob.setTarget(null);
-            BukkitTask follow = new BukkitRunnable() {
+            var speed = mob.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED);
+            if (speed != null) {
+                speed.setBaseValue(speed.getBaseValue() * petSpeedMultiplier);
+            }
+            BukkitTask task = new BukkitRunnable() {
                 @Override
                 public void run() {
                     if (!player.isOnline() || !mob.isValid()) {
@@ -884,9 +839,19 @@ public class CosmeticsManager implements Listener {
                         return;
                     }
                     mob.getPathfinder().moveTo(player);
+                    if (rainCloud) {
+                        player.getWorld().spawnParticle(Particle.DRIPPING_WATER,
+                                mob.getLocation().clone().add(0, -0.5, 0), 5, 0.3, 0, 0.3, 0);
+                    } else if (soul) {
+                        player.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME,
+                                mob.getLocation(), 3, 0.2, 0.2, 0.2, 0);
+                    } else if (fairy) {
+                        player.getWorld().spawnParticle(Particle.END_ROD,
+                                mob.getLocation(), 1, 0, 0, 0, 0);
+                    }
                 }
             }.runTaskTimer(plugin, 0L, 10L);
-            petTasks.put(uuid, follow);
+            petTasks.put(uuid, task);
         }
         pets.put(uuid, entity);
     }
@@ -916,13 +881,15 @@ public class CosmeticsManager implements Listener {
         player.addPassenger(holder);
 
         Entity balloon = player.getWorld().spawn(player.getLocation().add(0, 2, 0), EntityType.CHICKEN.getEntityClass());
-        if (balloon instanceof Mob mob) {
-            mob.setSilent(true);
-            mob.setInvulnerable(true);
-            mob.setPersistent(false);
-            mob.getEquipment().setHelmet(new ItemStack(cosmetic.getMaterial()));
+        if (balloon instanceof LivingEntity living) {
+            living.setSilent(true);
+            living.setInvulnerable(true);
+            living.setPersistent(false);
+            living.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false));
+            ItemStack itemStack = new ItemStack(cosmetic.getMaterial());
+            living.getEquipment().setHelmet(itemStack);
+            living.setLeashHolder(holder);
         }
-        ((LivingEntity) balloon).setLeashHolder(holder);
         balloons.put(uuid, balloon);
         balloonHolders.put(uuid, holder);
     }

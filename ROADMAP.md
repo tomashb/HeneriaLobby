@@ -8,6 +8,7 @@
    - [x] Sous-Menus et Logique (Terminé)
    - [ ] Gestes (Annulée)
    - [x] Ajout de Cosmétiques Animés et Ballons (Terminé)
+   - [x] Amélioration des Familiers (Terminé)
 - [x] Activités du Lobby (Terminé)
   - [x] Configuration en Jeu
 - [x] Corrections et Finitions des Cosmétiques
