@@ -1,5 +1,8 @@
 # Changelog
 
+### Version 1.3.2 - Patch Technique
+- Correction d'une erreur de compilation due à l'utilisation de l'ancienne interface `Leashable` supprimée dans l'API 1.21.
+
 ### Version 1.3.1 - Corrections de Compilation
 - Correction de plusieurs erreurs de compilation dans le CosmeticsManager liées à l'utilisation de l'API (Particules, Spawn d'entités, Leashes).
 
