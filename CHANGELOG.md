@@ -1,5 +1,10 @@
 # Changelog
 
+### Version 1.3.3 - Améliorations des Ballons et Familiers
+- Correction d'un bug affichant toujours un poulet comme ballon quelle que soit la sélection.
+- Les familiers suivent désormais le joueur via leur IA native avec une vitesse configurable, sans téléportation.
+- Documentation mise à jour avec la liste complète des cosmétiques disponibles.
+
 ### Version 1.3.2 - Patch Technique
 - Correction d'une erreur de compilation due à l'utilisation de l'ancienne interface `Leashable` supprimée dans l'API 1.21.
 

@@ -5,3 +5,6 @@ database:
   name: "s2_s2_lobby"
   user: "u2_4Dk3IV5sj2"
   password: "sodAFf^dGcR0TGTTuR.xgQaD"
+
+pets:
+  speed-multiplier: 1.5
