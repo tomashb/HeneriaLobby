@@ -1,25 +1,32 @@
 menus:
   games:
-    title: "&eSélecteur de Jeux"
+    title: "Sélecteur de Jeux"
     size: 27
     items:
       bedwars:
         material: RED_BED
         slot: 11
-        name: "&cBedwars"
+        name: "Bedwars"
         lore:
-          - "&7%players% joueurs en ligne"
+          - "&7Défendez votre lit..."
+          - " "
+          - "&8Joueurs: &b%bungee_bedwars%"
+          - " "
+          - "&a► Cliquez pour rejoindre"
         action: "connect_server:bedwars"
   profile:
-    title: "&aProfil"
+    title: "Profil"
     size: 27
     items:
       achievements:
         material: NETHER_STAR
         slot: 11
-        name: "&6Succès"
+        name: "Statistiques"
         lore:
-          - "&7Voir vos succès"
+          - "&7Consultez vos exploits..."
+          - " "
+          - "&bKills: &f%player_kills%"
+          - "&bVictoires: &f%player_wins%"
         action: "run_command:achievements"
       info:
         material: PLAYER_HEAD

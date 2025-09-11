@@ -2,6 +2,7 @@ package com.heneria.lobby.listeners;
 
 import com.heneria.lobby.menu.GUIManager;
 import com.heneria.lobby.menu.MenuItem;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -48,14 +49,16 @@ public class NavigationItemListener implements Listener {
         if (event.getItem() != null && guiManager.isNavigationItem(event.getItem())) {
             if (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK) {
                 event.setCancelled(true);
+                Player player = event.getPlayer();
                 MenuItem item = guiManager.getNavigationItem(event.getItem());
                 String action = item.getAction();
+                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
                 if (action.startsWith("open_menu:")) {
                     String name = action.split(":", 2)[1];
-                    guiManager.openMenu(event.getPlayer(), name);
+                    guiManager.openMenu(player, name);
                 } else if (action.startsWith("run_command:")) {
                     String cmd = action.split(":", 2)[1];
-                    event.getPlayer().performCommand(cmd);
+                    player.performCommand(cmd);
                 }
             }
         }
