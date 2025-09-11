@@ -159,4 +159,8 @@ public class HeneriaLobbyPlugin extends JavaPlugin {
     public CosmeticsManager getCosmeticsManager() {
         return cosmeticsManager;
     }
+
+    public LuckPerms getLuckPerms() {
+        return luckPerms;
+    }
 }

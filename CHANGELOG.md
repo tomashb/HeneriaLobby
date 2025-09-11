@@ -1,5 +1,8 @@
 # Changelog
 
+### Version 1.3.4 - Amélioration de l'Interface
+- Refonte complète du design du scoreboard pour correspondre à la nouvelle maquette officielle.
+
 ### Version 1.3.3 - Patch Technique
 - Correction d'une erreur de compilation dans le CosmeticsManager liée à l'utilisation de variables non-finales dans les tâches d'animation.
 
