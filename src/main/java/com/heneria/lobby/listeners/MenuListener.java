@@ -21,6 +21,10 @@ public class MenuListener implements Listener {
     private final GUIManager guiManager;
     private final HeneriaLobbyPlugin plugin;
 
+    private static final Sound CLICK_SOUND = Sound.UI_BUTTON_CLICK;
+    private static final Sound PURCHASE_SOUND = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
+    private static final Sound ERROR_SOUND = Sound.ENTITY_VILLAGER_NO;
+
     public MenuListener(HeneriaLobbyPlugin plugin, GUIManager guiManager) {
         this.plugin = plugin;
         this.guiManager = guiManager;
@@ -37,30 +41,47 @@ public class MenuListener implements Listener {
             return;
         }
         int slot = event.getRawSlot();
+        int base = event.getInventory().getSize() - 9;
+
+        if (slot == base && guiManager.isSubMenu(player)) {
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            guiManager.back(player);
+            return;
+        }
+        if (slot == base + 3) { // profile
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            guiManager.openMenu(player, "profile");
+            return;
+        }
+        if (slot == base + 4) { // coins - informational
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            return;
+        }
+        if (slot == base + 5) { // shop shortcut
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            guiManager.openMenu(player, "shop");
+            return;
+        }
+        if (slot == base + 7) { // networks
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            player.sendMessage("§9Discord: §fdiscord.gg/heneria");
+            player.sendMessage("§bSite: §fplay.heneria.net");
+            return;
+        }
+        if (slot == base + 8 && !guiManager.isSubMenu(player)) { // close
+            player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
+            guiManager.clearHistory(player);
+            player.closeInventory();
+            return;
+        }
+
         MenuItem item = menu.getItems().get(slot);
         if (item == null) {
-            int base = event.getInventory().getSize() - 9;
-            if (slot == base) {
-                player.closeInventory();
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                return;
-            } else if (slot == base + 3) {
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                // pagination logic would go here
-                return;
-            } else if (slot == base + 5) {
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                // pagination logic would go here
-                return;
-            } else if (slot == base + 4) {
-                player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
-                return;
-            }
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+            player.playSound(player.getLocation(), ERROR_SOUND, 1f, 1f);
             return;
         }
         String action = item.getAction();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1f, 1f);
+        player.playSound(player.getLocation(), CLICK_SOUND, 1f, 1f);
         if (action.startsWith("open_menu:")) {
             String name = action.split(":", 2)[1];
             if (name.equalsIgnoreCase("unlocked")) {
@@ -79,10 +100,8 @@ public class MenuListener implements Listener {
             out.writeUTF(server);
             player.closeInventory();
             player.sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
-        } else if (action.equalsIgnoreCase("close")) {
-            player.closeInventory();
         } else {
-            player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1f, 1f);
+            player.playSound(player.getLocation(), ERROR_SOUND, 1f, 1f);
         }
     }
 
@@ -90,6 +109,7 @@ public class MenuListener implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         if (event.getPlayer() instanceof Player player) {
             guiManager.stopBorderAnimation(player);
+            guiManager.clearHistory(player);
         }
     }
 }
