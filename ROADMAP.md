@@ -4,7 +4,7 @@
 - [x] Friends system
  - [x] Visual interface
   - [x] Refonte du Scoreboard (Terminée)
-  - [x] Refonte Visuelle Complète (Terminée)
+  - [x] Refonte Visuelle Complète (Terminée – charte Heneria finalisée et navigation corrigée)
  - [x] Navigation (Terminé)
  - [ ] Cosmetics system
    - [x] Sous-Menus et Logique (Terminé)

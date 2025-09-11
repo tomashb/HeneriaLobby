@@ -1,5 +1,11 @@
 # Changelog
 
+### Version 2.1.0 - Charte UI Définitive
+- Standardisation finale des menus avec bordure violette et barre de navigation.
+- Boutons de profil (48), coins (49) et boutique (50) ajoutés partout.
+- Ajout d'un bouton "Retour" (45) dans les sous-menus et "Fermer" (53) dans les
+  menus principaux pour corriger les problèmes de navigation.
+
 ### Version 2.0.0 - Refonte Complète des Menus
 - Adoption d'une charte graphique unifiée pour tous les menus (format 54 slots).
 - Ajout d'une barre de navigation globale : Fermer, Profil, Boutique, Réseaux Sociaux.

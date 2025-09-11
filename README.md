@@ -3,14 +3,21 @@
 Core lobby plugin for the Heneria network. It connects to a shared MySQL/MariaDB database
 and exposes a small API for other modules to access player information.
 
-## Heneria 2.0 – Menu Redesign
+## Heneria UI – Final Menu Design
 
-The user interface has been completely overhauled. All primary menus now use a
-unified 54-slot layout with a decorative header, a four-row content zone and a
-global navigation bar at the bottom. The navigation bar provides quick access to
-the profile, cosmetic shop and community links while keeping a consistent
-"Fermer" button on the far left. Example configurations are available in
-`menus.yml`.
+All interfaces follow the definitive "Heneria" charter:
+
+- 54 slots with a border of `PURPLE_STAINED_GLASS_PANE` and a content zone in the
+  middle.
+- The last row is a universal navigation bar – slot `48` opens the player's
+  profile, `49` shows the coin balance and `50` links to the cosmetic shop.
+- Main menus close with a barrier in slot `53` while sub-menus expose a return
+  arrow in slot `45` to fix the missing back-navigation bug.
+- Titles use `§5§l`; default item names use `§d` or rarity colours. Key values are
+  highlighted with `§6` (prices) and `§b` (stats), positive actions in `§a` and
+  negative actions in `§c`. Descriptions remain in `§7`.
+
+Example configurations are available in `menus.yml`.
 
 ## Building
 
