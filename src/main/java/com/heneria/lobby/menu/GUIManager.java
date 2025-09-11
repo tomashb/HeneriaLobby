@@ -4,6 +4,7 @@ import com.heneria.lobby.HeneriaLobbyPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -34,10 +36,13 @@ public class GUIManager {
     private final Map<String, Menu> menus = new HashMap<>();
     private final Map<UUID, BukkitTask> borderTasks = new HashMap<>();
     private final Map<UUID, java.util.Deque<String>> menuHistory = new HashMap<>();
+    private final Map<Integer, MenuItem> navigationItems = new HashMap<>();
+    private final NamespacedKey navKey;
 
     public GUIManager(HeneriaLobbyPlugin plugin, ServerInfoManager serverInfoManager) {
         this.plugin = plugin;
         this.serverInfoManager = serverInfoManager;
+        this.navKey = new NamespacedKey(plugin, "nav_action");
         loadConfig();
     }
 
@@ -72,6 +77,26 @@ public class GUIManager {
                 }
                 Menu menu = new Menu(key, title, size, items);
                 menus.put(key, menu);
+            }
+        }
+
+        navigationItems.clear();
+        plugin.saveResource("items.yml", false);
+        File itemsFile = new File(plugin.getDataFolder(), "items.yml");
+        FileConfiguration itemsConfig = YamlConfiguration.loadConfiguration(itemsFile);
+        ConfigurationSection navSec = itemsConfig.getConfigurationSection("items");
+        if (navSec != null) {
+            for (String key : navSec.getKeys(false)) {
+                ConfigurationSection itemSec = navSec.getConfigurationSection(key);
+                ItemStack stack = buildItem(itemSec);
+                String action = itemSec.getString("action", "");
+                ItemMeta meta = stack.getItemMeta();
+                if (meta != null) {
+                    meta.getPersistentDataContainer().set(navKey, PersistentDataType.STRING, action);
+                    stack.setItemMeta(meta);
+                }
+                int slot = itemSec.getInt("slot");
+                navigationItems.put(slot, new MenuItem(stack, action));
             }
         }
     }
@@ -111,8 +136,8 @@ public class GUIManager {
         Inventory inv = Bukkit.createInventory(null, menu.getSize(), menu.getTitle());
         for (Map.Entry<Integer, MenuItem> entry : menu.getItems().entrySet()) {
             MenuItem item = entry.getValue();
-            ItemStack stack = item.getItemStack().clone();
-            ItemMeta meta = stack.getItemMeta();
+            ItemStack itemStack = item.getItemStack().clone();
+            ItemMeta meta = itemStack.getItemMeta();
             String action = item.getAction();
             if (action.startsWith("connect_server:")) {
                 String server = action.split(":", 2)[1];
@@ -132,9 +157,9 @@ public class GUIManager {
                 meta.setLore(lore);
             }
             if (meta != null) {
-                stack.setItemMeta(meta);
+                itemStack.setItemMeta(meta);
             }
-            inv.setItem(entry.getKey(), stack);
+            inv.setItem(entry.getKey(), itemStack);
         }
         applyBorder(inv);
         addNavigationBar(player, inv);
@@ -295,6 +320,42 @@ public class GUIManager {
 
     public void clearHistory(Player player) {
         menuHistory.remove(player.getUniqueId());
+    }
+
+    public Map<Integer, MenuItem> getNavigationItems() {
+        return navigationItems;
+    }
+
+    public boolean isNavigationItem(ItemStack item) {
+        if (item == null) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.getPersistentDataContainer().has(navKey, PersistentDataType.STRING);
+    }
+
+    public MenuItem getNavigationItem(ItemStack item) {
+        if (!isNavigationItem(item)) {
+            return null;
+        }
+        ItemMeta meta = item.getItemMeta();
+        String action = meta.getPersistentDataContainer().get(navKey, PersistentDataType.STRING);
+        return new MenuItem(item, action);
+    }
+
+    public void executeNavigationAction(Player player, ItemStack item) {
+        MenuItem navItem = getNavigationItem(item);
+        if (navItem == null) {
+            return;
+        }
+        String action = navItem.getAction();
+        if (action.startsWith("open_menu:")) {
+            String name = action.split(":", 2)[1];
+            openMenu(player, name);
+        } else if (action.startsWith("run_command:")) {
+            String cmd = action.split(":", 2)[1];
+            player.performCommand(cmd);
+        }
     }
 
 }

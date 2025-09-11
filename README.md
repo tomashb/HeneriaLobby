@@ -3,6 +3,9 @@
 Core lobby plugin for the Heneria network. It connects to a shared MySQL/MariaDB database
 and exposes a small API for other modules to access player information.
 
+### Version 1.4.1 - Patch Technique
+- Correction de plusieurs erreurs de compilation liées à la gestion des menus et des items de navigation.
+
 ## Heneria UI – Final Menu Design
 
 All interfaces follow the definitive "Heneria" charter:

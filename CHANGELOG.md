@@ -11,6 +11,9 @@
 - Ajout d'une barre de navigation globale : Fermer, Profil, Boutique, Réseaux Sociaux.
 - Refonte du Sélecteur de Jeux et de la Boutique Cosmétique selon la nouvelle maquette.
 
+### Version 1.4.1 - Patch Technique
+- Correction de plusieurs erreurs de compilation liées à la gestion des menus et des items de navigation.
+
 ### Version 1.3.4 - Amélioration de l'Interface
 - Refonte complète du design du scoreboard pour correspondre à la nouvelle maquette officielle.
 
