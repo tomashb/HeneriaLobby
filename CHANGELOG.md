@@ -1,5 +1,10 @@
 # Changelog
 
+### Version 1.2.1 - Corrections Critiques des Cosmétiques
+- L'achat d'un cosmétique ne l'équipe plus automatiquement.
+- Correction majeure du bug où le titre masquait le pseudo du joueur.
+- Les familiers sont désormais miniatures, inoffensifs et leur suivi a été amélioré.
+
 ## 1.1.0 - Refonte du système de rareté et ajout massif de contenu cosmétique
 - Ajout de la rareté **Mythique** et configuration des couleurs/étoiles via `rarities.yml`.
 - Les cosmétiques affichent désormais leur rareté colorée et une ligne d'étoiles.

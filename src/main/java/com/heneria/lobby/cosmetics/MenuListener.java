@@ -42,7 +42,9 @@ public class MenuListener implements Listener {
             handleMenuAction(player, clicked);
             return;
         }
-        if (cosmeticsManager.isEquipped(player, cosmeticId)) {
+        if (!cosmeticsManager.isOwned(player, cosmeticId)) {
+            cosmeticsManager.purchaseCosmetic(player, cosmeticId);
+        } else if (cosmeticsManager.isEquipped(player, cosmeticId)) {
             cosmeticsManager.unequipCosmetic(player, cosmeticId);
             player.playSound(player.getLocation(), org.bukkit.Sound.BLOCK_NOTE_BLOCK_PLING, 1f, 1f);
         } else {
