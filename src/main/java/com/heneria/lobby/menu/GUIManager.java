@@ -32,8 +32,8 @@ public class GUIManager {
     private final ServerInfoManager serverInfoManager;
     private FileConfiguration config;
     private final Map<String, Menu> menus = new HashMap<>();
-    private final Map<Integer, MenuItem> navigationItems = new HashMap<>();
     private final Map<UUID, BukkitTask> borderTasks = new HashMap<>();
+    private final Map<UUID, java.util.Deque<String>> menuHistory = new HashMap<>();
 
     public GUIManager(HeneriaLobbyPlugin plugin, ServerInfoManager serverInfoManager) {
         this.plugin = plugin;
@@ -43,18 +43,16 @@ public class GUIManager {
 
     public void loadConfig() {
         plugin.saveResource("menus.yml", false);
-        plugin.saveResource("items.yml", false);
         File file = new File(plugin.getDataFolder(), "menus.yml");
         this.config = YamlConfiguration.loadConfiguration(file);
         menus.clear();
-        navigationItems.clear();
         ConfigurationSection menusSec = config.getConfigurationSection("menus");
         if (menusSec != null) {
             for (String key : menusSec.getKeys(false)) {
                 ConfigurationSection sec = menusSec.getConfigurationSection(key);
                 String rawTitle = sec.getString("title", key);
                 String title = Utils.format("&5&l" + ChatColor.stripColor(Utils.format(rawTitle)));
-                int size = sec.getInt("size", 27);
+                int size = 54;
                 Map<Integer, MenuItem> items = new HashMap<>();
                 ConfigurationSection itemsSec = sec.getConfigurationSection("items");
                 if (itemsSec != null) {
@@ -74,24 +72,6 @@ public class GUIManager {
                 }
                 Menu menu = new Menu(key, title, size, items);
                 menus.put(key, menu);
-            }
-        }
-        File itemsFile = new File(plugin.getDataFolder(), "items.yml");
-        FileConfiguration itemsConfig = YamlConfiguration.loadConfiguration(itemsFile);
-        ConfigurationSection navSec = itemsConfig.getConfigurationSection("items");
-        if (navSec != null) {
-            for (String key : navSec.getKeys(false)) {
-                ConfigurationSection itemSec = navSec.getConfigurationSection(key);
-                ItemStack stack = buildItem(itemSec);
-                String action = itemSec.getString("action", "");
-                if (itemSec.isList("slots")) {
-                    for (int slot : itemSec.getIntegerList("slots")) {
-                        navigationItems.put(slot, new MenuItem(stack, action));
-                    }
-                } else {
-                    int slot = itemSec.getInt("slot");
-                    navigationItems.put(slot, new MenuItem(stack, action));
-                }
             }
         }
     }
@@ -124,6 +104,10 @@ public class GUIManager {
         if (menu == null) {
             return;
         }
+        java.util.Deque<String> stack = menuHistory.computeIfAbsent(player.getUniqueId(), k -> new java.util.ArrayDeque<>());
+        if (stack.isEmpty() || !stack.peek().equals(menuName)) {
+            stack.push(menuName);
+        }
         Inventory inv = Bukkit.createInventory(null, menu.getSize(), menu.getTitle());
         for (Map.Entry<Integer, MenuItem> entry : menu.getItems().entrySet()) {
             MenuItem item = entry.getValue();
@@ -152,26 +136,10 @@ public class GUIManager {
             }
             inv.setItem(entry.getKey(), stack);
         }
-        addStandardItems(player, inv);
+        applyBorder(inv);
+        addNavigationBar(player, inv);
         player.openInventory(inv);
         startBorderAnimation(player, inv);
-    }
-
-    public Map<Integer, MenuItem> getNavigationItems() {
-        return navigationItems;
-    }
-
-    public MenuItem getNavigationItem(ItemStack stack) {
-        for (MenuItem item : navigationItems.values()) {
-            if (stack.isSimilar(item.getItemStack())) {
-                return item;
-            }
-        }
-        return null;
-    }
-
-    public boolean isNavigationItem(ItemStack stack) {
-        return getNavigationItem(stack) != null;
     }
 
     public Menu getMenuByTitle(String title) {
@@ -183,49 +151,74 @@ public class GUIManager {
         return null;
     }
 
-    private void addStandardItems(Player player, Inventory inv) {
+    private void addNavigationBar(Player player, Inventory inv) {
         int base = inv.getSize() - 9;
 
-        ItemStack back = new ItemStack(Material.BARRIER);
-        ItemMeta backMeta = back.getItemMeta();
-        if (backMeta != null) {
-            backMeta.setDisplayName(Utils.format("&c&lRetour"));
-            backMeta.setLore(List.of(Utils.format("&7Ferme le menu actuel.")));
-            back.setItemMeta(backMeta);
-        }
-        inv.setItem(base, back);
+        java.util.Deque<String> stack = menuHistory.get(player.getUniqueId());
+        boolean hasParent = stack != null && stack.size() > 1;
 
-        ItemStack prev = new ItemStack(Material.ARROW);
-        ItemMeta prevMeta = prev.getItemMeta();
-        if (prevMeta != null) {
-            prevMeta.setDisplayName(Utils.format("&d&lPage précédente"));
-            prevMeta.setLore(List.of(Utils.format("&7Aller à la page précédente")));
-            prev.setItemMeta(prevMeta);
+        if (hasParent) {
+            ItemStack back = new ItemStack(Material.PLAYER_HEAD);
+            ItemMeta backMeta = back.getItemMeta();
+            if (backMeta != null) {
+                backMeta.setDisplayName(Utils.format("&c&lRetour"));
+                backMeta.setLore(List.of(Utils.format("&7Revenir au menu précédent")));
+                back.setItemMeta(backMeta);
+            }
+            inv.setItem(base, back);
+        } else {
+            ItemStack close = new ItemStack(Material.BARRIER);
+            ItemMeta closeMeta = close.getItemMeta();
+            if (closeMeta != null) {
+                closeMeta.setDisplayName(Utils.format("&c&lFermer"));
+                closeMeta.setLore(List.of(Utils.format("&7Ferme le menu")));
+                close.setItemMeta(closeMeta);
+            }
+            inv.setItem(base + 8, close);
         }
-        inv.setItem(base + 3, prev);
 
-        ItemStack info = new ItemStack(Material.PLAYER_HEAD);
-        ItemMeta infoMeta = info.getItemMeta();
-        if (infoMeta != null) {
-            infoMeta.setDisplayName(Utils.format("&d&lProfil"));
-            long coins = plugin.getEconomyManager().getCoins(player.getUniqueId());
-            List<String> lore = List.of(
-                    Utils.format("&7Grade: &6" + player.getDisplayName()),
-                    Utils.format("&7Coins: &b" + coins)
-            );
-            infoMeta.setLore(lore);
-            info.setItemMeta(infoMeta);
+        ItemStack profile = new ItemStack(Material.PLAYER_HEAD);
+        ItemMeta profileMeta = profile.getItemMeta();
+        if (profileMeta != null) {
+            if (profileMeta instanceof org.bukkit.inventory.meta.SkullMeta skull) {
+                skull.setOwningPlayer(player);
+            }
+            profileMeta.setDisplayName(Utils.format("&aVotre Profil"));
+            profileMeta.setLore(List.of(
+                    Utils.format("&7Grade: &f%luckperms_prefix%"),
+                    Utils.format("&7Succès: &f%player_achievements%")));
+            profile.setItemMeta(profileMeta);
         }
-        inv.setItem(base + 4, info);
+        inv.setItem(base + 3, profile);
 
-        ItemStack next = new ItemStack(Material.ARROW);
-        ItemMeta nextMeta = next.getItemMeta();
-        if (nextMeta != null) {
-            nextMeta.setDisplayName(Utils.format("&d&lPage suivante"));
-            nextMeta.setLore(List.of(Utils.format("&7Aller à la page suivante")));
-            next.setItemMeta(nextMeta);
+        ItemStack coins = new ItemStack(Material.EMERALD);
+        ItemMeta coinsMeta = coins.getItemMeta();
+        if (coinsMeta != null) {
+            coinsMeta.setDisplayName(Utils.format("&6Coins"));
+            coinsMeta.setLore(List.of(Utils.format("&e%player_coins%")));
+            coins.setItemMeta(coinsMeta);
         }
-        inv.setItem(base + 5, next);
+        inv.setItem(base + 4, coins);
+
+        ItemStack shop = new ItemStack(Material.NETHER_STAR);
+        ItemMeta shopMeta = shop.getItemMeta();
+        if (shopMeta != null) {
+            shopMeta.setDisplayName(Utils.format("&dBoutique"));
+            shopMeta.setLore(List.of(Utils.format("&7Ouvre la boutique cosmétique")));
+            shop.setItemMeta(shopMeta);
+        }
+        inv.setItem(base + 5, shop);
+
+        ItemStack networks = new ItemStack(Material.WRITABLE_BOOK);
+        ItemMeta netMeta = networks.getItemMeta();
+        if (netMeta != null) {
+            netMeta.setDisplayName(Utils.format("&bRéseaux"));
+            netMeta.setLore(List.of(
+                    Utils.format("&9Discord: &fdiscord.gg/heneria"),
+                    Utils.format("&bSite: &fplay.heneria.net")));
+            networks.setItemMeta(netMeta);
+        }
+        inv.setItem(base + 7, networks);
     }
 
     private void startBorderAnimation(Player player, Inventory inv) {
@@ -274,6 +267,34 @@ public class GUIManager {
             pane.setItemMeta(meta);
         }
         return pane;
+    }
+
+    private void applyBorder(Inventory inv) {
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            if (isBorderSlot(slot, inv.getSize()) && inv.getItem(slot) == null) {
+                inv.setItem(slot, createPane(Material.MAGENTA_STAINED_GLASS_PANE));
+            }
+        }
+    }
+
+    public void back(Player player) {
+        java.util.Deque<String> stack = menuHistory.get(player.getUniqueId());
+        if (stack == null || stack.size() <= 1) {
+            player.closeInventory();
+            return;
+        }
+        stack.pop();
+        String previous = stack.peek();
+        openMenu(player, previous);
+    }
+
+    public boolean isSubMenu(Player player) {
+        java.util.Deque<String> stack = menuHistory.get(player.getUniqueId());
+        return stack != null && stack.size() > 1;
+    }
+
+    public void clearHistory(Player player) {
+        menuHistory.remove(player.getUniqueId());
     }
 
 }
