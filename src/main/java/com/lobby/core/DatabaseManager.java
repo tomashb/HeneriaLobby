@@ -9,9 +9,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Duration;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.logging.Level;
 
 public class DatabaseManager {
@@ -64,30 +62,38 @@ public class DatabaseManager {
     }
 
     private boolean setupMySql(final FileConfiguration config) {
-        final String host = Objects.requireNonNullElse(config.getString("database.host"), "localhost");
-        final String database = Objects.requireNonNullElse(config.getString("database.database"), "lobby");
-        final String username = Objects.requireNonNullElse(config.getString("database.username"), "root");
-        final String password = Objects.requireNonNullElse(config.getString("database.password"), "");
-        final int port = extractPort(host, 3306);
-        final String hostname = extractHost(host);
+        final String host = config.getString("database.host", "localhost");
+        final int port = config.getInt("database.port", 3306);
+        final String database = config.getString("database.database", "lobby");
+        final String username = config.getString("database.username", "root");
+        final String password = config.getString("database.password", "");
 
         try {
             final HikariConfig hikariConfig = new HikariConfig();
-            hikariConfig.setJdbcUrl("jdbc:mysql://" + hostname + ":" + port + "/" + database + "?useSSL=false&useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC");
+            hikariConfig.setJdbcUrl(String.format("jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=UTC&characterEncoding=utf8&allowPublicKeyRetrieval=true", host, port, database));
             hikariConfig.setUsername(username);
             hikariConfig.setPassword(password);
-            hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
-            hikariConfig.setMaximumPoolSize(10);
-            hikariConfig.setMinimumIdle(2);
-            hikariConfig.setConnectionTimeout(Duration.ofSeconds(10).toMillis());
-            hikariConfig.setMaxLifetime(Duration.ofMinutes(30).toMillis());
+            hikariConfig.setMaximumPoolSize(config.getInt("database.pool.maximum_size", 10));
+            hikariConfig.setMinimumIdle(config.getInt("database.pool.minimum_idle", 3));
+            hikariConfig.setConnectionTimeout(config.getLong("database.pool.connection_timeout", 30000L));
+            hikariConfig.setIdleTimeout(config.getLong("database.pool.idle_timeout", 600000L));
+            hikariConfig.setMaxLifetime(config.getLong("database.pool.max_lifetime", 1800000L));
             hikariConfig.setPoolName("LobbyCore-MySQL");
+            hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+            hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+            hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
 
             this.dataSource = new HikariDataSource(hikariConfig);
+
+            try (Connection connection = dataSource.getConnection()) {
+                plugin.getLogger().info("MySQL connection test successful");
+            }
+
             this.databaseType = DatabaseType.MYSQL;
             return true;
         } catch (final Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Unable to connect to MySQL database", exception);
+            plugin.getLogger().log(Level.WARNING, "MySQL connection failed: " + exception.getMessage(), exception);
             closeDataSource();
             return false;
         }
@@ -120,85 +126,23 @@ public class DatabaseManager {
     }
 
     private boolean createTables() {
-        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
-            statement.addBatch("CREATE TABLE IF NOT EXISTS players (" +
-                    "uuid VARCHAR(36) PRIMARY KEY, " +
-                    "username VARCHAR(16) NOT NULL, " +
-                    "coins BIGINT DEFAULT 1000, " +
-                    "tokens BIGINT DEFAULT 0, " +
-                    "first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                    "last_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                    "total_playtime BIGINT DEFAULT 0, " +
-                    "discord_id VARCHAR(20) NULL" +
-                    ")");
+        try {
+            plugin.getLogger().info("Creating/updating database tables...");
 
-            statement.addBatch("CREATE TABLE IF NOT EXISTS player_stats (" +
-                    "uuid VARCHAR(36) NOT NULL, " +
-                    "stat_key VARCHAR(64) NOT NULL, " +
-                    "stat_value BIGINT DEFAULT 0, " +
-                    "PRIMARY KEY (uuid, stat_key)" +
-                    ")");
+            createOrUpdatePlayersTable();
 
-            statement.addBatch("CREATE TABLE IF NOT EXISTS holograms (" +
-                    "id VARCHAR(64) PRIMARY KEY, " +
-                    "world VARCHAR(64) NOT NULL, " +
-                    "x DOUBLE NOT NULL, " +
-                    "y DOUBLE NOT NULL, " +
-                    "z DOUBLE NOT NULL, " +
-                    "lines TEXT NOT NULL" +
-                    ")");
+            executeSQL(getCreateStatsTableSQL());
+            executeSQL(getCreateHologramsTableSQL());
+            executeSQL(getCreateNPCsTableSQL());
+            executeSQL(getCreateShopTableSQL());
+            executeSQL(getCreateTransactionsTableSQL());
 
-            statement.addBatch("CREATE TABLE IF NOT EXISTS npcs (" +
-                    "id VARCHAR(64) PRIMARY KEY, " +
-                    "world VARCHAR(64) NOT NULL, " +
-                    "x DOUBLE NOT NULL, " +
-                    "y DOUBLE NOT NULL, " +
-                    "z DOUBLE NOT NULL, " +
-                    "skin TEXT NULL" +
-                    ")");
+            createTransactionIndexes();
 
-            statement.addBatch("CREATE TABLE IF NOT EXISTS shop_items (" +
-                    "id VARCHAR(64) PRIMARY KEY, " +
-                    "name VARCHAR(64) NOT NULL, " +
-                    "price BIGINT NOT NULL, " +
-                    "currency VARCHAR(16) NOT NULL, " +
-                    "category VARCHAR(64) NOT NULL" +
-                    ")");
-
-            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_players_coins_desc ON players(coins DESC)");
-            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_players_tokens_desc ON players(tokens DESC)");
-
-            final String transactionsTable;
-            if (databaseType == DatabaseType.MYSQL) {
-                transactionsTable = "CREATE TABLE IF NOT EXISTS transactions (" +
-                        "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
-                        "player_uuid VARCHAR(36) NOT NULL, " +
-                        "transaction_type VARCHAR(32) NOT NULL, " +
-                        "amount BIGINT NOT NULL, " +
-                        "balance_after BIGINT NOT NULL, " +
-                        "reason VARCHAR(255), " +
-                        "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                        "FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE" +
-                        ")";
-            } else {
-                transactionsTable = "CREATE TABLE IF NOT EXISTS transactions (" +
-                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                        "player_uuid VARCHAR(36) NOT NULL, " +
-                        "transaction_type TEXT NOT NULL, " +
-                        "amount BIGINT NOT NULL, " +
-                        "balance_after BIGINT NOT NULL, " +
-                        "reason TEXT, " +
-                        "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
-                        "FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE" +
-                        ")";
-            }
-            statement.addBatch(transactionsTable);
-            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_transactions_player_time ON transactions(player_uuid, timestamp)");
-
-            statement.executeBatch();
+            plugin.getLogger().info("All database tables created/updated successfully");
             return true;
-        } catch (final SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to create database tables", exception);
+        } catch (final Exception exception) {
+            plugin.getLogger().log(Level.SEVERE, "Error creating database tables: " + exception.getMessage(), exception);
             return false;
         }
     }
@@ -210,23 +154,166 @@ public class DatabaseManager {
         }
     }
 
-    private int extractPort(final String host, final int defaultPort) {
-        if (host.contains(":")) {
-            final String[] parts = host.split(":");
-            try {
-                return Integer.parseInt(parts[1]);
-            } catch (NumberFormatException ignored) {
-                return defaultPort;
-            }
+    private void executeSQL(final String sql) throws SQLException {
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
+            statement.execute(sql);
         }
-        return defaultPort;
     }
 
-    private String extractHost(final String host) {
-        if (host.contains(":")) {
-            return host.split(":")[0];
+    private void createOrUpdatePlayersTable() throws SQLException {
+        final String playersTableSql;
+        if (databaseType == DatabaseType.MYSQL) {
+            playersTableSql = """
+                    CREATE TABLE IF NOT EXISTS players (
+                        uuid VARCHAR(36) PRIMARY KEY,
+                        username VARCHAR(16) NOT NULL,
+                        coins BIGINT DEFAULT 1000,
+                        first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        total_playtime BIGINT DEFAULT 0
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+        } else {
+            playersTableSql = """
+                    CREATE TABLE IF NOT EXISTS players (
+                        uuid VARCHAR(36) PRIMARY KEY,
+                        username VARCHAR(16) NOT NULL,
+                        coins BIGINT DEFAULT 1000,
+                        first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        last_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        total_playtime BIGINT DEFAULT 0
+                    )
+                    """;
         }
-        return host;
+
+        executeSQL(playersTableSql);
+
+        addColumnIfMissing("players", "tokens", "BIGINT DEFAULT 0");
+        addColumnIfMissing("players", "discord_id", "VARCHAR(20) NULL");
+
+        createPlayerIndexes();
+    }
+
+    private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
+        final String alterSql = "ALTER TABLE " + table + " ADD COLUMN " + columnName + " " + definition;
+        try {
+            executeSQL(alterSql);
+            plugin.getLogger().info("Added '" + columnName + "' column to " + table + " table");
+        } catch (final SQLException exception) {
+            if (isDuplicateColumnError(exception)) {
+                plugin.getLogger().fine("Column '" + columnName + "' already exists in " + table + " table");
+            } else {
+                throw exception;
+            }
+        }
+    }
+
+    private boolean isDuplicateColumnError(final SQLException exception) {
+        final String message = exception.getMessage();
+        return message != null && message.toLowerCase(Locale.ROOT).contains("duplicate column name");
+    }
+
+    private void createPlayerIndexes() {
+        final String[] indexes = {
+                "CREATE INDEX IF NOT EXISTS idx_players_username ON players(username)",
+                "CREATE INDEX IF NOT EXISTS idx_players_coins_desc ON players(coins DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_players_tokens_desc ON players(tokens DESC)"
+        };
+
+        for (final String indexSql : indexes) {
+            try {
+                executeSQL(indexSql);
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.WARNING, "Failed to create player index: " + exception.getMessage(), exception);
+            }
+        }
+    }
+
+    private void createTransactionIndexes() {
+        try {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_transactions_player_time ON transactions(player_uuid, timestamp)");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Failed to create transactions index: " + exception.getMessage(), exception);
+        }
+    }
+
+    private String getCreateStatsTableSQL() {
+        return """
+                CREATE TABLE IF NOT EXISTS player_stats (
+                    uuid VARCHAR(36) NOT NULL,
+                    stat_key VARCHAR(64) NOT NULL,
+                    stat_value BIGINT DEFAULT 0,
+                    PRIMARY KEY (uuid, stat_key)
+                )
+                """;
+    }
+
+    private String getCreateHologramsTableSQL() {
+        return """
+                CREATE TABLE IF NOT EXISTS holograms (
+                    id VARCHAR(64) PRIMARY KEY,
+                    world VARCHAR(64) NOT NULL,
+                    x DOUBLE NOT NULL,
+                    y DOUBLE NOT NULL,
+                    z DOUBLE NOT NULL,
+                    lines TEXT NOT NULL
+                )
+                """;
+    }
+
+    private String getCreateNPCsTableSQL() {
+        return """
+                CREATE TABLE IF NOT EXISTS npcs (
+                    id VARCHAR(64) PRIMARY KEY,
+                    world VARCHAR(64) NOT NULL,
+                    x DOUBLE NOT NULL,
+                    y DOUBLE NOT NULL,
+                    z DOUBLE NOT NULL,
+                    skin TEXT NULL
+                )
+                """;
+    }
+
+    private String getCreateShopTableSQL() {
+        return """
+                CREATE TABLE IF NOT EXISTS shop_items (
+                    id VARCHAR(64) PRIMARY KEY,
+                    name VARCHAR(64) NOT NULL,
+                    price BIGINT NOT NULL,
+                    currency VARCHAR(16) NOT NULL,
+                    category VARCHAR(64) NOT NULL
+                )
+                """;
+    }
+
+    private String getCreateTransactionsTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS transactions (
+                        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        transaction_type VARCHAR(32) NOT NULL,
+                        amount BIGINT NOT NULL,
+                        balance_after BIGINT NOT NULL,
+                        reason VARCHAR(255),
+                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
+                    )
+                    """;
+        }
+
+        return """
+                CREATE TABLE IF NOT EXISTS transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    transaction_type TEXT NOT NULL,
+                    amount BIGINT NOT NULL,
+                    balance_after BIGINT NOT NULL,
+                    reason TEXT,
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
+                )
+                """;
     }
 
     public enum DatabaseType {
