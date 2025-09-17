@@ -238,50 +238,134 @@ public class DatabaseManager {
     }
 
     private String getCreateStatsTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS player_stats (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        server_name VARCHAR(50) NOT NULL,
+                        playtime BIGINT DEFAULT 0,
+                        kills INT DEFAULT 0,
+                        deaths INT DEFAULT 0,
+                        wins INT DEFAULT 0,
+                        INDEX idx_player_server (player_uuid, server_name)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
         return """
                 CREATE TABLE IF NOT EXISTS player_stats (
-                    uuid VARCHAR(36) NOT NULL,
-                    stat_key VARCHAR(64) NOT NULL,
-                    stat_value BIGINT DEFAULT 0,
-                    PRIMARY KEY (uuid, stat_key)
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_uuid TEXT NOT NULL,
+                    server_name TEXT NOT NULL,
+                    playtime INTEGER DEFAULT 0,
+                    kills INTEGER DEFAULT 0,
+                    deaths INTEGER DEFAULT 0,
+                    wins INTEGER DEFAULT 0
                 )
                 """;
     }
 
     private String getCreateHologramsTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS holograms (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(50) UNIQUE NOT NULL,
+                        world VARCHAR(50) NOT NULL,
+                        x DOUBLE NOT NULL,
+                        y DOUBLE NOT NULL,
+                        z DOUBLE NOT NULL,
+                        `lines` TEXT NOT NULL,
+                        visible BOOLEAN DEFAULT TRUE,
+                        INDEX idx_world (world),
+                        INDEX idx_visible (visible)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
         return """
                 CREATE TABLE IF NOT EXISTS holograms (
-                    id VARCHAR(64) PRIMARY KEY,
-                    world VARCHAR(64) NOT NULL,
-                    x DOUBLE NOT NULL,
-                    y DOUBLE NOT NULL,
-                    z DOUBLE NOT NULL,
-                    lines TEXT NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    world TEXT NOT NULL,
+                    x REAL NOT NULL,
+                    y REAL NOT NULL,
+                    z REAL NOT NULL,
+                    lines TEXT NOT NULL,
+                    visible INTEGER DEFAULT 1
                 )
                 """;
     }
 
     private String getCreateNPCsTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS npcs (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(50) UNIQUE NOT NULL,
+                        display_name VARCHAR(100),
+                        world VARCHAR(50) NOT NULL,
+                        x DOUBLE NOT NULL,
+                        y DOUBLE NOT NULL,
+                        z DOUBLE NOT NULL,
+                        yaw FLOAT DEFAULT 0,
+                        pitch FLOAT DEFAULT 0,
+                        head_texture TEXT,
+                        `actions` TEXT,
+                        visible BOOLEAN DEFAULT TRUE,
+                        INDEX idx_world (world),
+                        INDEX idx_visible (visible)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
         return """
                 CREATE TABLE IF NOT EXISTS npcs (
-                    id VARCHAR(64) PRIMARY KEY,
-                    world VARCHAR(64) NOT NULL,
-                    x DOUBLE NOT NULL,
-                    y DOUBLE NOT NULL,
-                    z DOUBLE NOT NULL,
-                    skin TEXT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    display_name TEXT,
+                    world TEXT NOT NULL,
+                    x REAL NOT NULL,
+                    y REAL NOT NULL,
+                    z REAL NOT NULL,
+                    yaw REAL DEFAULT 0,
+                    pitch REAL DEFAULT 0,
+                    head_texture TEXT,
+                    actions TEXT,
+                    visible INTEGER DEFAULT 1
                 )
                 """;
     }
 
     private String getCreateShopTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS shop_items (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        category VARCHAR(50) NOT NULL,
+                        item_name VARCHAR(100) NOT NULL,
+                        description TEXT,
+                        price_coins BIGINT DEFAULT 0,
+                        price_tokens BIGINT DEFAULT 0,
+                        commands TEXT,
+                        enabled BOOLEAN DEFAULT TRUE,
+                        INDEX idx_category (category),
+                        INDEX idx_enabled (enabled)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
         return """
                 CREATE TABLE IF NOT EXISTS shop_items (
-                    id VARCHAR(64) PRIMARY KEY,
-                    name VARCHAR(64) NOT NULL,
-                    price BIGINT NOT NULL,
-                    currency VARCHAR(16) NOT NULL,
-                    category VARCHAR(64) NOT NULL
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    category TEXT NOT NULL,
+                    item_name TEXT NOT NULL,
+                    description TEXT,
+                    price_coins INTEGER DEFAULT 0,
+                    price_tokens INTEGER DEFAULT 0,
+                    commands TEXT,
+                    enabled INTEGER DEFAULT 1
                 )
                 """;
     }
