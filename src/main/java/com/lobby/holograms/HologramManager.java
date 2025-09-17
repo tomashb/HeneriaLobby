@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 
 public class HologramManager implements Listener {
 
+    private static final String EMPTY_LINE_MARKER = "__EMPTY_LINE__";
+
     private final LobbyPlugin plugin;
     private final Map<String, Hologram> holograms = new ConcurrentHashMap<>();
     private final PlaceholderProcessor placeholderProcessor;
@@ -149,6 +151,10 @@ public class HologramManager implements Listener {
             throw new IllegalArgumentException("Hologram '" + name + "' not found");
         }
         final List<String> sanitized = new ArrayList<>(newLines == null ? List.of() : newLines);
+        for (int index = 0; index < sanitized.size(); index++) {
+            final String line = sanitized.get(index);
+            sanitized.set(index, line == null ? "" : line);
+        }
         final HologramData updatedData = hologram.getData().withLines(sanitized);
         try (Connection connection = plugin.getDatabaseManager().getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE holograms SET `lines` = ? WHERE name = ?")) {
@@ -162,6 +168,72 @@ public class HologramManager implements Listener {
             LogUtils.info(plugin, "Updated hologram lines: " + name);
         } catch (final SQLException exception) {
             throw new RuntimeException("Failed to update hologram: " + exception.getMessage(), exception);
+        }
+    }
+
+    public void setHologramLine(final String name, final int lineNumber, final String text) {
+        if (lineNumber < 0) {
+            throw new IllegalArgumentException("Line number must be non-negative");
+        }
+        final Hologram hologram = holograms.get(name);
+        if (hologram == null) {
+            throw new IllegalArgumentException("Hologram '" + name + "' not found");
+        }
+        final List<String> currentLines = new ArrayList<>(hologram.getData().lines());
+        while (currentLines.size() <= lineNumber) {
+            currentLines.add("");
+        }
+        currentLines.set(lineNumber, text == null ? "" : text);
+        trimTrailingEmptyLines(currentLines);
+        updateHologramLines(name, currentLines);
+    }
+
+    public void addHologramLine(final String name, final String text) {
+        final Hologram hologram = holograms.get(name);
+        if (hologram == null) {
+            throw new IllegalArgumentException("Hologram '" + name + "' not found");
+        }
+        final List<String> currentLines = new ArrayList<>(hologram.getData().lines());
+        currentLines.add(text == null ? "" : text);
+        updateHologramLines(name, currentLines);
+    }
+
+    public void insertHologramLine(final String name, final int lineNumber, final String text) {
+        if (lineNumber < 0) {
+            throw new IllegalArgumentException("Line number must be non-negative");
+        }
+        final Hologram hologram = holograms.get(name);
+        if (hologram == null) {
+            throw new IllegalArgumentException("Hologram '" + name + "' not found");
+        }
+        final List<String> currentLines = new ArrayList<>(hologram.getData().lines());
+        while (currentLines.size() < lineNumber) {
+            currentLines.add("");
+        }
+        currentLines.add(lineNumber, text == null ? "" : text);
+        updateHologramLines(name, currentLines);
+    }
+
+    public void removeHologramLine(final String name, final int lineNumber) {
+        final Hologram hologram = holograms.get(name);
+        if (hologram == null) {
+            throw new IllegalArgumentException("Hologram '" + name + "' not found");
+        }
+        final List<String> currentLines = new ArrayList<>(hologram.getData().lines());
+        if (lineNumber < 0 || lineNumber >= currentLines.size()) {
+            throw new IllegalArgumentException("Line number out of range");
+        }
+        currentLines.remove(lineNumber);
+        updateHologramLines(name, currentLines);
+    }
+
+    private void trimTrailingEmptyLines(final List<String> lines) {
+        while (!lines.isEmpty()) {
+            final String last = lines.get(lines.size() - 1);
+            if (last != null && !last.trim().isEmpty()) {
+                break;
+            }
+            lines.remove(lines.size() - 1);
         }
     }
 
@@ -313,7 +385,7 @@ public class HologramManager implements Listener {
         }
         final String trimmed = linesJson.trim();
         if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
-            return new ArrayList<>(List.of(trimmed));
+            return new ArrayList<>(List.of(replaceEmptyMarker(trimmed)));
         }
         final String content = trimmed.substring(1, trimmed.length() - 1);
         if (content.isBlank()) {
@@ -330,7 +402,7 @@ public class HologramManager implements Listener {
                 part = part.substring(0, part.length() - 1);
             }
             part = part.replace("\\\"", "\"").replace("\\\\", "\\");
-            lines.add(part);
+            lines.add(replaceEmptyMarker(part));
         }
         return lines;
     }
@@ -338,9 +410,18 @@ public class HologramManager implements Listener {
     private String linesToJson(final List<String> lines) {
         final List<String> sanitized = Optional.ofNullable(lines).orElse(List.of());
         return sanitized.stream()
+                .map(value -> value == null ? "" : value)
+                .map(value -> value.trim().isEmpty() ? EMPTY_LINE_MARKER : value)
                 .map(value -> value.replace("\\", "\\\\").replace("\"", "\\\""))
                 .map(value -> "\"" + value + "\"")
                 .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private String replaceEmptyMarker(final String value) {
+        if (value == null) {
+            return "";
+        }
+        return EMPTY_LINE_MARKER.equals(value) ? "" : value;
     }
 
     private HologramData.AnimationType parseAnimation(final String animation) {
