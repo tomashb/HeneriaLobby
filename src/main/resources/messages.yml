@@ -1,0 +1,5 @@
+prefix: "&8[&6Lobby&8] &7"
+no_permission: "&cVous n'avez pas la permission !"
+welcome_message:
+  - "&6Bienvenue %player_name% !"
+  - "&7Tapez /lobby pour le menu"
