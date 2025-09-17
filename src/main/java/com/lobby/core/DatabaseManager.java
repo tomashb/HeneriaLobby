@@ -165,6 +165,36 @@ public class DatabaseManager {
                     "category VARCHAR(64) NOT NULL" +
                     ")");
 
+            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_players_coins_desc ON players(coins DESC)");
+            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_players_tokens_desc ON players(tokens DESC)");
+
+            final String transactionsTable;
+            if (databaseType == DatabaseType.MYSQL) {
+                transactionsTable = "CREATE TABLE IF NOT EXISTS transactions (" +
+                        "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                        "player_uuid VARCHAR(36) NOT NULL, " +
+                        "transaction_type VARCHAR(32) NOT NULL, " +
+                        "amount BIGINT NOT NULL, " +
+                        "balance_after BIGINT NOT NULL, " +
+                        "reason VARCHAR(255), " +
+                        "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE" +
+                        ")";
+            } else {
+                transactionsTable = "CREATE TABLE IF NOT EXISTS transactions (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        "player_uuid VARCHAR(36) NOT NULL, " +
+                        "transaction_type TEXT NOT NULL, " +
+                        "amount BIGINT NOT NULL, " +
+                        "balance_after BIGINT NOT NULL, " +
+                        "reason TEXT, " +
+                        "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, " +
+                        "FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE" +
+                        ")";
+            }
+            statement.addBatch(transactionsTable);
+            statement.addBatch("CREATE INDEX IF NOT EXISTS idx_transactions_player_time ON transactions(player_uuid, timestamp)");
+
             statement.executeBatch();
             return true;
         } catch (final SQLException exception) {

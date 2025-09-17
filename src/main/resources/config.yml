@@ -8,6 +8,12 @@ database:
 economy:
   starting_coins: 1000
   starting_tokens: 0
+  max_coins: 999999999
+  max_tokens: 999999
+  save_interval_minutes: 5
+  allow_transfers: true
+  transfer_tax_percentage: 0.0
+  log_transactions: true
 
 holograms:
   update_interval_ticks: 20
