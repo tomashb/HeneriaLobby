@@ -7,6 +7,8 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Locale;
@@ -173,7 +175,6 @@ public class DatabaseManager {
                         username VARCHAR(16) NOT NULL,
                         coins BIGINT DEFAULT 1000,
                         first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         total_playtime BIGINT DEFAULT 0
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
@@ -184,16 +185,21 @@ public class DatabaseManager {
                         username VARCHAR(16) NOT NULL,
                         coins BIGINT DEFAULT 1000,
                         first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         total_playtime BIGINT DEFAULT 0
                     )
                     """;
         }
 
         executeSQL(playersTableSql);
+        plugin.getLogger().fine("Base players table created/verified");
 
-        addColumnIfMissing("players", "tokens", "BIGINT DEFAULT 0");
-        addColumnIfMissing("players", "discord_id", "VARCHAR(20) NULL");
+        addColumnIfNotExists("players", "tokens", "BIGINT DEFAULT 0");
+        final String lastJoinDefinition = databaseType == DatabaseType.MYSQL
+                ? "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+                : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+        addColumnIfNotExists("players", "last_join", lastJoinDefinition);
+        final String discordDefinition = databaseType == DatabaseType.MYSQL ? "VARCHAR(20) NULL" : "TEXT NULL";
+        addColumnIfNotExists("players", "discord_id", discordDefinition);
 
         createPlayerIndexes();
     }
@@ -212,16 +218,74 @@ public class DatabaseManager {
         }
     }
 
+    private void addColumnIfNotExists(final String tableName, final String columnName, final String columnDefinition) throws SQLException {
+        if (columnExists(tableName, columnName)) {
+            plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table");
+            return;
+        }
+
+        final String alterSql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition;
+        try {
+            executeSQL(alterSql);
+            plugin.getLogger().info("Added '" + columnName + "' column to " + tableName + " table");
+        } catch (final SQLException exception) {
+            if (isDuplicateColumnError(exception)) {
+                plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table");
+            } else {
+                throw exception;
+            }
+        }
+    }
+
+    private boolean columnExists(final String tableName, final String columnName) throws SQLException {
+        try (Connection connection = getConnection()) {
+            if (databaseType == DatabaseType.MYSQL) {
+                final String checkSql = """
+                        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = ?
+                          AND COLUMN_NAME = ?
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+                    statement.setString(1, tableName);
+                    statement.setString(2, columnName);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            return resultSet.getInt(1) > 0;
+                        }
+                    }
+                }
+            } else {
+                final String pragmaSql = "PRAGMA table_info(" + tableName + ")";
+                try (Statement statement = connection.createStatement();
+                     ResultSet resultSet = statement.executeQuery(pragmaSql)) {
+                    while (resultSet.next()) {
+                        final String existingColumn = resultSet.getString("name");
+                        if (existingColumn != null && existingColumn.equalsIgnoreCase(columnName)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     private boolean isDuplicateColumnError(final SQLException exception) {
         final String message = exception.getMessage();
-        return message != null && message.toLowerCase(Locale.ROOT).contains("duplicate column name");
+        if (message == null) {
+            return false;
+        }
+        final String lowerCaseMessage = message.toLowerCase(Locale.ROOT);
+        return lowerCaseMessage.contains("duplicate column name") || lowerCaseMessage.contains("already exists");
     }
 
     private void createPlayerIndexes() {
         final String[] indexes = {
                 "CREATE INDEX IF NOT EXISTS idx_players_username ON players(username)",
                 "CREATE INDEX IF NOT EXISTS idx_players_coins_desc ON players(coins DESC)",
-                "CREATE INDEX IF NOT EXISTS idx_players_tokens_desc ON players(tokens DESC)"
+                "CREATE INDEX IF NOT EXISTS idx_players_tokens_desc ON players(tokens DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_players_last_join ON players(last_join)"
         };
 
         for (final String indexSql : indexes) {
