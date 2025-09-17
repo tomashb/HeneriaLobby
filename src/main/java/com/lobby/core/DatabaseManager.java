@@ -133,6 +133,10 @@ public class DatabaseManager {
 
             executeSQL(getCreateStatsTableSQL());
             executeSQL(getCreateHologramsTableSQL());
+            final String animationDefinition = databaseType == DatabaseType.MYSQL
+                    ? "VARCHAR(32) DEFAULT 'NONE'"
+                    : "TEXT DEFAULT 'NONE'";
+            addColumnIfMissing("holograms", "animation", animationDefinition);
             executeSQL(getCreateNPCsTableSQL());
             executeSQL(getCreateShopTableSQL());
             executeSQL(getCreateTransactionsTableSQL());
@@ -278,6 +282,7 @@ public class DatabaseManager {
                         z DOUBLE NOT NULL,
                         `lines` TEXT NOT NULL,
                         visible BOOLEAN DEFAULT TRUE,
+                        animation VARCHAR(32) DEFAULT 'NONE',
                         INDEX idx_world (world),
                         INDEX idx_visible (visible)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -293,7 +298,8 @@ public class DatabaseManager {
                     y REAL NOT NULL,
                     z REAL NOT NULL,
                     lines TEXT NOT NULL,
-                    visible INTEGER DEFAULT 1
+                    visible INTEGER DEFAULT 1,
+                    animation TEXT DEFAULT 'NONE'
                 )
                 """;
     }

@@ -20,7 +20,7 @@ commands:
     permission: lobby.economy.use
   lobbyadmin:
     description: Commandes d'administration du lobby
-    permission: lobby.admin.economy
+    permission: lobby.admin
 permissions:
   lobby.use:
     default: true
@@ -33,4 +33,6 @@ permissions:
   lobby.economy.view:
     default: op
   lobby.admin.economy:
+    default: op
+  lobby.admin.hologram:
     default: op
