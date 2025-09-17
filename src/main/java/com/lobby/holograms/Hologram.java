@@ -47,9 +47,16 @@ public class Hologram {
             return;
         }
         for (int index = 0; index < armorStands.size(); index++) {
-            final String line = data.lines().get(data.lines().size() - 1 - index);
-            final String processed = manager.getPlaceholderProcessor().process(line, null);
-            armorStands.get(index).setCustomName(ChatColor.translateAlternateColorCodes('&', processed));
+            final ArmorStand armorStand = armorStands.get(index);
+            final String rawLine = data.lines().get(index);
+            if (rawLine == null || rawLine.trim().isEmpty()) {
+                armorStand.setCustomName("");
+                armorStand.setCustomNameVisible(false);
+                continue;
+            }
+            final String processed = manager.getPlaceholderProcessor().process(rawLine, null);
+            armorStand.setCustomName(ChatColor.translateAlternateColorCodes('&', processed));
+            armorStand.setCustomNameVisible(true);
         }
     }
 

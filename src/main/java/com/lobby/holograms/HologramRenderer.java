@@ -21,8 +21,9 @@ public class HologramRenderer {
         final Location baseLocation = new Location(world, data.x(), data.y(), data.z());
         final List<String> lines = data.lines();
         final List<ArmorStand> spawned = new ArrayList<>(lines.size());
-        for (int index = lines.size() - 1; index >= 0; index--) {
-            final Location location = baseLocation.clone().add(0.0D, index * LINE_HEIGHT, 0.0D);
+        for (int index = 0; index < lines.size(); index++) {
+            final double offset = (lines.size() - 1 - index) * LINE_HEIGHT;
+            final Location location = baseLocation.clone().add(0.0D, offset, 0.0D);
             final ArmorStand stand = world.spawn(location, ArmorStand.class, this::setupArmorStand);
             spawned.add(stand);
         }
@@ -36,7 +37,7 @@ public class HologramRenderer {
         armorStand.setVisible(false);
         armorStand.setGravity(false);
         armorStand.setCanPickupItems(false);
-        armorStand.setCustomNameVisible(true);
+        armorStand.setCustomNameVisible(false);
         armorStand.setMarker(true);
         armorStand.setInvulnerable(true);
         armorStand.setSilent(true);
