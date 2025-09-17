@@ -6,8 +6,31 @@ commands:
   lobby:
     description: Menu principal
     permission: lobby.use
+  coins:
+    description: Affiche votre solde de coins
+    permission: lobby.economy.use
+  tokens:
+    description: Affiche votre solde de tokens
+    permission: lobby.economy.use
+  pay:
+    description: Transfère des coins à un joueur
+    permission: lobby.economy.pay
+  top:
+    description: Classements des joueurs
+    permission: lobby.economy.use
+  lobbyadmin:
+    description: Commandes d'administration du lobby
+    permission: lobby.admin.economy
 permissions:
   lobby.use:
     default: true
   lobby.admin:
+    default: op
+  lobby.economy.use:
+    default: true
+  lobby.economy.pay:
+    default: true
+  lobby.economy.view:
+    default: op
+  lobby.admin.economy:
     default: op

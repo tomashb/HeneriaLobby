@@ -2,6 +2,7 @@ package com.lobby.events;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.core.PlayerDataManager;
+import com.lobby.economy.EconomyManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
@@ -16,16 +17,22 @@ public class PlayerJoinLeaveEvent implements Listener {
 
     private final LobbyPlugin plugin;
     private final PlayerDataManager playerDataManager;
+    private final EconomyManager economyManager;
 
-    public PlayerJoinLeaveEvent(final LobbyPlugin plugin, final PlayerDataManager playerDataManager) {
+    public PlayerJoinLeaveEvent(final LobbyPlugin plugin, final PlayerDataManager playerDataManager,
+                                final EconomyManager economyManager) {
         this.plugin = plugin;
         this.playerDataManager = playerDataManager;
+        this.economyManager = economyManager;
     }
 
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
         playerDataManager.handlePlayerJoin(player);
+        if (economyManager != null) {
+            economyManager.handlePlayerJoin(player.getUniqueId(), player.getName());
+        }
         sendWelcomeMessage(player);
     }
 
@@ -33,6 +40,9 @@ public class PlayerJoinLeaveEvent implements Listener {
     public void onPlayerQuit(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
         playerDataManager.handlePlayerQuit(player);
+        if (economyManager != null) {
+            economyManager.handlePlayerQuit(player.getUniqueId());
+        }
     }
 
     private void sendWelcomeMessage(final Player player) {
