@@ -1,9 +1,21 @@
+plugin:
+  debug: true
+  language: "fr_FR"
+
 database:
   type: "mysql"
-  host: "localhost"
-  database: "lobby"
-  username: "root"
-  password: ""
+  host: "172.19.0.1"
+  port: 3306
+  database: "s2_s2_lobby"
+  username: "u2_4Dk3IV5sj2"
+  password: "sodAFf^dGcR0TGTTuR.xgQaD"
+
+  pool:
+    maximum_size: 10
+    minimum_idle: 3
+    connection_timeout: 30000
+    idle_timeout: 600000
+    max_lifetime: 1800000
 
 economy:
   starting_coins: 1000
@@ -18,6 +30,10 @@ economy:
 holograms:
   update_interval_ticks: 20
   max_view_distance: 50
+
+npcs:
+  interaction_cooldown_ms: 1000
+  max_interaction_distance: 3.0
 
 discord:
   enabled: false
