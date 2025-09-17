@@ -3,6 +3,7 @@ package com.lobby.economy;
 import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.data.PlayerData;
+import com.lobby.economy.event.EconomyTransactionEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitTask;
@@ -247,6 +248,7 @@ public class EconomyManager implements EconomyAPI {
                 .map(uuid -> locks.computeIfAbsent(uuid, key -> new ReentrantLock()))
                 .toList();
         acquiredLocks.forEach(ReentrantLock::lock);
+        final List<EconomyTransactionEvent> events = new ArrayList<>(2);
         try {
             final PlayerData senderData = getPlayerData(from);
             if (senderData.coins() < amount) {
@@ -262,16 +264,22 @@ public class EconomyManager implements EconomyAPI {
             cache.put(from, senderData.withCoins(transferResult.senderBalanceAfter()));
             cache.put(to, receiverData.withCoins(transferResult.receiverBalanceAfter()));
             leaderboardManager.invalidate();
+            events.add(new EconomyTransactionEvent(from, CurrencyType.COINS, -amount,
+                    transferResult.senderBalanceAfter(), reason));
+            events.add(new EconomyTransactionEvent(to, CurrencyType.COINS, transferResult.transferredAmount(),
+                    transferResult.receiverBalanceAfter(), reason));
             return Optional.of(transferResult);
         } finally {
             for (int index = acquiredLocks.size() - 1; index >= 0; index--) {
                 acquiredLocks.get(index).unlock();
             }
+            events.forEach(event -> Bukkit.getPluginManager().callEvent(event));
         }
     }
 
     private void changeBalance(final UUID uuid, final CurrencyType currencyType, final long delta, final String reason) {
         final ReentrantLock lock = locks.computeIfAbsent(uuid, key -> new ReentrantLock());
+        EconomyTransactionEvent transactionEvent = null;
         lock.lock();
         try {
             final PlayerData data = getPlayerData(uuid);
@@ -289,8 +297,12 @@ public class EconomyManager implements EconomyAPI {
             final PlayerData updated = currencyType.isCoins() ? data.withCoins(newBalance) : data.withTokens(newBalance);
             cache.put(uuid, updated);
             leaderboardManager.invalidate();
+            transactionEvent = new EconomyTransactionEvent(uuid, currencyType, clampedDelta, newBalance, reason);
         } finally {
             lock.unlock();
+        }
+        if (transactionEvent != null) {
+            Bukkit.getPluginManager().callEvent(transactionEvent);
         }
     }
 

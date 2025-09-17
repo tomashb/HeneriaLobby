@@ -3,6 +3,7 @@ package com.lobby.commands;
 import com.lobby.LobbyPlugin;
 import com.lobby.data.PlayerData;
 import com.lobby.economy.EconomyManager;
+import com.lobby.holograms.HologramManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -13,6 +14,7 @@ import org.bukkit.entity.Player;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -23,25 +25,33 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
 
     private final LobbyPlugin plugin;
     private final EconomyManager economyManager;
+    private final HologramCommands hologramCommands;
 
-    public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager) {
+    public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager, final HologramManager hologramManager) {
         this.plugin = plugin;
         this.economyManager = economyManager;
+        this.hologramCommands = new HologramCommands(hologramManager);
     }
 
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        if (!sender.hasPermission("lobby.admin.economy")) {
-            MessageUtils.sendPrefixedMessage(sender, plugin.getConfigManager().getMessagesConfig().getString("no_permission"));
-            return true;
-        }
-
         if (args.length == 0) {
             MessageUtils.sendConfigMessage(sender, "economy.admin.usage", Collections.emptyMap());
             return true;
         }
 
         final String subCommand = args[0].toLowerCase(Locale.ROOT);
+        if (subCommand.equals("holo") || subCommand.equals("hologram")) {
+            final String[] hologramArgs = Arrays.copyOfRange(args, 1, args.length);
+            hologramCommands.handle(sender, hologramArgs);
+            return true;
+        }
+
+        if (!sender.hasPermission("lobby.admin.economy")) {
+            MessageUtils.sendPrefixedMessage(sender, plugin.getConfigManager().getMessagesConfig().getString("no_permission"));
+            return true;
+        }
+
         return switch (subCommand) {
             case "give" -> handleGive(sender, args);
             case "take" -> handleTake(sender, args);
@@ -55,8 +65,16 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
 
     @Override
     public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
+        if (args.length >= 1) {
+            final String first = args[0].toLowerCase(Locale.ROOT);
+            if (first.equals("holo") || first.equals("hologram")) {
+                final String[] hologramArgs = Arrays.copyOfRange(args, 1, args.length);
+                return hologramCommands.tabComplete(sender, hologramArgs);
+            }
+        }
+
         if (args.length == 1) {
-            final List<String> options = List.of("give", "take", "balance");
+            final List<String> options = List.of("give", "take", "balance", "holo", "hologram");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.stream().filter(option -> option.startsWith(prefix)).toList();
         }

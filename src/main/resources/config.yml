@@ -30,6 +30,8 @@ economy:
 holograms:
   update_interval_ticks: 20
   max_view_distance: 50
+  max_per_world: 100
+  animations_enabled: true
 
 npcs:
   interaction_cooldown_ms: 1000

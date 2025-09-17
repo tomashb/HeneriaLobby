@@ -1,0 +1,39 @@
+# Configuration des hologrammes par défaut
+default_holograms:
+  welcome:
+    world: "lobby"
+    x: 0.5
+    y: 100.0
+    z: 0.5
+    animation: "FLOAT"
+    lines:
+      - "&6&lBienvenue %player_name% !"
+      - "&eCoins: &a%player_coins%"
+      - "&bTokens: &d%player_tokens%"
+      - "&7Joueurs en ligne: &f%server_online%"
+
+  leaderboard_coins:
+    world: "lobby"
+    x: 10.5
+    y: 101.0
+    z: 5.5
+    animation: "NONE"
+    lines:
+      - "&6&lTOP COINS"
+      - "&e1. %top_coins_1%"
+      - "&e2. %top_coins_2%"
+      - "&e3. %top_coins_3%"
+      - "&e4. %top_coins_4%"
+      - "&e5. %top_coins_5%"
+
+  server_info:
+    world: "lobby"
+    x: -10.5
+    y: 101.0
+    z: 0.5
+    animation: "ROTATE"
+    lines:
+      - "&b&lINFOS SERVEUR"
+      - "&7Heure: &f%time%"
+      - "&7Date: &f%date%"
+      - "&7En ligne: &a%server_online%&7/&c%server_max%"

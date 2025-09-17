@@ -6,6 +6,7 @@ import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
+import com.lobby.holograms.HologramManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
 import com.lobby.utils.LogUtils;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -17,6 +18,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private ConfigManager configManager;
     private PlayerDataManager playerDataManager;
     private EconomyManager economyManager;
+    private HologramManager hologramManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -38,6 +40,8 @@ public final class LobbyPlugin extends JavaPlugin {
 
         playerDataManager = new PlayerDataManager(this, databaseManager);
         economyManager = new EconomyManager(this);
+        hologramManager = new HologramManager(this);
+        hologramManager.initialize();
 
         registerCommands();
 
@@ -48,6 +52,9 @@ public final class LobbyPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (hologramManager != null) {
+            hologramManager.shutdown();
+        }
         if (economyManager != null) {
             economyManager.shutdown();
         }
@@ -73,6 +80,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return economyManager;
     }
 
+    public HologramManager getHologramManager() {
+        return hologramManager;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -82,6 +93,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (economyManager != null) {
             economyManager.reload();
+        }
+        if (hologramManager != null) {
+            hologramManager.reload();
         }
     }
 
@@ -104,7 +118,7 @@ public final class LobbyPlugin extends JavaPlugin {
             getCommand("top").setTabCompleter(economyCommands);
         }
 
-        final AdminCommands adminCommands = new AdminCommands(this, economyManager);
+        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager);
         if (getCommand("lobbyadmin") != null) {
             getCommand("lobbyadmin").setExecutor(adminCommands);
             getCommand("lobbyadmin").setTabCompleter(adminCommands);
