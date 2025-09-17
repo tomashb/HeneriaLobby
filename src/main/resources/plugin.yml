@@ -1,0 +1,13 @@
+name: LobbyCore
+version: '${project.version}'
+main: com.lobby.LobbyPlugin
+api-version: '1.21'
+commands:
+  lobby:
+    description: Menu principal
+    permission: lobby.use
+permissions:
+  lobby.use:
+    default: true
+  lobby.admin:
+    default: op

@@ -1,0 +1,17 @@
+database:
+  type: "mysql"
+  host: "localhost"
+  database: "lobby"
+  username: "root"
+  password: ""
+
+economy:
+  starting_coins: 1000
+  starting_tokens: 0
+
+holograms:
+  update_interval_ticks: 20
+  max_view_distance: 50
+
+discord:
+  enabled: false
