@@ -1,220 +1,316 @@
 package com.lobby.commands;
 
-import com.lobby.data.NPCData;
+import com.lobby.LobbyPlugin;
 import com.lobby.npcs.NPC;
 import com.lobby.npcs.NPCManager;
 import com.lobby.utils.MessageUtils;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
-public class NPCCommands {
+public class NPCCommands implements CommandExecutor, TabCompleter {
 
+    private final LobbyPlugin plugin;
     private final NPCManager npcManager;
 
+    public NPCCommands(final LobbyPlugin plugin) {
+        this(plugin, plugin != null ? plugin.getNpcManager() : null);
+    }
+
     public NPCCommands(final NPCManager npcManager) {
+        this(LobbyPlugin.getInstance(), npcManager);
+    }
+
+    private NPCCommands(final LobbyPlugin plugin, final NPCManager npcManager) {
+        this.plugin = plugin;
         this.npcManager = npcManager;
     }
 
+    @Override
+    public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
+        if (!command.getName().equalsIgnoreCase("lobbyadmin")) {
+            return false;
+        }
+
+        if (npcManager == null) {
+            MessageUtils.sendPrefixedMessage(sender, "&cGestionnaire de PNJ indisponible.");
+            return true;
+        }
+
+        if (args.length < 1 || !args[0].equalsIgnoreCase("npc")) {
+            sendUsage(sender);
+            return true;
+        }
+
+        final String[] npcArgs = Arrays.copyOfRange(args, 1, args.length);
+        handleNpcCommand(sender, npcArgs);
+        return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
+        if (!command.getName().equalsIgnoreCase("lobbyadmin")) {
+            return Collections.emptyList();
+        }
+
+        if (args.length == 1) {
+            return filterSuggestions(List.of("npc"), args[0]);
+        }
+
+        if (args.length >= 2 && args[0].equalsIgnoreCase("npc")) {
+            final String[] npcArgs = Arrays.copyOfRange(args, 1, args.length);
+            return tabComplete(sender, npcArgs);
+        }
+
+        return Collections.emptyList();
+    }
+
     public boolean handle(final CommandSender sender, final String[] args) {
+        if (npcManager == null) {
+            MessageUtils.sendPrefixedMessage(sender, "&cGestionnaire de PNJ indisponible.");
+            return true;
+        }
+        return handleNpcCommand(sender, args);
+    }
+
+    public List<String> tabComplete(final CommandSender sender, final String[] args) {
+        if (args.length == 0) {
+            return Collections.emptyList();
+        }
+
+        if (args.length == 1) {
+            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction"), args[0]);
+        }
+
+        if (args.length == 2) {
+            final String subCommand = args[0].toLowerCase(Locale.ROOT);
+            if (subCommand.equals("delete") || subCommand.equals("info") || subCommand.equals("addaction")) {
+                return filterSuggestions(new ArrayList<>(npcManager.getNPCNames()), args[1]);
+            }
+        }
+
+        if (args.length == 3 && args[0].equalsIgnoreCase("addaction")) {
+            return filterSuggestions(List.of("[MESSAGE] ", "[SOUND] ", "[COMMAND] ", "[COINS_ADD] ", "[TOKENS_ADD] "), args[2]);
+        }
+
+        return Collections.emptyList();
+    }
+
+    private boolean handleNpcCommand(final CommandSender sender, final String[] args) {
         if (args.length == 0) {
             sendUsage(sender);
             return true;
         }
+
         final String subCommand = args[0].toLowerCase(Locale.ROOT);
-        final String[] remaining = Arrays.copyOfRange(args, 1, args.length);
-        return switch (subCommand) {
-            case "create" -> handleCreate(sender, remaining);
-            case "delete" -> handleDelete(sender, remaining);
+        final String[] parameters = Arrays.copyOfRange(args, 1, args.length);
+
+        switch (subCommand) {
+            case "create" -> handleCreate(sender, parameters);
+            case "delete" -> handleDelete(sender, parameters);
             case "list" -> handleList(sender);
-            case "addaction" -> handleAddAction(sender, remaining);
-            case "info" -> handleInfo(sender, remaining);
-            default -> {
-                sendUsage(sender);
-                yield true;
-            }
-        };
+            case "info" -> handleInfo(sender, parameters);
+            case "addaction" -> handleAddAction(sender, parameters);
+            default -> sendUsage(sender);
+        }
+        return true;
     }
 
-    public List<String> tabComplete(final CommandSender sender, final String[] args) {
-        if (args.length == 1) {
-            return filter(List.of("create", "delete", "list", "addaction", "info"), args[0]);
-        }
-        if (args.length == 2) {
-            final String sub = args[0].toLowerCase(Locale.ROOT);
-            if (sub.equals("delete") || sub.equals("addaction") || sub.equals("info")) {
-                return filter(new ArrayList<>(npcManager.getNPCNames()), args[1]);
-            }
-        }
-        if (args.length == 3 && args[0].equalsIgnoreCase("addaction")) {
-            return filter(List.of("[MESSAGE] ", "[SOUND] ", "[COMMAND] ", "[COINS_ADD] ", "[TOKENS_ADD] "), args[2]);
-        }
-        return List.of();
-    }
-
-    private boolean handleCreate(final CommandSender sender, final String[] args) {
+    private void handleCreate(final CommandSender sender, final String[] args) {
         if (!(sender instanceof Player player)) {
-            MessageUtils.sendConfigMessage(sender, "economy.player_only");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cSeuls les joueurs peuvent créer des PNJ !");
+            return;
         }
         if (!sender.hasPermission("lobby.admin.npc")) {
-            MessageUtils.sendConfigMessage(sender, "no_permission");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
         }
         if (args.length < 2) {
-            MessageUtils.sendConfigMessage(sender, "npc.usage_create");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /ladmin npc create <nom> <nom_affiché> [tête]");
+            return;
         }
+
         final String name = args[0];
         final String displayName = args[1];
         final String headTexture = args.length >= 3 ? args[2] : player.getName();
+
         final List<String> defaultActions = List.of(
                 "[MESSAGE] &eSalut %player_name% !",
                 "[SOUND] ENTITY_VILLAGER_YES"
         );
+
         try {
             npcManager.createNPC(name, displayName, player.getLocation(), headTexture, defaultActions);
-            MessageUtils.sendConfigMessage(sender, "npc.created", Map.of("name", name));
-        } catch (final IllegalStateException exception) {
-            MessageUtils.sendPrefixedMessage(sender, "&c" + exception.getMessage());
+            MessageUtils.sendPrefixedMessage(sender, "&aPNJ '&6" + name + "&a' créé avec succès !");
+            MessageUtils.sendPrefixedMessage(sender, "&7Position: " + formatLocation(player.getLocation()));
         } catch (final IllegalArgumentException exception) {
             MessageUtils.sendPrefixedMessage(sender, "&c" + exception.getMessage());
-        } catch (final RuntimeException exception) {
-            MessageUtils.sendPrefixedMessage(sender, "&cImpossible de créer le PNJ : " + exception.getMessage());
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cErreur lors de la création du PNJ !");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error creating NPC: " + exception.getMessage());
+            }
         }
-        return true;
     }
 
-    private boolean handleDelete(final CommandSender sender, final String[] args) {
+    private void handleDelete(final CommandSender sender, final String[] args) {
         if (!sender.hasPermission("lobby.admin.npc")) {
-            MessageUtils.sendConfigMessage(sender, "no_permission");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
         }
         if (args.length == 0) {
-            MessageUtils.sendConfigMessage(sender, "npc.usage_delete");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /ladmin npc delete <nom>");
+            return;
         }
+
         final String name = args[0];
-        if (npcManager.deleteNPC(name)) {
-            MessageUtils.sendConfigMessage(sender, "npc.deleted", Map.of("name", name));
-        } else {
-            MessageUtils.sendConfigMessage(sender, "npc.not_found", Map.of("name", name));
+
+        try {
+            final boolean deleted = npcManager.deleteNPC(name);
+            if (deleted) {
+                MessageUtils.sendPrefixedMessage(sender, "&aPNJ '&6" + name + "&a' supprimé avec succès !");
+            } else {
+                MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + name + "&c' introuvable !");
+            }
+        } catch (final IllegalArgumentException exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&c" + exception.getMessage());
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cErreur lors de la suppression du PNJ !");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error deleting NPC: " + exception.getMessage());
+            }
         }
-        return true;
     }
 
-    private boolean handleList(final CommandSender sender) {
+    private void handleList(final CommandSender sender) {
         if (!sender.hasPermission("lobby.admin.npc")) {
-            MessageUtils.sendConfigMessage(sender, "no_permission");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
         }
-        final Set<String> names = npcManager.getNPCNames();
+
+        final List<String> names = new ArrayList<>(npcManager.getNPCNames());
         if (names.isEmpty()) {
-            MessageUtils.sendConfigMessage(sender, "npc.none");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cAucun PNJ trouvé.");
+            return;
         }
-        MessageUtils.sendConfigMessage(sender, "npc.list_header", Map.of("count", String.valueOf(names.size())));
+
+        Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
+        MessageUtils.sendPrefixedMessage(sender, "&6&lListe des PNJ (&e" + names.size() + "&6)&7:");
         for (final String name : names) {
             final NPC npc = npcManager.getNPC(name);
             if (npc == null) {
                 continue;
             }
-            final NPCData data = npc.getData();
-            MessageUtils.sendConfigMessage(sender, "npc.list_entry", Map.of(
-                    "name", name,
-                    "world", data.world(),
-                    "x", format(data.x()),
-                    "y", format(data.y()),
-                    "z", format(data.z())
-            ));
+            final var data = npc.getData();
+            MessageUtils.sendPrefixedMessage(sender, "&e- &a" + name + " &7(" + data.world() + " "
+                    + String.format(Locale.ROOT, "%.1f,%.1f,%.1f", data.x(), data.y(), data.z()) + ")");
         }
-        return true;
     }
 
-    private boolean handleAddAction(final CommandSender sender, final String[] args) {
+    private void handleInfo(final CommandSender sender, final String[] args) {
         if (!sender.hasPermission("lobby.admin.npc")) {
-            MessageUtils.sendConfigMessage(sender, "no_permission");
-            return true;
-        }
-        if (args.length < 2) {
-            MessageUtils.sendConfigMessage(sender, "npc.usage_addaction");
-            return true;
-        }
-        final String name = args[0];
-        final NPC npc = npcManager.getNPC(name);
-        if (npc == null) {
-            MessageUtils.sendConfigMessage(sender, "npc.not_found", Map.of("name", name));
-            return true;
-        }
-        final String action = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-        final List<String> actions = new ArrayList<>(npc.getData().actions());
-        actions.add(action);
-        try {
-            npcManager.updateNPCActions(name, actions);
-            MessageUtils.sendConfigMessage(sender, "npc.action_added", Map.of("name", name));
-        } catch (final RuntimeException exception) {
-            MessageUtils.sendPrefixedMessage(sender, "&c" + exception.getMessage());
-        }
-        return true;
-    }
-
-    private boolean handleInfo(final CommandSender sender, final String[] args) {
-        if (!sender.hasPermission("lobby.admin.npc")) {
-            MessageUtils.sendConfigMessage(sender, "no_permission");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
         }
         if (args.length == 0) {
-            MessageUtils.sendConfigMessage(sender, "npc.usage_info");
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /ladmin npc info <nom>");
+            return;
         }
+
+        final NPC npc = npcManager.getNPC(args[0]);
+        if (npc == null) {
+            MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + args[0] + "&c' introuvable !");
+            return;
+        }
+
+        final var data = npc.getData();
+        MessageUtils.sendPrefixedMessage(sender, "&6&lInformations - " + data.name());
+        MessageUtils.sendPrefixedMessage(sender, "&eNom affiché: &f" + (data.displayName() != null ? data.displayName() : "Aucun"));
+        MessageUtils.sendPrefixedMessage(sender, "&eMonde: &f" + data.world());
+        MessageUtils.sendPrefixedMessage(sender, "&ePosition: &f" + String.format(Locale.ROOT,
+                "%.1f, %.1f, %.1f", data.x(), data.y(), data.z()));
+        MessageUtils.sendPrefixedMessage(sender, "&eTête: &f" + (data.headTexture() != null ? data.headTexture() : "Par défaut"));
+        MessageUtils.sendPrefixedMessage(sender, "&eActions (&6" + data.actions().size() + "&e) :");
+
+        final List<String> actions = data.actions();
+        for (int index = 0; index < actions.size(); index++) {
+            MessageUtils.sendPrefixedMessage(sender, "&a  " + (index + 1) + ". &f" + actions.get(index));
+        }
+    }
+
+    private void handleAddAction(final CommandSender sender, final String[] args) {
+        if (!sender.hasPermission("lobby.admin.npc")) {
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
+        }
+        if (args.length < 2) {
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /ladmin npc addaction <nom> <action>");
+            MessageUtils.sendPrefixedMessage(sender, "&7Exemples d'actions:");
+            MessageUtils.sendPrefixedMessage(sender, "&e  [MESSAGE] &aSalut %player_name% !");
+            MessageUtils.sendPrefixedMessage(sender, "&e  [COINS_ADD] 100");
+            MessageUtils.sendPrefixedMessage(sender, "&e  [SOUND] ENTITY_VILLAGER_YES");
+            return;
+        }
+
         final String name = args[0];
         final NPC npc = npcManager.getNPC(name);
         if (npc == null) {
-            MessageUtils.sendConfigMessage(sender, "npc.not_found", Map.of("name", name));
-            return true;
+            MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + name + "&c' introuvable !");
+            return;
         }
-        final NPCData data = npc.getData();
-        MessageUtils.sendConfigMessage(sender, "npc.info_header", Map.of("name", name));
-        MessageUtils.sendConfigMessage(sender, "npc.info_world", Map.of("world", data.world()));
-        MessageUtils.sendConfigMessage(sender, "npc.info_position", Map.of(
-                "x", format(data.x()),
-                "y", format(data.y()),
-                "z", format(data.z())
-        ));
-        final List<String> actions = data.actions();
-        MessageUtils.sendConfigMessage(sender, "npc.info_actions_header", Map.of("count", String.valueOf(actions.size())));
-        for (int index = 0; index < actions.size(); index++) {
-            final String action = actions.get(index);
-            MessageUtils.sendConfigMessage(sender, "npc.info_action_entry", Map.of(
-                    "index", String.valueOf(index + 1),
-                    "action", action
-            ));
+
+        final String action = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+        final List<String> currentActions = new ArrayList<>(npc.getData().actions());
+        currentActions.add(action);
+
+        try {
+            npcManager.updateNPCActions(name, currentActions);
+            MessageUtils.sendPrefixedMessage(sender, "&aAction ajoutée au PNJ '&6" + name + "&a' !");
+            MessageUtils.sendPrefixedMessage(sender, "&7Action: &f" + action);
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cErreur lors de l'ajout de l'action !");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error adding NPC action: " + exception.getMessage());
+            }
         }
-        return true;
     }
 
     private void sendUsage(final CommandSender sender) {
-        MessageUtils.sendConfigMessage(sender, "npc.usage");
+        MessageUtils.sendPrefixedMessage(sender, "&cCommande inconnue ! Utilisez:");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc create <nom> <nom_affiché> [tête]");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc delete <nom>");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc list");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc info <nom>");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc addaction <nom> <action>");
     }
 
-    private List<String> filter(final List<String> options, final String prefix) {
-        final String lower = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
-        final List<String> matches = new ArrayList<>();
+    private List<String> filterSuggestions(final List<String> options, final String prefix) {
+        if (options == null || options.isEmpty()) {
+            return Collections.emptyList();
+        }
+        final String effectivePrefix = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
+        final List<String> results = new ArrayList<>();
         for (final String option : options) {
-            if (option.toLowerCase(Locale.ROOT).startsWith(lower)) {
-                matches.add(option);
+            if (option == null) {
+                continue;
+            }
+            if (effectivePrefix.isEmpty() || option.toLowerCase(Locale.ROOT).startsWith(effectivePrefix)) {
+                results.add(option);
             }
         }
-        return matches;
+        return results;
     }
 
-    private String format(final double value) {
-        return String.format(Locale.ROOT, "%.2f", value);
+    private String formatLocation(final Location location) {
+        return String.format(Locale.ROOT, "%.1f, %.1f, %.1f", location.getX(), location.getY(), location.getZ());
     }
 }
