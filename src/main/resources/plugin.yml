@@ -22,6 +22,9 @@ commands:
     description: Commandes d'administration du lobby
     permission: lobby.admin
     aliases: [ladmin]
+  npc:
+    description: Gestion des PNJ
+    permission: lobby.admin.npc
 permissions:
   lobby.use:
     default: true

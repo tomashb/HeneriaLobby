@@ -12,6 +12,7 @@ public record NPCData(
         float yaw,
         float pitch,
         String headTexture,
+        String armorColor,
         List<String> actions,
         boolean visible
 ) {
@@ -21,6 +22,10 @@ public record NPCData(
     }
 
     public NPCData withActions(final List<String> newActions) {
-        return new NPCData(name, displayName, world, x, y, z, yaw, pitch, headTexture, newActions, visible);
+        return new NPCData(name, displayName, world, x, y, z, yaw, pitch, headTexture, armorColor, newActions, visible);
+    }
+
+    public NPCData withArmorColor(final String newColor) {
+        return new NPCData(name, displayName, world, x, y, z, yaw, pitch, headTexture, newColor, actions, visible);
     }
 }

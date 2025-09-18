@@ -4,8 +4,13 @@ import com.lobby.LobbyPlugin;
 import com.lobby.data.NPCData;
 import com.lobby.utils.LogUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.Connection;
@@ -21,8 +26,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 public class NPCManager {
+    private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("^#[0-9a-fA-F]{6}$");
     private final LobbyPlugin plugin;
     private final Map<String, NPC> npcs = new ConcurrentHashMap<>();
     private final Map<UUID, Map<String, Long>> cooldowns = new ConcurrentHashMap<>();
@@ -61,8 +69,14 @@ public class NPCManager {
             int loaded = 0;
             while (rs.next()) {
                 try {
+                    final String name = rs.getString("name");
+                    final String rawColor = rs.getString("armor_color");
+                    final String armorColor = normalizeArmorColor(rawColor);
+                    if (rawColor != null && armorColor == null) {
+                        LogUtils.warning(plugin, "Ignoring invalid armor color '" + rawColor + "' for NPC '" + name + "'");
+                    }
                     final NPCData data = new NPCData(
-                            rs.getString("name"),
+                            name,
                             rs.getString("display_name"),
                             rs.getString("world"),
                             rs.getDouble("x"),
@@ -71,6 +85,7 @@ public class NPCManager {
                             rs.getFloat("yaw"),
                             rs.getFloat("pitch"),
                             rs.getString("head_texture"),
+                            armorColor,
                             parseActions(rs.getString("actions")),
                             rs.getBoolean("visible")
                     );
@@ -103,13 +118,13 @@ public class NPCManager {
                 location.getWorld().getName(),
                 location.getX(), location.getY(), location.getZ(),
                 location.getYaw(), location.getPitch(),
-                headTexture, actions, true
+                headTexture, null, actions, true
         );
 
         try (Connection conn = plugin.getDatabaseManager().getConnection();
              PreparedStatement stmt = conn.prepareStatement("""
-                     INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, actions, visible)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, visible)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                      """)) {
 
             stmt.setString(1, name);
@@ -121,8 +136,9 @@ public class NPCManager {
             stmt.setFloat(7, location.getYaw());
             stmt.setFloat(8, location.getPitch());
             stmt.setString(9, headTexture);
-            stmt.setString(10, actionsToJson(actions));
-            stmt.setBoolean(11, true);
+            stmt.setString(10, data.armorColor());
+            stmt.setString(11, actionsToJson(actions));
+            stmt.setBoolean(12, true);
 
             final int result = stmt.executeUpdate();
             plugin.getLogger().fine("Insert result: " + result + " rows affected");
@@ -184,6 +200,34 @@ public class NPCManager {
         }
     }
 
+    public void updateNPCArmorColor(final String name, final String hexColor) {
+        final NPC npc = npcs.get(name);
+        if (npc == null) {
+            throw new IllegalArgumentException("NPC '" + name + "' not found");
+        }
+
+        final String normalized = normalizeArmorColor(hexColor);
+        if (normalized == null) {
+            throw new IllegalArgumentException("Invalid armor color: " + hexColor);
+        }
+
+        try (Connection conn = plugin.getDatabaseManager().getConnection();
+             PreparedStatement stmt = conn.prepareStatement("UPDATE npcs SET armor_color = ? WHERE name = ?")) {
+            stmt.setString(1, normalized);
+            stmt.setString(2, name);
+            stmt.executeUpdate();
+        } catch (final SQLException exception) {
+            throw new RuntimeException("Failed to update NPC color: " + exception.getMessage(), exception);
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand != null && !armorStand.isDead()) {
+            applyArmorColor(armorStand, normalized);
+        }
+
+        npc.setData(npc.getData().withArmorColor(normalized));
+    }
+
     private List<String> parseActions(String actionsJson) {
         if (actionsJson == null || actionsJson.trim().isEmpty()) {
             return new ArrayList<>();
@@ -212,6 +256,73 @@ public class NPCManager {
             return "[]";
         }
         return "[\"" + String.join("\",\"", actions) + "\"]";
+    }
+
+    public boolean isValidArmorColor(final String color) {
+        if (color == null) {
+            return false;
+        }
+
+        final String trimmed = color.trim();
+        if (!trimmed.startsWith("#")) {
+            return false;
+        }
+
+        return HEX_COLOR_PATTERN.matcher(trimmed).matches();
+    }
+
+    public boolean applyArmorColor(final ArmorStand armorStand, final String hexColor) {
+        if (armorStand == null) {
+            return false;
+        }
+
+        final String normalized = normalizeArmorColor(hexColor);
+        if (normalized == null) {
+            return false;
+        }
+
+        final var equipment = armorStand.getEquipment();
+        if (equipment == null) {
+            return false;
+        }
+
+        final ItemStack[] armorPieces = equipment.getArmorContents();
+        boolean applied = false;
+
+        try {
+            final java.awt.Color awtColor = java.awt.Color.decode(normalized);
+            final Color bukkitColor = Color.fromRGB(awtColor.getRed(), awtColor.getGreen(), awtColor.getBlue());
+
+            for (int index = 0; index < armorPieces.length; index++) {
+                final ItemStack piece = armorPieces[index];
+                if (piece == null || piece.getType() == Material.AIR) {
+                    continue;
+                }
+
+                if (!piece.getType().name().startsWith("LEATHER_")) {
+                    continue;
+                }
+
+                final var meta = piece.getItemMeta();
+                if (!(meta instanceof LeatherArmorMeta leatherMeta)) {
+                    continue;
+                }
+
+                leatherMeta.setColor(bukkitColor);
+                piece.setItemMeta(leatherMeta);
+                armorPieces[index] = piece;
+                applied = true;
+            }
+
+            if (applied) {
+                equipment.setArmorContents(armorPieces);
+            }
+        } catch (final NumberFormatException exception) {
+            LogUtils.warning(plugin, "Invalid armor color provided: " + hexColor);
+            return false;
+        }
+
+        return applied;
     }
 
     public boolean isOnCooldown(final UUID player, final String npcName) {
@@ -303,6 +414,27 @@ public class NPCManager {
         interactionCooldownMillis = Math.max(0L, config.getLong("npcs.interaction_cooldown_ms", 1000L));
         maxInteractionDistance = Math.max(0D, config.getDouble("npcs.max_interaction_distance", 3.0D));
         lookAtPlayer = config.getBoolean("npcs.look_at_player", false);
+    }
+
+    private String normalizeArmorColor(final String hexColor) {
+        if (hexColor == null) {
+            return null;
+        }
+
+        String trimmed = hexColor.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        if (!trimmed.startsWith("#")) {
+            trimmed = "#" + trimmed;
+        }
+
+        if (!HEX_COLOR_PATTERN.matcher(trimmed).matches()) {
+            return null;
+        }
+
+        return trimmed.toUpperCase(Locale.ROOT);
     }
 
     private String formatLocation(final Location location) {
