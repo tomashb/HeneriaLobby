@@ -21,6 +21,7 @@ commands:
   lobbyadmin:
     description: Commandes d'administration du lobby
     permission: lobby.admin
+    aliases: [ladmin]
 permissions:
   lobby.use:
     default: true
@@ -35,4 +36,6 @@ permissions:
   lobby.admin.economy:
     default: op
   lobby.admin.hologram:
+    default: op
+  lobby.admin.npc:
     default: op

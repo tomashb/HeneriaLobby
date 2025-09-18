@@ -4,6 +4,7 @@ import com.lobby.LobbyPlugin;
 import com.lobby.data.PlayerData;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
+import com.lobby.npcs.NPCManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -26,11 +27,14 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
     private final LobbyPlugin plugin;
     private final EconomyManager economyManager;
     private final HologramCommands hologramCommands;
+    private final NPCCommands npcCommands;
 
-    public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager, final HologramManager hologramManager) {
+    public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager,
+                         final HologramManager hologramManager, final NPCManager npcManager) {
         this.plugin = plugin;
         this.economyManager = economyManager;
         this.hologramCommands = new HologramCommands(hologramManager);
+        this.npcCommands = new NPCCommands(npcManager);
     }
 
     @Override
@@ -44,6 +48,12 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         if (subCommand.equals("holo") || subCommand.equals("hologram")) {
             final String[] hologramArgs = Arrays.copyOfRange(args, 1, args.length);
             hologramCommands.handle(sender, hologramArgs);
+            return true;
+        }
+
+        if (subCommand.equals("npc")) {
+            final String[] npcArgs = Arrays.copyOfRange(args, 1, args.length);
+            npcCommands.handle(sender, npcArgs);
             return true;
         }
 
@@ -74,7 +84,7 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         if (args.length == 1) {
-            final List<String> options = List.of("give", "take", "balance", "holo", "hologram");
+            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.stream().filter(option -> option.startsWith(prefix)).toList();
         }
@@ -83,12 +93,22 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
             return switch (args[0].toLowerCase(Locale.ROOT)) {
                 case "give", "take" -> List.of("coins", "tokens");
                 case "balance" -> completePlayerNames(args[1]);
+                case "npc" -> npcCommands.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
                 default -> Collections.emptyList();
             };
         }
 
-        if (args.length == 3 && (args[0].equalsIgnoreCase("give") || args[0].equalsIgnoreCase("take"))) {
-            return completePlayerNames(args[2]);
+        if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("npc")) {
+                return npcCommands.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
+            }
+            if (args[0].equalsIgnoreCase("give") || args[0].equalsIgnoreCase("take")) {
+                return completePlayerNames(args[2]);
+            }
+        }
+
+        if (args.length > 3 && args[0].equalsIgnoreCase("npc")) {
+            return npcCommands.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
         }
 
         if (args.length == 4 && (args[0].equalsIgnoreCase("give") || args[0].equalsIgnoreCase("take"))) {
