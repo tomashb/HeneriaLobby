@@ -30,6 +30,7 @@ public class NPC {
     private final NPCData data;
     private final NPCManager manager;
     private ArmorStand armorStand;
+    private ArmorStand nameArmorStand;
     private boolean spawned;
 
     public NPC(final NPCData data, final NPCManager manager) {
@@ -49,33 +50,19 @@ public class NPC {
         if (isSpawned()) {
             return;
         }
+
         final World world = Bukkit.getWorld(data.world());
         if (world == null) {
             LogUtils.warning(manager.getPlugin(), "World not found for NPC '" + data.name() + "': " + data.world());
             return;
         }
+
         final Location location = new Location(world, data.x(), data.y(), data.z(), data.yaw(), data.pitch());
-        armorStand = world.spawn(location, ArmorStand.class, stand -> {
-            stand.setVisible(false);
-            stand.setGravity(false);
-            stand.setCanPickupItems(false);
-            stand.setMarker(true);
-            stand.setInvulnerable(true);
-            stand.setPersistent(true);
-            stand.setRemoveWhenFarAway(false);
-            stand.setCollidable(false);
-            stand.setSilent(true);
-            stand.setBasePlate(false);
-            stand.setArms(false);
-            final String displayName = data.displayName() == null ? data.name() : data.displayName();
-            stand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(displayName));
-            stand.setCustomNameVisible(true);
-            final NamespacedKey key = manager.getNpcKey();
-            if (key != null) {
-                stand.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.name());
-            }
-        });
+        armorStand = world.spawn(location, ArmorStand.class);
+
+        setupArmorStand();
         setHeadTexture();
+        setDefaultEquipment();
         spawned = true;
     }
 
@@ -83,6 +70,10 @@ public class NPC {
         if (armorStand != null) {
             armorStand.remove();
             armorStand = null;
+        }
+        if (nameArmorStand != null) {
+            nameArmorStand.remove();
+            nameArmorStand = null;
         }
         spawned = false;
     }
@@ -133,6 +124,90 @@ public class NPC {
         final var equipment = armorStand.getEquipment();
         if (equipment != null) {
             equipment.setHelmet(head);
+        }
+    }
+
+    public ArmorStand getArmorStand() {
+        return armorStand;
+    }
+
+    private void setupArmorStand() {
+        if (armorStand == null) {
+            return;
+        }
+
+        armorStand.setVisible(true);
+        armorStand.setGravity(false);
+        armorStand.setCanPickupItems(false);
+        armorStand.setInvulnerable(true);
+        armorStand.setSilent(true);
+        armorStand.setBasePlate(true);
+        armorStand.setArms(true);
+        armorStand.setMarker(false);
+        armorStand.setSmall(false);
+        armorStand.setPersistent(true);
+        armorStand.setRemoveWhenFarAway(false);
+        armorStand.setCollidable(false);
+        final String customName = (data.displayName() == null || data.displayName().isEmpty())
+                ? data.name() : data.displayName();
+        armorStand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(customName));
+        armorStand.setCustomNameVisible(false);
+
+        final NamespacedKey key = manager.getNpcKey();
+        if (key != null) {
+            armorStand.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.name());
+        }
+
+        if (nameArmorStand != null) {
+            nameArmorStand.remove();
+            nameArmorStand = null;
+        }
+
+        final String displayName = data.displayName();
+        if (displayName != null && !displayName.isEmpty()) {
+            final Location nameLocation = armorStand.getLocation().clone().add(0, 0.5, 0);
+            nameArmorStand = armorStand.getWorld().spawn(nameLocation, ArmorStand.class);
+            nameArmorStand.setVisible(false);
+            nameArmorStand.setGravity(false);
+            nameArmorStand.setCanPickupItems(false);
+            nameArmorStand.setInvulnerable(true);
+            nameArmorStand.setSilent(true);
+            nameArmorStand.setBasePlate(false);
+            nameArmorStand.setArms(false);
+            nameArmorStand.setMarker(true);
+            nameArmorStand.setPersistent(true);
+            nameArmorStand.setRemoveWhenFarAway(false);
+            nameArmorStand.setCollidable(false);
+            nameArmorStand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(displayName));
+            nameArmorStand.setCustomNameVisible(true);
+
+            if (key != null) {
+                nameArmorStand.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.name());
+            }
+        }
+    }
+
+    private void setDefaultEquipment() {
+        if (armorStand == null) {
+            return;
+        }
+
+        final var equipment = armorStand.getEquipment();
+        if (equipment == null) {
+            return;
+        }
+
+        if (equipment.getChestplate() == null || equipment.getChestplate().getType() == Material.AIR) {
+            equipment.setChestplate(new ItemStack(Material.LEATHER_CHESTPLATE));
+        }
+        if (equipment.getLeggings() == null || equipment.getLeggings().getType() == Material.AIR) {
+            equipment.setLeggings(new ItemStack(Material.LEATHER_LEGGINGS));
+        }
+        if (equipment.getBoots() == null || equipment.getBoots().getType() == Material.AIR) {
+            equipment.setBoots(new ItemStack(Material.LEATHER_BOOTS));
+        }
+        if (equipment.getItemInMainHand() == null || equipment.getItemInMainHand().getType() == Material.AIR) {
+            equipment.setItemInMainHand(new ItemStack(Material.STICK));
         }
     }
 

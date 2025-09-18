@@ -5,11 +5,14 @@ import com.lobby.npcs.NPC;
 import com.lobby.npcs.NPCManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,12 +91,13 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction"), args[0]);
+            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction", "equip"), args[0]);
         }
 
         if (args.length == 2) {
             final String subCommand = args[0].toLowerCase(Locale.ROOT);
-            if (subCommand.equals("delete") || subCommand.equals("info") || subCommand.equals("addaction")) {
+            if (subCommand.equals("delete") || subCommand.equals("info") || subCommand.equals("addaction")
+                    || subCommand.equals("equip")) {
                 return filterSuggestions(new ArrayList<>(npcManager.getNPCNames()), args[1]);
             }
         }
@@ -120,6 +124,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
             case "list" -> handleList(sender);
             case "info" -> handleInfo(sender, parameters);
             case "addaction" -> handleAddAction(sender, parameters);
+            case "equip" -> handleEquip(sender, parameters);
             default -> sendUsage(sender);
         }
         return true;
@@ -280,6 +285,50 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         }
     }
 
+    private void handleEquip(final CommandSender sender, final String[] args) {
+        if (!(sender instanceof Player player)) {
+            MessageUtils.sendPrefixedMessage(sender, "&cSeuls les joueurs peuvent équiper des PNJ !");
+            return;
+        }
+        if (!sender.hasPermission("lobby.admin.npc")) {
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
+        }
+        if (args.length == 0) {
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /ladmin npc equip <nom>");
+            MessageUtils.sendPrefixedMessage(sender, "&7Tenez l'item à équiper dans votre main principale");
+            return;
+        }
+
+        final String name = args[0];
+        final NPC npc = npcManager.getNPC(name);
+        if (npc == null) {
+            MessageUtils.sendPrefixedMessage(player, "&cPNJ '&6" + name + "&c' introuvable !");
+            return;
+        }
+
+        final ItemStack itemInHand = player.getInventory().getItemInMainHand();
+        if (itemInHand.getType() == Material.AIR) {
+            MessageUtils.sendPrefixedMessage(player, "&cVous devez tenir un item dans votre main !");
+            return;
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand == null || armorStand.isDead()) {
+            MessageUtils.sendPrefixedMessage(player, "&cLe PNJ n'est pas disponible actuellement.");
+            return;
+        }
+
+        final var equipment = armorStand.getEquipment();
+        if (equipment == null) {
+            MessageUtils.sendPrefixedMessage(player, "&cImpossible d'équiper ce PNJ.");
+            return;
+        }
+
+        equipment.setItemInMainHand(itemInHand.clone());
+        MessageUtils.sendPrefixedMessage(player, "&aPNJ '&6" + name + "&a' équipé avec l'item !");
+    }
+
     private void sendUsage(final CommandSender sender) {
         MessageUtils.sendPrefixedMessage(sender, "&cCommande inconnue ! Utilisez:");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc create <nom> <nom_affiché> [tête]");
@@ -287,6 +336,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc list");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc info <nom>");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc addaction <nom> <action>");
+        MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc equip <nom>");
     }
 
     private List<String> filterSuggestions(final List<String> options, final String prefix) {
