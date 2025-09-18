@@ -5,6 +5,8 @@ import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
@@ -44,10 +46,10 @@ public class ActionProcessor {
         }
         if (startsWithIgnoreCase(trimmed, "[SOUND]")) {
             final String soundName = processed.substring(7).trim();
-            try {
-                final Sound sound = Sound.valueOf(soundName.toUpperCase(Locale.ROOT));
+            final Sound sound = resolveSound(soundName);
+            if (sound != null) {
                 player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-            } catch (final IllegalArgumentException exception) {
+            } else {
                 LogUtils.warning(plugin, "Unknown sound in NPC action: " + soundName);
             }
             return;
@@ -128,5 +130,57 @@ public class ActionProcessor {
 
     private boolean startsWithIgnoreCase(final String text, final String prefix) {
         return text.regionMatches(true, 0, prefix, 0, prefix.length());
+    }
+
+    private Sound resolveSound(final String soundName) {
+        if (soundName == null || soundName.isBlank()) {
+            return null;
+        }
+        final String trimmed = soundName.trim();
+        final String lower = trimmed.toLowerCase(Locale.ROOT);
+
+        final Sound namespacedMatch = lookupSound(lower);
+        if (namespacedMatch != null) {
+            return namespacedMatch;
+        }
+
+        if (lower.startsWith("minecraft:")) {
+            final Sound minecraftMatch = lookupSound(lower.substring("minecraft:".length()));
+            if (minecraftMatch != null) {
+                return minecraftMatch;
+            }
+        }
+
+        if (!lower.contains(".")) {
+            final String dotted = lower.replace('_', '.');
+            final Sound dottedMatch = lookupSound(dotted);
+            if (dottedMatch != null) {
+                return dottedMatch;
+            }
+        }
+
+        try {
+            return Sound.valueOf(trimmed.toUpperCase(Locale.ROOT));
+        } catch (final IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private Sound lookupSound(final String key) {
+        try {
+            final NamespacedKey directKey = NamespacedKey.fromString(key);
+            if (directKey != null) {
+                final Sound sound = Registry.SOUNDS.get(directKey);
+                if (sound != null) {
+                    return sound;
+                }
+            }
+            if (key.indexOf(':') >= 0) {
+                return null;
+            }
+            return Registry.SOUNDS.get(NamespacedKey.minecraft(key));
+        } catch (final IllegalArgumentException ignored) {
+            return null;
+        }
     }
 }
