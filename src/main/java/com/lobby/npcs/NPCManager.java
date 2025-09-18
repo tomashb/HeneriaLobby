@@ -32,7 +32,7 @@ public class NPCManager {
     private BukkitTask cleanupTask;
     private long interactionCooldownMillis = 1000L;
     private double maxInteractionDistance = 3.0D;
-    private boolean lookAtPlayer = true;
+    private boolean lookAtPlayer = false;
 
     public NPCManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -302,7 +302,7 @@ public class NPCManager {
         final var config = plugin.getConfig();
         interactionCooldownMillis = Math.max(0L, config.getLong("npcs.interaction_cooldown_ms", 1000L));
         maxInteractionDistance = Math.max(0D, config.getDouble("npcs.max_interaction_distance", 3.0D));
-        lookAtPlayer = config.getBoolean("npcs.look_at_player", true);
+        lookAtPlayer = config.getBoolean("npcs.look_at_player", false);
     }
 
     private String formatLocation(final Location location) {

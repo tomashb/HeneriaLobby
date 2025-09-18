@@ -30,7 +30,6 @@ public class NPC {
     private final NPCData data;
     private final NPCManager manager;
     private ArmorStand armorStand;
-    private ArmorStand nameArmorStand;
     private boolean spawned;
 
     public NPC(final NPCData data, final NPCManager manager) {
@@ -70,10 +69,6 @@ public class NPC {
         if (armorStand != null) {
             armorStand.remove();
             armorStand = null;
-        }
-        if (nameArmorStand != null) {
-            nameArmorStand.remove();
-            nameArmorStand = null;
         }
         spawned = false;
     }
@@ -141,49 +136,22 @@ public class NPC {
         armorStand.setCanPickupItems(false);
         armorStand.setInvulnerable(true);
         armorStand.setSilent(true);
-        armorStand.setBasePlate(true);
+        armorStand.setBasePlate(false);
         armorStand.setArms(true);
         armorStand.setMarker(false);
         armorStand.setSmall(false);
         armorStand.setPersistent(true);
         armorStand.setRemoveWhenFarAway(false);
         armorStand.setCollidable(false);
+        armorStand.setAI(false);
         final String customName = (data.displayName() == null || data.displayName().isEmpty())
                 ? data.name() : data.displayName();
         armorStand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(customName));
-        armorStand.setCustomNameVisible(false);
+        armorStand.setCustomNameVisible(true);
 
         final NamespacedKey key = manager.getNpcKey();
         if (key != null) {
             armorStand.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.name());
-        }
-
-        if (nameArmorStand != null) {
-            nameArmorStand.remove();
-            nameArmorStand = null;
-        }
-
-        final String displayName = data.displayName();
-        if (displayName != null && !displayName.isEmpty()) {
-            final Location nameLocation = armorStand.getLocation().clone().add(0, 0.5, 0);
-            nameArmorStand = armorStand.getWorld().spawn(nameLocation, ArmorStand.class);
-            nameArmorStand.setVisible(false);
-            nameArmorStand.setGravity(false);
-            nameArmorStand.setCanPickupItems(false);
-            nameArmorStand.setInvulnerable(true);
-            nameArmorStand.setSilent(true);
-            nameArmorStand.setBasePlate(false);
-            nameArmorStand.setArms(false);
-            nameArmorStand.setMarker(true);
-            nameArmorStand.setPersistent(true);
-            nameArmorStand.setRemoveWhenFarAway(false);
-            nameArmorStand.setCollidable(false);
-            nameArmorStand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(displayName));
-            nameArmorStand.setCustomNameVisible(true);
-
-            if (key != null) {
-                nameArmorStand.getPersistentDataContainer().set(key, PersistentDataType.STRING, data.name());
-            }
         }
     }
 

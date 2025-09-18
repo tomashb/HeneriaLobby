@@ -149,7 +149,6 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         final String headTexture = args.length >= 3 ? args[2] : player.getName();
 
         final List<String> defaultActions = List.of(
-                "[MESSAGE] &eSalut %player_name% !",
                 "[SOUND] ENTITY_VILLAGER_YES"
         );
 
