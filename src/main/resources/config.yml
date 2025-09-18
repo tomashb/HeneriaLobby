@@ -36,7 +36,7 @@ holograms:
 npcs:
   interaction_cooldown_ms: 1000
   max_interaction_distance: 3.0
-  look_at_player: true
+  look_at_player: false
   max_per_world: 50
 
 discord:
