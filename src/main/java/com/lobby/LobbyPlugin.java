@@ -1,7 +1,9 @@
 package com.lobby;
 
+import com.lobby.commands.AdminCommands;
 import com.lobby.commands.EconomyCommands;
 import com.lobby.commands.NPCCommands;
+import com.lobby.commands.PlayerCommands;
 import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
@@ -11,6 +13,9 @@ import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
 import com.lobby.utils.LogUtils;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class LobbyPlugin extends JavaPlugin {
@@ -116,32 +121,35 @@ public final class LobbyPlugin extends JavaPlugin {
     }
 
     private void registerCommands() {
+        final PlayerCommands playerCommands = new PlayerCommands();
+        registerCommand("lobby", playerCommands);
+        registerCommand("shop", playerCommands);
+        registerCommand("serveurs", playerCommands);
+        registerCommand("profil", playerCommands);
+        registerCommand("discord", playerCommands);
+
         final EconomyCommands economyCommands = new EconomyCommands(this, economyManager);
-        if (getCommand("coins") != null) {
-            getCommand("coins").setExecutor(economyCommands);
-            getCommand("coins").setTabCompleter(economyCommands);
-        }
-        if (getCommand("tokens") != null) {
-            getCommand("tokens").setExecutor(economyCommands);
-            getCommand("tokens").setTabCompleter(economyCommands);
-        }
-        if (getCommand("pay") != null) {
-            getCommand("pay").setExecutor(economyCommands);
-            getCommand("pay").setTabCompleter(economyCommands);
-        }
-        if (getCommand("top") != null) {
-            getCommand("top").setExecutor(economyCommands);
-            getCommand("top").setTabCompleter(economyCommands);
-        }
+        registerCommand("coins", economyCommands);
+        registerCommand("tokens", economyCommands);
+        registerCommand("pay", economyCommands);
+        registerCommand("top", economyCommands);
+
+        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager);
+        registerCommand("lobbyadmin", adminCommands);
 
         final NPCCommands npcCommands = new NPCCommands(this);
-        if (getCommand("lobbyadmin") != null) {
-            getCommand("lobbyadmin").setExecutor(npcCommands);
-            getCommand("lobbyadmin").setTabCompleter(npcCommands);
+        registerCommand("npc", npcCommands);
+    }
+
+    private void registerCommand(final String name, final CommandExecutor executor) {
+        final PluginCommand command = getCommand(name);
+        if (command == null) {
+            LogUtils.warning(this, "Commande '" + name + "' introuvable dans plugin.yml.");
+            return;
         }
-        if (getCommand("npc") != null) {
-            getCommand("npc").setExecutor(npcCommands);
-            getCommand("npc").setTabCompleter(npcCommands);
+        command.setExecutor(executor);
+        if (executor instanceof TabCompleter tabCompleter) {
+            command.setTabCompleter(tabCompleter);
         }
     }
 }

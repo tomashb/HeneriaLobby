@@ -3,6 +3,14 @@ no_permission: "&cVous n'avez pas la permission !"
 welcome_message:
   - "&6Bienvenue %player_name% !"
   - "&7Tapez /lobby pour le menu"
+commands:
+  player_only: "&cSeuls les joueurs peuvent utiliser cette commande."
+  lobby_unavailable: "&cLe menu lobby n'est pas encore disponible."
+  shop_unavailable: "&cLa boutique n'est pas encore disponible."
+  servers_unavailable: "&cLe sélecteur de serveurs n'est pas encore disponible."
+  profile_unavailable: "&cLe profil joueur n'est pas encore disponible."
+  discord_unavailable: "&cLa liaison Discord n'est pas encore disponible."
+  unavailable: "&cLa commande {command} n'est pas encore disponible."
 economy:
   player_only: "&cSeuls les joueurs peuvent exécuter cette commande."
   player_not_found: "&cLe joueur &e{player} &cest introuvable."
