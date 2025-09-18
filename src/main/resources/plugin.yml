@@ -4,10 +4,12 @@ main: com.lobby.LobbyPlugin
 api-version: '1.21'
 commands:
   lobby:
-    description: Menu principal
+    description: Commande principale du lobby
+    aliases: [l, hub]
     permission: lobby.use
   coins:
     description: Affiche votre solde de coins
+    aliases: [money, balance]
     permission: lobby.economy.use
   tokens:
     description: Affiche votre solde de tokens
@@ -16,17 +18,34 @@ commands:
     description: Transfère des coins à un joueur
     permission: lobby.economy.pay
   top:
-    description: Classements des joueurs
+    description: Classement économique
     permission: lobby.economy.use
+  shop:
+    description: Ouvre la boutique du lobby
+    permission: lobby.shop.use
+  serveurs:
+    description: Ouvre le sélecteur de serveurs
+    aliases: [server]
+    permission: lobby.use
+  profil:
+    description: Affiche le profil du joueur
+    permission: lobby.use
+  discord:
+    description: Lie son compte Discord
+    permission: lobby.discord.link
   lobbyadmin:
     description: Commandes d'administration du lobby
-    permission: lobby.admin
     aliases: [ladmin]
+    permission: lobby.admin
   npc:
     description: Gestion des PNJ
     permission: lobby.admin.npc
 permissions:
   lobby.use:
+    default: true
+  lobby.shop.use:
+    default: true
+  lobby.discord.link:
     default: true
   lobby.admin:
     default: op
