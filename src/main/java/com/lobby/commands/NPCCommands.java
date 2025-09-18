@@ -40,7 +40,8 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(final CommandSender sender, final Command command, final String label, final String[] args) {
-        if (!command.getName().equalsIgnoreCase("lobbyadmin")) {
+        final String commandName = command.getName().toLowerCase(Locale.ROOT);
+        if (!commandName.equals("lobbyadmin") && !commandName.equals("npc")) {
             return false;
         }
 
@@ -49,11 +50,14 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
             return true;
         }
 
+        if (commandName.equals("npc")) {
+            return handleNpcCommand(sender, args);
+        }
+
         if (args.length < 1 || !args[0].equalsIgnoreCase("npc")) {
             sendUsage(sender);
             return true;
         }
-
         final String[] npcArgs = Arrays.copyOfRange(args, 1, args.length);
         handleNpcCommand(sender, npcArgs);
         return true;
@@ -61,8 +65,13 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
-        if (!command.getName().equalsIgnoreCase("lobbyadmin")) {
+        final String commandName = command.getName().toLowerCase(Locale.ROOT);
+        if (!commandName.equals("lobbyadmin") && !commandName.equals("npc")) {
             return Collections.emptyList();
+        }
+
+        if (commandName.equals("npc")) {
+            return tabComplete(sender, args);
         }
 
         if (args.length == 1) {
@@ -91,19 +100,23 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction", "equip"), args[0]);
+            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction", "equip", "setcolor"), args[0]);
         }
 
         if (args.length == 2) {
             final String subCommand = args[0].toLowerCase(Locale.ROOT);
             if (subCommand.equals("delete") || subCommand.equals("info") || subCommand.equals("addaction")
-                    || subCommand.equals("equip")) {
+                    || subCommand.equals("equip") || subCommand.equals("setcolor")) {
                 return filterSuggestions(new ArrayList<>(npcManager.getNPCNames()), args[1]);
             }
         }
 
         if (args.length == 3 && args[0].equalsIgnoreCase("addaction")) {
             return filterSuggestions(List.of("[MESSAGE] ", "[SOUND] ", "[COMMAND] ", "[COINS_ADD] ", "[TOKENS_ADD] "), args[2]);
+        }
+
+        if (args.length == 3 && args[0].equalsIgnoreCase("setcolor")) {
+            return filterSuggestions(List.of("#FF0000", "#00FF00", "#0000FF"), args[2]);
         }
 
         return Collections.emptyList();
@@ -125,6 +138,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
             case "info" -> handleInfo(sender, parameters);
             case "addaction" -> handleAddAction(sender, parameters);
             case "equip" -> handleEquip(sender, parameters);
+            case "setcolor" -> handleSetColor(sender, parameters);
             default -> sendUsage(sender);
         }
         return true;
@@ -328,6 +342,44 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         MessageUtils.sendPrefixedMessage(player, "&aPNJ '&6" + name + "&a' équipé avec l'item !");
     }
 
+    private void handleSetColor(final CommandSender sender, final String[] args) {
+        if (!sender.hasPermission("lobby.admin.npc")) {
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
+        }
+
+        if (args.length != 2) {
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /npc setcolor <nom> <#RRGGBB>");
+            return;
+        }
+
+        final String name = args[0];
+        final String hexColor = args[1];
+
+        if (!npcManager.isValidArmorColor(hexColor)) {
+            MessageUtils.sendPrefixedMessage(sender, "&cFormat de couleur invalide (ex: #RRGGBB)");
+            return;
+        }
+
+        final NPC npc = npcManager.getNPC(name);
+        if (npc == null) {
+            MessageUtils.sendPrefixedMessage(sender, "&cPNJ introuvable");
+            return;
+        }
+
+        try {
+            npcManager.updateNPCArmorColor(name, hexColor);
+            MessageUtils.sendPrefixedMessage(sender, "&aCouleur du PNJ '&6" + name + "&a' mise à jour !");
+        } catch (final IllegalArgumentException exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cFormat de couleur invalide (ex: #RRGGBB)");
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cImpossible de mettre à jour la couleur de ce PNJ.");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error updating NPC color: " + exception.getMessage());
+            }
+        }
+    }
+
     private void sendUsage(final CommandSender sender) {
         MessageUtils.sendPrefixedMessage(sender, "&cCommande inconnue ! Utilisez:");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc create <nom> <nom_affiché> [tête]");
@@ -336,6 +388,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc info <nom>");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc addaction <nom> <action>");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc equip <nom>");
+        MessageUtils.sendPrefixedMessage(sender, "&e/npc setcolor <nom> <#RRGGBB>");
     }
 
     private List<String> filterSuggestions(final List<String> options, final String prefix) {

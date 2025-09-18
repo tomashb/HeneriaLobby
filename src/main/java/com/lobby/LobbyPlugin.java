@@ -139,5 +139,9 @@ public final class LobbyPlugin extends JavaPlugin {
             getCommand("lobbyadmin").setExecutor(npcCommands);
             getCommand("lobbyadmin").setTabCompleter(npcCommands);
         }
+        if (getCommand("npc") != null) {
+            getCommand("npc").setExecutor(npcCommands);
+            getCommand("npc").setTabCompleter(npcCommands);
+        }
     }
 }

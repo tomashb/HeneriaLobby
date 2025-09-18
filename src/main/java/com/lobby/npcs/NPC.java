@@ -22,23 +22,28 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class NPC {
 
-    private final NPCData data;
+    private NPCData data;
     private final NPCManager manager;
     private ArmorStand armorStand;
     private boolean spawned;
 
     public NPC(final NPCData data, final NPCManager manager) {
-        this.data = data;
+        this.data = Objects.requireNonNull(data, "data");
         this.manager = manager;
     }
 
     public NPCData getData() {
         return data;
+    }
+
+    public void setData(final NPCData data) {
+        this.data = Objects.requireNonNull(data, "data");
     }
 
     public boolean isSpawned() {
@@ -62,6 +67,7 @@ public class NPC {
         setupArmorStand();
         setHeadTexture();
         setDefaultEquipment();
+        applyArmorColor();
         spawned = true;
     }
 
@@ -177,6 +183,14 @@ public class NPC {
         if (equipment.getItemInMainHand() == null || equipment.getItemInMainHand().getType() == Material.AIR) {
             equipment.setItemInMainHand(new ItemStack(Material.STICK));
         }
+    }
+
+    private void applyArmorColor() {
+        if (armorStand == null) {
+            return;
+        }
+
+        manager.applyArmorColor(armorStand, data.armorColor());
     }
 
     private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");

@@ -225,6 +225,7 @@ public class DatabaseManager {
                         yaw REAL DEFAULT 0,
                         pitch REAL DEFAULT 0,
                         head_texture TEXT,
+                        armor_color TEXT,
                         actions TEXT,
                         visible INTEGER DEFAULT 1,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -233,6 +234,7 @@ public class DatabaseManager {
 
             executeSQL(sqliteCreate);
             plugin.getLogger().fine("Created npcs table for SQLite");
+            addColumnIfNotExists("npcs", "armor_color", "TEXT");
             createNPCIndexes();
             return;
         }
@@ -256,6 +258,7 @@ public class DatabaseManager {
                     yaw FLOAT DEFAULT 0,
                     pitch FLOAT DEFAULT 0,
                     head_texture TEXT,
+                    armor_color VARCHAR(7),
                     actions TEXT,
                     visible BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -267,6 +270,7 @@ public class DatabaseManager {
 
         executeSQL(createTable);
         LogUtils.info(plugin, "Created npcs table with proper AUTO_INCREMENT");
+        addColumnIfNotExists("npcs", "armor_color", "VARCHAR(7)");
     }
 
     private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
