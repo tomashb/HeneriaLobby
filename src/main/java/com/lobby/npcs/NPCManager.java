@@ -201,14 +201,22 @@ public class NPCManager {
         npcs.values().forEach(NPC::despawn);
         npcs.clear();
         try (Connection connection = plugin.getDatabaseManager().getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT * FROM npcs WHERE visible = ?")) {
-            statement.setBoolean(1, true);
+             PreparedStatement statement = connection.prepareStatement("SELECT * FROM npcs")) {
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     final String worldName = resultSet.getString("world");
                     final World world = Bukkit.getWorld(worldName);
                     if (world == null) {
                         LogUtils.warning(plugin, "Skipping NPC in unknown world '" + worldName + "'");
+                        continue;
+                    }
+                    boolean visible = true;
+                    try {
+                        visible = resultSet.getBoolean("visible");
+                    } catch (final SQLException exception) {
+                        plugin.getLogger().fine("Column 'visible' not found in npcs table, using default value");
+                    }
+                    if (!visible) {
                         continue;
                     }
                     final List<String> actions = parseActions(resultSet.getString("actions"));
@@ -223,7 +231,7 @@ public class NPCManager {
                             resultSet.getFloat("pitch"),
                             resultSet.getString("head_texture"),
                             actions,
-                            resultSet.getBoolean("visible")
+                            visible
                     );
                     try {
                         validateWorldLimit(worldName);
