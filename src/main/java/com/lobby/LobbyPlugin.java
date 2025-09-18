@@ -7,6 +7,8 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
+import com.lobby.npcs.NPCInteractionHandler;
+import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
 import com.lobby.utils.LogUtils;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -19,6 +21,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private PlayerDataManager playerDataManager;
     private EconomyManager economyManager;
     private HologramManager hologramManager;
+    private NPCManager npcManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -42,10 +45,13 @@ public final class LobbyPlugin extends JavaPlugin {
         economyManager = new EconomyManager(this);
         hologramManager = new HologramManager(this);
         hologramManager.initialize();
+        npcManager = new NPCManager(this);
+        npcManager.initialize();
 
         registerCommands();
 
         getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
+        getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
 
         LogUtils.info(this, "LobbyCore activé !");
     }
@@ -54,6 +60,9 @@ public final class LobbyPlugin extends JavaPlugin {
     public void onDisable() {
         if (hologramManager != null) {
             hologramManager.shutdown();
+        }
+        if (npcManager != null) {
+            npcManager.shutdown();
         }
         if (economyManager != null) {
             economyManager.shutdown();
@@ -84,6 +93,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return hologramManager;
     }
 
+    public NPCManager getNpcManager() {
+        return npcManager;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -96,6 +109,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (hologramManager != null) {
             hologramManager.reload();
+        }
+        if (npcManager != null) {
+            npcManager.reload();
         }
     }
 
@@ -118,7 +134,7 @@ public final class LobbyPlugin extends JavaPlugin {
             getCommand("top").setTabCompleter(economyCommands);
         }
 
-        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager);
+        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager);
         if (getCommand("lobbyadmin") != null) {
             getCommand("lobbyadmin").setExecutor(adminCommands);
             getCommand("lobbyadmin").setTabCompleter(adminCommands);
