@@ -96,3 +96,10 @@ npc:
   info_position: "&ePosition: &f{x}, {y}, {z}"
   info_actions_header: "&eActions (&6{count}&e) :"
   info_action_entry: "&7  {index}. &f{action}"
+lobby:
+  teleport_success: "&aTéléportation vers le lobby !"
+  teleport_failed: "&cLe point de spawn du lobby est introuvable."
+  spawn_not_set: "&cLe spawn du lobby n'est pas défini. Utilisez &e/lobbyadmin setlobby&c."
+  spawn_set: "&aSpawn du lobby défini sur &e{world} &7({x}, {y}, {z})"
+  bypass_enabled: "&aMode bypass du lobby activé."
+  bypass_disabled: "&cMode bypass du lobby désactivé."

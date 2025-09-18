@@ -12,6 +12,9 @@ import com.lobby.holograms.HologramManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
+import com.lobby.lobby.LobbyManager;
+import com.lobby.lobby.listeners.LobbyPlayerListener;
+import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.utils.LogUtils;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -27,6 +30,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private EconomyManager economyManager;
     private HologramManager hologramManager;
     private NPCManager npcManager;
+    private LobbyManager lobbyManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -52,10 +56,14 @@ public final class LobbyPlugin extends JavaPlugin {
         hologramManager.initialize();
         npcManager = new NPCManager(this);
         npcManager.initialize();
+        lobbyManager = new LobbyManager(this);
+        lobbyManager.applyWorldSettings();
 
         registerCommands();
 
         getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
+        getServer().getPluginManager().registerEvents(new LobbyPlayerListener(lobbyManager), this);
+        getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
 
         LogUtils.info(this, "LobbyCore activé !");
@@ -74,6 +82,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (databaseManager != null) {
             databaseManager.shutdown();
+        }
+        if (lobbyManager != null) {
+            lobbyManager.shutdown();
         }
         instance = null;
     }
@@ -102,6 +113,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return npcManager;
     }
 
+    public LobbyManager getLobbyManager() {
+        return lobbyManager;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -118,10 +133,13 @@ public final class LobbyPlugin extends JavaPlugin {
         if (npcManager != null) {
             npcManager.reload();
         }
+        if (lobbyManager != null) {
+            lobbyManager.reload();
+        }
     }
 
     private void registerCommands() {
-        final PlayerCommands playerCommands = new PlayerCommands();
+        final PlayerCommands playerCommands = new PlayerCommands(lobbyManager);
         registerCommand("lobby", playerCommands);
         registerCommand("shop", playerCommands);
         registerCommand("serveurs", playerCommands);
@@ -134,7 +152,7 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("pay", economyCommands);
         registerCommand("top", economyCommands);
 
-        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager);
+        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager, lobbyManager);
         registerCommand("lobbyadmin", adminCommands);
 
         final NPCCommands npcCommands = new NPCCommands(this);
