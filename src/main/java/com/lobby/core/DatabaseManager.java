@@ -167,39 +167,45 @@ public class DatabaseManager {
     }
 
     private void createOrUpdatePlayersTable() throws SQLException {
-        final String playersTableSql;
+        final String createTableSql;
         if (databaseType == DatabaseType.MYSQL) {
-            playersTableSql = """
+            createTableSql = """
                     CREATE TABLE IF NOT EXISTS players (
                         uuid VARCHAR(36) PRIMARY KEY,
-                        username VARCHAR(16) NOT NULL,
-                        coins BIGINT DEFAULT 1000,
-                        first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        total_playtime BIGINT DEFAULT 0
+                        username VARCHAR(16) NOT NULL
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
         } else {
-            playersTableSql = """
+            createTableSql = """
                     CREATE TABLE IF NOT EXISTS players (
                         uuid VARCHAR(36) PRIMARY KEY,
-                        username VARCHAR(16) NOT NULL,
-                        coins BIGINT DEFAULT 1000,
-                        first_join TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        total_playtime BIGINT DEFAULT 0
+                        username VARCHAR(16) NOT NULL
                     )
                     """;
         }
 
-        executeSQL(playersTableSql);
+        executeSQL(createTableSql);
         plugin.getLogger().fine("Base players table created/verified");
 
+        final boolean debugEnabled = plugin.getConfigManager() != null && plugin.getConfigManager().isDebugEnabled();
+        if (debugEnabled) {
+            debugTableStructure("players");
+        }
+
+        addColumnIfNotExists("players", "coins", "BIGINT DEFAULT 1000");
         addColumnIfNotExists("players", "tokens", "BIGINT DEFAULT 0");
+        addColumnIfNotExists("players", "first_join", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         final String lastJoinDefinition = databaseType == DatabaseType.MYSQL
                 ? "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
                 : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
         addColumnIfNotExists("players", "last_join", lastJoinDefinition);
+        addColumnIfNotExists("players", "total_playtime", "BIGINT DEFAULT 0");
         final String discordDefinition = databaseType == DatabaseType.MYSQL ? "VARCHAR(20) NULL" : "TEXT NULL";
         addColumnIfNotExists("players", "discord_id", discordDefinition);
+
+        if (debugEnabled) {
+            debugTableStructure("players");
+        }
 
         createPlayerIndexes();
     }
@@ -219,40 +225,88 @@ public class DatabaseManager {
     }
 
     private void addColumnIfNotExists(final String tableName, final String columnName, final String columnDefinition) throws SQLException {
-        if (columnExists(tableName, columnName)) {
-            plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table");
-            return;
-        }
-
-        final String alterSql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition;
         try {
-            executeSQL(alterSql);
-            plugin.getLogger().info("Added '" + columnName + "' column to " + tableName + " table");
-        } catch (final SQLException exception) {
-            if (isDuplicateColumnError(exception)) {
-                plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table");
-            } else {
-                throw exception;
+            plugin.getLogger().fine("Checking column: " + tableName + '.' + columnName);
+
+            boolean columnExists = false;
+            try (Connection connection = getConnection()) {
+                if (databaseType == DatabaseType.MYSQL) {
+                    final String checkSql = """
+                            SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                            WHERE TABLE_SCHEMA = DATABASE()
+                              AND TABLE_NAME = ?
+                              AND COLUMN_NAME = ?
+                            """;
+                    try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+                        statement.setString(1, tableName);
+                        statement.setString(2, columnName);
+                        try (ResultSet resultSet = statement.executeQuery()) {
+                            if (resultSet.next()) {
+                                columnExists = resultSet.getInt(1) > 0;
+                            }
+                        }
+                    }
+                } else {
+                    final String pragmaSql = "PRAGMA table_info(" + tableName + ")";
+                    try (Statement statement = connection.createStatement();
+                         ResultSet resultSet = statement.executeQuery(pragmaSql)) {
+                        while (resultSet.next()) {
+                            final String existingColumn = resultSet.getString("name");
+                            if (existingColumn != null && existingColumn.equalsIgnoreCase(columnName)) {
+                                columnExists = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } catch (final SQLException checkException) {
+                plugin.getLogger().log(Level.WARNING, "Could not check column existence for " + tableName + '.' + columnName
+                        + ": " + checkException.getMessage(), checkException);
             }
+
+            if (columnExists) {
+                plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table");
+                return;
+            }
+
+            final String alterSql = "ALTER TABLE " + tableName + " ADD COLUMN " + columnName + " " + columnDefinition;
+            try {
+                executeSQL(alterSql);
+                plugin.getLogger().info("Successfully added column '" + columnName + "' to table '" + tableName + "'");
+            } catch (final SQLException exception) {
+                final String message = exception.getMessage();
+                final String lowerCaseMessage = message == null ? "" : message.toLowerCase(Locale.ROOT);
+                if (lowerCaseMessage.contains("duplicate column")
+                        || lowerCaseMessage.contains("already exists")
+                        || lowerCaseMessage.contains(columnName.toLowerCase(Locale.ROOT))) {
+                    plugin.getLogger().fine("Column '" + columnName + "' already exists in " + tableName + " table (detected via ALTER error)");
+                } else {
+                    plugin.getLogger().log(Level.SEVERE,
+                            "Failed to add column '" + columnName + "' to '" + tableName + "': " + exception.getMessage(), exception);
+                    throw exception;
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Critical error managing column '" + columnName + "': " + exception.getMessage(), exception);
+            throw new RuntimeException("Database schema update failed", exception);
         }
     }
 
-    private boolean columnExists(final String tableName, final String columnName) throws SQLException {
+    private void debugTableStructure(final String tableName) {
         try (Connection connection = getConnection()) {
+            plugin.getLogger().info("=== Structure of table " + tableName + " ===");
             if (databaseType == DatabaseType.MYSQL) {
-                final String checkSql = """
-                        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-                        WHERE TABLE_SCHEMA = DATABASE()
-                          AND TABLE_NAME = ?
-                          AND COLUMN_NAME = ?
-                        """;
-                try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
-                    statement.setString(1, tableName);
-                    statement.setString(2, columnName);
-                    try (ResultSet resultSet = statement.executeQuery()) {
-                        if (resultSet.next()) {
-                            return resultSet.getInt(1) > 0;
-                        }
+                final String describeSql = "DESCRIBE " + tableName;
+                try (PreparedStatement statement = connection.prepareStatement(describeSql);
+                     ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        final String columnName = resultSet.getString("Field");
+                        final String columnType = resultSet.getString("Type");
+                        final String nullable = resultSet.getString("Null");
+                        final String defaultValue = resultSet.getString("Default");
+                        plugin.getLogger().info("Column: " + columnName + " | Type: " + columnType
+                                + " | Null: " + nullable + " | Default: " + defaultValue);
                     }
                 }
             } else {
@@ -260,15 +314,20 @@ public class DatabaseManager {
                 try (Statement statement = connection.createStatement();
                      ResultSet resultSet = statement.executeQuery(pragmaSql)) {
                     while (resultSet.next()) {
-                        final String existingColumn = resultSet.getString("name");
-                        if (existingColumn != null && existingColumn.equalsIgnoreCase(columnName)) {
-                            return true;
-                        }
+                        final String columnName = resultSet.getString("name");
+                        final String columnType = resultSet.getString("type");
+                        final String nullable = resultSet.getInt("notnull") == 0 ? "YES" : "NO";
+                        final String defaultValue = resultSet.getString("dflt_value");
+                        plugin.getLogger().info("Column: " + columnName + " | Type: " + columnType
+                                + " | Null: " + nullable + " | Default: " + defaultValue);
                     }
                 }
             }
+            plugin.getLogger().info("=== End of structure ===");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not debug table structure for '" + tableName + "': " + exception.getMessage(), exception);
         }
-        return false;
     }
 
     private boolean isDuplicateColumnError(final SQLException exception) {
