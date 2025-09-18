@@ -42,6 +42,10 @@ public class ConfigManager {
         return messagesConfig;
     }
 
+    public boolean isDebugEnabled() {
+        return plugin.getConfig().getBoolean("plugin.debug", false);
+    }
+
     private void loadMessages() {
         if (messagesFile == null) {
             messagesFile = new File(plugin.getDataFolder(), "messages.yml");
