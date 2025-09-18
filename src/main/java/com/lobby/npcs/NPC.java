@@ -15,6 +15,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.util.Vector;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -22,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class NPC {
 
@@ -56,11 +58,15 @@ public class NPC {
         armorStand = world.spawn(location, ArmorStand.class, stand -> {
             stand.setVisible(false);
             stand.setGravity(false);
+            stand.setCanPickupItems(false);
             stand.setMarker(true);
             stand.setInvulnerable(true);
             stand.setPersistent(true);
             stand.setRemoveWhenFarAway(false);
             stand.setCollidable(false);
+            stand.setSilent(true);
+            stand.setBasePlate(false);
+            stand.setArms(false);
             final String displayName = data.displayName() == null ? data.name() : data.displayName();
             stand.customName(LegacyComponentSerializer.legacyAmpersand().deserialize(displayName));
             stand.setCustomNameVisible(true);
@@ -130,30 +136,59 @@ public class NPC {
         }
     }
 
+    private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+
     private ItemStack createCustomHead(final String texture) {
         final String trimmed = texture.trim();
         if (trimmed.isEmpty()) {
             return null;
         }
-        if (trimmed.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
-            return getHeadFromDatabase(trimmed.substring(4));
+        try {
+            if (trimmed.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+                final ItemStack head = getHeadFromDatabase(trimmed.substring(4));
+                if (head != null) {
+                    return head;
+                }
+                LogUtils.warning(manager.getPlugin(), "HeadDatabase not available, using default head for NPC '" + data.name() + "'.");
+                return getDefaultHead();
+            }
+            if (UUID_PATTERN.matcher(trimmed).matches()) {
+                return getHeadFromPlayer(trimmed);
+            }
+            if (trimmed.length() > 50) {
+                return getHeadFromBase64(trimmed);
+            }
+            return getHeadFromPlayer(trimmed);
+        } catch (final Exception exception) {
+            LogUtils.warning(manager.getPlugin(), "Failed to create custom head for NPC '" + data.name() + "': " + exception.getMessage());
+            return getDefaultHead();
         }
-        return getHeadFromPlayer(trimmed);
     }
 
     private ItemStack getHeadFromDatabase(final String id) {
+        final Plugin headDatabase = Bukkit.getPluginManager().getPlugin("HeadDatabase");
+        if (headDatabase == null || !headDatabase.isEnabled()) {
+            LogUtils.warning(manager.getPlugin(), "HeadDatabase plugin not found for NPC head " + id);
+            return null;
+        }
         try {
             final Class<?> apiClass = Class.forName("me.arcaniax.hdb.api.HeadDatabaseAPI");
-            final Constructor<?> constructor = apiClass.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            final Object apiInstance = constructor.newInstance();
+            Object apiInstance;
+            try {
+                final Method getApiMethod = apiClass.getMethod("getAPI");
+                apiInstance = getApiMethod.invoke(null);
+            } catch (final NoSuchMethodException ignored) {
+                final Constructor<?> constructor = apiClass.getDeclaredConstructor();
+                constructor.setAccessible(true);
+                apiInstance = constructor.newInstance();
+            }
             final Method method = apiClass.getMethod("getItemHead", String.class);
             final Object result = method.invoke(apiInstance, id);
             if (result instanceof ItemStack itemStack) {
                 return itemStack;
             }
-        } catch (final ClassNotFoundException ignored) {
-            LogUtils.warning(manager.getPlugin(), "HeadDatabase plugin not found for NPC head " + id);
+        } catch (final ClassNotFoundException exception) {
+            LogUtils.warning(manager.getPlugin(), "HeadDatabase plugin classes not found for NPC head " + id);
         } catch (final ReflectiveOperationException exception) {
             LogUtils.warning(manager.getPlugin(), "Failed to fetch head from HeadDatabase: " + exception.getMessage());
         }
@@ -164,7 +199,7 @@ public class NPC {
         final ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
         final SkullMeta meta = (SkullMeta) skull.getItemMeta();
         if (meta == null) {
-            return null;
+            return getDefaultHead();
         }
         try {
             final OfflinePlayer owner;
@@ -177,9 +212,18 @@ public class NPC {
             meta.setOwningPlayer(owner);
         } catch (final IllegalArgumentException exception) {
             LogUtils.warning(manager.getPlugin(), "Invalid head identifier for NPC '" + data.name() + "': " + identifier);
-            return null;
+            return getDefaultHead();
         }
         skull.setItemMeta(meta);
         return skull;
+    }
+
+    private ItemStack getDefaultHead() {
+        return new ItemStack(Material.PLAYER_HEAD);
+    }
+
+    private ItemStack getHeadFromBase64(final String base64) {
+        LogUtils.warning(manager.getPlugin(), "Base64 textures are not supported yet for NPC '" + data.name() + "'.");
+        return getDefaultHead();
     }
 }
