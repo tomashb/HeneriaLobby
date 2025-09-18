@@ -132,6 +132,7 @@ public class DatabaseManager {
             plugin.getLogger().info("Creating/updating database tables...");
 
             createOrUpdatePlayersTable();
+            createOrUpdateNPCsTable();
 
             executeSQL(getCreateStatsTableSQL());
             executeSQL(getCreateHologramsTableSQL());
@@ -139,7 +140,6 @@ public class DatabaseManager {
                     ? "VARCHAR(32) DEFAULT 'NONE'"
                     : "TEXT DEFAULT 'NONE'";
             addColumnIfMissing("holograms", "animation", animationDefinition);
-            executeSQL(getCreateNPCsTableSQL());
             executeSQL(getCreateShopTableSQL());
             executeSQL(getCreateTransactionsTableSQL());
 
@@ -208,6 +208,59 @@ public class DatabaseManager {
         }
 
         createPlayerIndexes();
+    }
+
+    private void createOrUpdateNPCsTable() throws SQLException {
+        final String baseCreateSql;
+        if (databaseType == DatabaseType.MYSQL) {
+            baseCreateSql = """
+                    CREATE TABLE IF NOT EXISTS npcs (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(50) UNIQUE NOT NULL,
+                        world VARCHAR(50) NOT NULL,
+                        x DOUBLE NOT NULL,
+                        y DOUBLE NOT NULL,
+                        z DOUBLE NOT NULL
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        } else {
+            baseCreateSql = """
+                    CREATE TABLE IF NOT EXISTS npcs (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL,
+                        world TEXT NOT NULL,
+                        x REAL NOT NULL,
+                        y REAL NOT NULL,
+                        z REAL NOT NULL
+                    )
+                    """;
+        }
+
+        executeSQL(baseCreateSql);
+        plugin.getLogger().fine("Base npcs table created/verified");
+
+        final boolean debugEnabled = plugin.getConfigManager() != null && plugin.getConfigManager().isDebugEnabled();
+        if (debugEnabled) {
+            debugTableStructure("npcs");
+        }
+
+        final String displayNameDefinition = databaseType == DatabaseType.MYSQL ? "VARCHAR(100)" : "TEXT";
+        final String yawDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
+        final String pitchDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
+        final String visibleDefinition = databaseType == DatabaseType.MYSQL ? "BOOLEAN DEFAULT TRUE" : "INTEGER DEFAULT 1";
+
+        addColumnIfNotExists("npcs", "display_name", displayNameDefinition);
+        addColumnIfNotExists("npcs", "yaw", yawDefinition);
+        addColumnIfNotExists("npcs", "pitch", pitchDefinition);
+        addColumnIfNotExists("npcs", "head_texture", "TEXT");
+        addColumnIfNotExists("npcs", "actions", "TEXT");
+        addColumnIfNotExists("npcs", "visible", visibleDefinition);
+
+        if (debugEnabled) {
+            debugTableStructure("npcs");
+        }
+
+        createNPCIndexes();
     }
 
     private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
@@ -354,6 +407,23 @@ public class DatabaseManager {
                 plugin.getLogger().log(Level.WARNING, "Failed to create player index: " + exception.getMessage(), exception);
             }
         }
+    }
+
+    private void createNPCIndexes() {
+        final String[] indexes = {
+                "CREATE INDEX IF NOT EXISTS idx_npc_world ON npcs(world)",
+                "CREATE INDEX IF NOT EXISTS idx_npc_visible ON npcs(visible)",
+                "CREATE INDEX IF NOT EXISTS idx_npc_name ON npcs(name)"
+        };
+
+        for (final String indexSql : indexes) {
+            try {
+                executeSQL(indexSql);
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.FINE, "NPC index creation note: " + exception.getMessage(), exception);
+            }
+        }
+        plugin.getLogger().fine("NPC indexes created/verified");
     }
 
     private void createTransactionIndexes() {
