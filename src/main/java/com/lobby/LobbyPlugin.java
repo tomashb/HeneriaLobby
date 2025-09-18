@@ -1,7 +1,7 @@
 package com.lobby;
 
-import com.lobby.commands.AdminCommands;
 import com.lobby.commands.EconomyCommands;
+import com.lobby.commands.NPCCommands;
 import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
@@ -134,10 +134,10 @@ public final class LobbyPlugin extends JavaPlugin {
             getCommand("top").setTabCompleter(economyCommands);
         }
 
-        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager);
+        final NPCCommands npcCommands = new NPCCommands(this);
         if (getCommand("lobbyadmin") != null) {
-            getCommand("lobbyadmin").setExecutor(adminCommands);
-            getCommand("lobbyadmin").setTabCompleter(adminCommands);
+            getCommand("lobbyadmin").setExecutor(npcCommands);
+            getCommand("lobbyadmin").setTabCompleter(npcCommands);
         }
     }
 }

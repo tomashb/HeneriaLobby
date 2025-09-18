@@ -215,23 +215,13 @@ public class DatabaseManager {
         if (databaseType == DatabaseType.MYSQL) {
             baseCreateSql = """
                     CREATE TABLE IF NOT EXISTS npcs (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        name VARCHAR(50) UNIQUE NOT NULL,
-                        world VARCHAR(50) NOT NULL,
-                        x DOUBLE NOT NULL,
-                        y DOUBLE NOT NULL,
-                        z DOUBLE NOT NULL
+                        id INT AUTO_INCREMENT PRIMARY KEY
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """;
         } else {
             baseCreateSql = """
                     CREATE TABLE IF NOT EXISTS npcs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        name TEXT UNIQUE NOT NULL,
-                        world TEXT NOT NULL,
-                        x REAL NOT NULL,
-                        y REAL NOT NULL,
-                        z REAL NOT NULL
+                        id INTEGER PRIMARY KEY AUTOINCREMENT
                     )
                     """;
         }
@@ -244,12 +234,32 @@ public class DatabaseManager {
             debugTableStructure("npcs");
         }
 
+        final String nameDefinition = databaseType == DatabaseType.MYSQL
+                ? "VARCHAR(50) UNIQUE NOT NULL"
+                : "TEXT UNIQUE";
         final String displayNameDefinition = databaseType == DatabaseType.MYSQL ? "VARCHAR(100)" : "TEXT";
+        final String worldDefinition = databaseType == DatabaseType.MYSQL
+                ? "VARCHAR(50) NOT NULL DEFAULT 'world'"
+                : "TEXT NOT NULL DEFAULT 'world'";
+        final String xDefinition = databaseType == DatabaseType.MYSQL
+                ? "DOUBLE NOT NULL DEFAULT 0"
+                : "REAL NOT NULL DEFAULT 0";
+        final String yDefinition = databaseType == DatabaseType.MYSQL
+                ? "DOUBLE NOT NULL DEFAULT 64"
+                : "REAL NOT NULL DEFAULT 64";
+        final String zDefinition = databaseType == DatabaseType.MYSQL
+                ? "DOUBLE NOT NULL DEFAULT 0"
+                : "REAL NOT NULL DEFAULT 0";
         final String yawDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
         final String pitchDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
         final String visibleDefinition = databaseType == DatabaseType.MYSQL ? "BOOLEAN DEFAULT TRUE" : "INTEGER DEFAULT 1";
 
+        addColumnIfNotExists("npcs", "name", nameDefinition);
         addColumnIfNotExists("npcs", "display_name", displayNameDefinition);
+        addColumnIfNotExists("npcs", "world", worldDefinition);
+        addColumnIfNotExists("npcs", "x", xDefinition);
+        addColumnIfNotExists("npcs", "y", yDefinition);
+        addColumnIfNotExists("npcs", "z", zDefinition);
         addColumnIfNotExists("npcs", "yaw", yawDefinition);
         addColumnIfNotExists("npcs", "pitch", pitchDefinition);
         addColumnIfNotExists("npcs", "head_texture", "TEXT");
