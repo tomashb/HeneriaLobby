@@ -175,14 +175,10 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         final String name = args[0];
 
         try {
-            final boolean deleted = npcManager.deleteNPC(name);
-            if (deleted) {
-                MessageUtils.sendPrefixedMessage(sender, "&aPNJ '&6" + name + "&a' supprimé avec succès !");
-            } else {
-                MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + name + "&c' introuvable !");
-            }
-        } catch (final IllegalArgumentException exception) {
-            MessageUtils.sendPrefixedMessage(sender, "&c" + exception.getMessage());
+            npcManager.deleteNPC(name);
+            MessageUtils.sendPrefixedMessage(sender, "&aPNJ '&6" + name + "&a' supprimé avec succès !");
+        } catch (final IllegalArgumentException ignored) {
+            MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + name + "&c' introuvable !");
         } catch (final Exception exception) {
             MessageUtils.sendPrefixedMessage(sender, "&cErreur lors de la suppression du PNJ !");
             if (plugin != null) {
