@@ -5,6 +5,7 @@ import com.lobby.data.PlayerData;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.npcs.NPCManager;
+import com.lobby.lobby.LobbyManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -28,13 +29,16 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
     private final EconomyManager economyManager;
     private final HologramCommands hologramCommands;
     private final NPCCommands npcCommands;
+    private final LobbyManager lobbyManager;
 
     public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager,
-                         final HologramManager hologramManager, final NPCManager npcManager) {
+                         final HologramManager hologramManager, final NPCManager npcManager,
+                         final LobbyManager lobbyManager) {
         this.plugin = plugin;
         this.economyManager = economyManager;
         this.hologramCommands = new HologramCommands(hologramManager);
         this.npcCommands = new NPCCommands(npcManager);
+        this.lobbyManager = lobbyManager;
     }
 
     @Override
@@ -55,6 +59,14 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
             final String[] npcArgs = Arrays.copyOfRange(args, 1, args.length);
             npcCommands.handle(sender, npcArgs);
             return true;
+        }
+
+        if (subCommand.equals("setlobby")) {
+            return handleSetLobby(sender);
+        }
+
+        if (subCommand.equals("bypass")) {
+            return handleBypass(sender);
         }
 
         if (!sender.hasPermission("lobby.admin.economy")) {
@@ -84,7 +96,7 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         if (args.length == 1) {
-            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc");
+            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc", "setlobby", "bypass");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.stream().filter(option -> option.startsWith(prefix)).toList();
         }
@@ -116,6 +128,44 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         return Collections.emptyList();
+    }
+
+    private boolean handleSetLobby(final CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            MessageUtils.sendConfigMessage(sender, "commands.player_only");
+            return true;
+        }
+        if (lobbyManager == null) {
+            MessageUtils.sendConfigMessage(sender, "lobby.teleport_failed");
+            return true;
+        }
+        lobbyManager.saveSpawn(player.getLocation());
+        MessageUtils.sendConfigMessage(sender, "lobby.spawn_set", Map.of(
+                "world", player.getWorld().getName(),
+                "x", String.format(Locale.ROOT, "%.2f", player.getLocation().getX()),
+                "y", String.format(Locale.ROOT, "%.2f", player.getLocation().getY()),
+                "z", String.format(Locale.ROOT, "%.2f", player.getLocation().getZ())
+        ));
+        return true;
+    }
+
+    private boolean handleBypass(final CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            MessageUtils.sendConfigMessage(sender, "commands.player_only");
+            return true;
+        }
+        if (!player.hasPermission("lobby.admin.bypass")) {
+            MessageUtils.sendPrefixedMessage(player, plugin.getConfigManager().getMessagesConfig().getString("no_permission"));
+            return true;
+        }
+        if (lobbyManager == null) {
+            MessageUtils.sendConfigMessage(player, "lobby.teleport_failed");
+            return true;
+        }
+        final boolean enabled = lobbyManager.toggleBypass(player);
+        final String path = enabled ? "lobby.bypass_enabled" : "lobby.bypass_disabled";
+        MessageUtils.sendConfigMessage(player, path);
+        return true;
     }
 
     private boolean handleGive(final CommandSender sender, final String[] args) {
