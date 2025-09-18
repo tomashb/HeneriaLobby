@@ -7,8 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
-import org.bukkit.configuration.InvalidConfigurationException;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.sql.Connection;
@@ -16,6 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 public class NPCManager {
 
@@ -171,7 +171,7 @@ public class NPCManager {
         final NPCData updatedData = existing.getData().withActions(sanitized);
         try (Connection connection = plugin.getDatabaseManager().getConnection();
              PreparedStatement statement = connection.prepareStatement("UPDATE npcs SET `actions` = ? WHERE name = ?")) {
-            statement.setString(1, actionsToString(sanitized));
+            statement.setString(1, actionsToJson(sanitized));
             statement.setString(2, name);
             statement.executeUpdate();
         } catch (final SQLException exception) {
@@ -309,7 +309,7 @@ public class NPCManager {
             statement.setFloat(7, data.yaw());
             statement.setFloat(8, data.pitch());
             statement.setString(9, data.headTexture());
-            statement.setString(10, actionsToString(data.actions()));
+            statement.setString(10, actionsToJson(data.actions()));
             statement.setBoolean(11, data.visible());
             statement.executeUpdate();
         } catch (final SQLException exception) {
@@ -317,23 +317,33 @@ public class NPCManager {
         }
     }
 
-    private List<String> parseActions(final String serialized) {
-        if (serialized == null || serialized.isEmpty()) {
-            return List.of();
+    private List<String> parseActions(String actionsJson) {
+        if (actionsJson == null || actionsJson.trim().isEmpty()) {
+            return new ArrayList<>();
         }
-        final YamlConfiguration configuration = new YamlConfiguration();
+
         try {
-            configuration.loadFromString(serialized);
-            return new ArrayList<>(configuration.getStringList("actions"));
-        } catch (final InvalidConfigurationException exception) {
-            LogUtils.warning(plugin, "Failed to parse NPC actions: " + exception.getMessage());
-            return List.of();
+            if (actionsJson.startsWith("[") && actionsJson.endsWith("]")) {
+                actionsJson = actionsJson.substring(1, actionsJson.length() - 1);
+                if (actionsJson.trim().isEmpty()) {
+                    return new ArrayList<>();
+                }
+
+                return Arrays.stream(actionsJson.split("\",\""))
+                        .map(s -> s.replace("\"", ""))
+                        .collect(Collectors.toList());
+            }
+        } catch (final Exception exception) {
+            LogUtils.warning(plugin, "Failed to parse NPC actions: " + actionsJson);
         }
+
+        return Arrays.asList("[MESSAGE] &cError loading NPC actions");
     }
 
-    private String actionsToString(final List<String> actions) {
-        final YamlConfiguration configuration = new YamlConfiguration();
-        configuration.set("actions", actions == null ? List.of() : actions);
-        return configuration.saveToString();
+    private String actionsToJson(final List<String> actions) {
+        if (actions == null || actions.isEmpty()) {
+            return "[]";
+        }
+        return "[\"" + String.join("\",\"", actions) + "\"]";
     }
 }
