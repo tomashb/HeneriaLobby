@@ -1,6 +1,7 @@
 package com.lobby.core;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.utils.LogUtils;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -211,66 +212,61 @@ public class DatabaseManager {
     }
 
     private void createOrUpdateNPCsTable() throws SQLException {
-        final String baseCreateSql;
-        if (databaseType == DatabaseType.MYSQL) {
-            baseCreateSql = """
+        if (databaseType != DatabaseType.MYSQL) {
+            final String sqliteCreate = """
                     CREATE TABLE IF NOT EXISTS npcs (
-                        id INT AUTO_INCREMENT PRIMARY KEY
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-                    """;
-        } else {
-            baseCreateSql = """
-                    CREATE TABLE IF NOT EXISTS npcs (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE,
+                        display_name TEXT,
+                        world TEXT NOT NULL,
+                        x REAL NOT NULL,
+                        y REAL NOT NULL,
+                        z REAL NOT NULL,
+                        yaw REAL DEFAULT 0,
+                        pitch REAL DEFAULT 0,
+                        head_texture TEXT,
+                        actions TEXT,
+                        visible INTEGER DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                     """;
+
+            executeSQL(sqliteCreate);
+            plugin.getLogger().fine("Created npcs table for SQLite");
+            createNPCIndexes();
+            return;
         }
 
-        executeSQL(baseCreateSql);
-        plugin.getLogger().fine("Base npcs table created/verified");
-
-        final boolean debugEnabled = plugin.getConfigManager() != null && plugin.getConfigManager().isDebugEnabled();
-        if (debugEnabled) {
-            debugTableStructure("npcs");
+        try {
+            executeSQL("DROP TABLE IF EXISTS npcs");
+            LogUtils.info(plugin, "Dropped existing npcs table");
+        } catch (final SQLException exception) {
+            plugin.getLogger().fine("No existing npcs table to drop");
         }
 
-        final String nameDefinition = databaseType == DatabaseType.MYSQL
-                ? "VARCHAR(50) UNIQUE NOT NULL"
-                : "TEXT UNIQUE";
-        final String displayNameDefinition = databaseType == DatabaseType.MYSQL ? "VARCHAR(100)" : "TEXT";
-        final String worldDefinition = databaseType == DatabaseType.MYSQL
-                ? "VARCHAR(50) NOT NULL DEFAULT 'world'"
-                : "TEXT NOT NULL DEFAULT 'world'";
-        final String xDefinition = databaseType == DatabaseType.MYSQL
-                ? "DOUBLE NOT NULL DEFAULT 0"
-                : "REAL NOT NULL DEFAULT 0";
-        final String yDefinition = databaseType == DatabaseType.MYSQL
-                ? "DOUBLE NOT NULL DEFAULT 64"
-                : "REAL NOT NULL DEFAULT 64";
-        final String zDefinition = databaseType == DatabaseType.MYSQL
-                ? "DOUBLE NOT NULL DEFAULT 0"
-                : "REAL NOT NULL DEFAULT 0";
-        final String yawDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
-        final String pitchDefinition = databaseType == DatabaseType.MYSQL ? "FLOAT DEFAULT 0" : "REAL DEFAULT 0";
-        final String visibleDefinition = databaseType == DatabaseType.MYSQL ? "BOOLEAN DEFAULT TRUE" : "INTEGER DEFAULT 1";
+        final String createTable = """
+                CREATE TABLE npcs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(50) UNIQUE NOT NULL,
+                    display_name VARCHAR(100),
+                    world VARCHAR(50) NOT NULL,
+                    x DOUBLE NOT NULL,
+                    y DOUBLE NOT NULL,
+                    z DOUBLE NOT NULL,
+                    yaw FLOAT DEFAULT 0,
+                    pitch FLOAT DEFAULT 0,
+                    head_texture TEXT,
+                    actions TEXT,
+                    visible BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_world (world),
+                    INDEX idx_visible (visible),
+                    INDEX idx_name (name)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1
+                """;
 
-        addColumnIfNotExists("npcs", "name", nameDefinition);
-        addColumnIfNotExists("npcs", "display_name", displayNameDefinition);
-        addColumnIfNotExists("npcs", "world", worldDefinition);
-        addColumnIfNotExists("npcs", "x", xDefinition);
-        addColumnIfNotExists("npcs", "y", yDefinition);
-        addColumnIfNotExists("npcs", "z", zDefinition);
-        addColumnIfNotExists("npcs", "yaw", yawDefinition);
-        addColumnIfNotExists("npcs", "pitch", pitchDefinition);
-        addColumnIfNotExists("npcs", "head_texture", "TEXT");
-        addColumnIfNotExists("npcs", "actions", "TEXT");
-        addColumnIfNotExists("npcs", "visible", visibleDefinition);
-
-        if (debugEnabled) {
-            debugTableStructure("npcs");
-        }
-
-        createNPCIndexes();
+        executeSQL(createTable);
+        LogUtils.info(plugin, "Created npcs table with proper AUTO_INCREMENT");
     }
 
     private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
