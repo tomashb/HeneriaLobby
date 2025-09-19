@@ -6,6 +6,7 @@ import com.lobby.commands.NPCCommands;
 import com.lobby.commands.PlayerCommands;
 import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
+import com.lobby.core.ProxyServerStatusService;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
@@ -28,6 +29,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private ConfigManager configManager;
     private PlayerDataManager playerDataManager;
     private EconomyManager economyManager;
+    private ProxyServerStatusService proxyServerStatusService;
     private HologramManager hologramManager;
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
@@ -52,6 +54,8 @@ public final class LobbyPlugin extends JavaPlugin {
 
         playerDataManager = new PlayerDataManager(this, databaseManager);
         economyManager = new EconomyManager(this);
+        proxyServerStatusService = new ProxyServerStatusService(this);
+        proxyServerStatusService.initialize();
         hologramManager = new HologramManager(this);
         hologramManager.initialize();
         npcManager = new NPCManager(this);
@@ -71,6 +75,9 @@ public final class LobbyPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (proxyServerStatusService != null) {
+            proxyServerStatusService.shutdown();
+        }
         if (hologramManager != null) {
             hologramManager.shutdown();
         }
@@ -103,6 +110,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public EconomyManager getEconomyManager() {
         return economyManager;
+    }
+
+    public ProxyServerStatusService getProxyServerStatusService() {
+        return proxyServerStatusService;
     }
 
     public HologramManager getHologramManager() {

@@ -37,6 +37,7 @@ public class HologramCommands {
             case "edit", "setlines", "lines" -> handleEdit(sender, Arrays.copyOfRange(args, 1, args.length));
             case "list" -> handleList(sender);
             case "tp", "teleport" -> handleTeleport(sender, Arrays.copyOfRange(args, 1, args.length));
+            case "move" -> handleMove(sender, Arrays.copyOfRange(args, 1, args.length));
             case "info" -> handleInfo(sender, Arrays.copyOfRange(args, 1, args.length));
             case "setline" -> handleSetLine(sender, Arrays.copyOfRange(args, 1, args.length));
             case "addline" -> handleAddLine(sender, Arrays.copyOfRange(args, 1, args.length));
@@ -52,18 +53,59 @@ public class HologramCommands {
 
     public List<String> tabComplete(final CommandSender sender, final String[] args) {
         if (args.length == 1) {
-            return filter(List.of("create", "delete", "edit", "list", "teleport", "tp", "info",
+            return filter(List.of("create", "delete", "edit", "list", "teleport", "tp", "move", "info",
                     "setline", "addline", "insertline", "removeline", "clearlines"), args[0]);
         }
         if (args.length == 2) {
             final String sub = args[0].toLowerCase(Locale.ROOT);
-            if (sub.equals("delete") || sub.equals("edit") || sub.equals("teleport") || sub.equals("tp") || sub.equals("info") ||
+            if (sub.equals("delete") || sub.equals("edit") || sub.equals("teleport") || sub.equals("tp") || sub.equals("move") || sub.equals("info") ||
                     sub.equals("setline") || sub.equals("addline") || sub.equals("insertline") || sub.equals("removeline") ||
                     sub.equals("clearlines")) {
                 return filter(new ArrayList<>(hologramManager.getHologramNames()), args[1]);
             }
         }
         return List.of();
+    }
+
+    private boolean handleMove(final CommandSender sender, final String[] args) {
+        if (!(sender instanceof Player player)) {
+            MessageUtils.sendConfigMessage(sender, "economy.player_only");
+            return true;
+        }
+        if (!sender.hasPermission("lobby.admin.hologram")) {
+            MessageUtils.sendConfigMessage(sender, "no_permission");
+            return true;
+        }
+        if (args.length == 0) {
+            MessageUtils.sendConfigMessage(sender, "hologram.usage_move");
+            return true;
+        }
+        final String name = args[0];
+        final Hologram hologram = hologramManager.getHologram(name);
+        if (hologram == null) {
+            MessageUtils.sendConfigMessage(sender, "hologram.not_found", Map.of("name", name));
+            return true;
+        }
+        try {
+            hologramManager.moveHologram(name, player.getLocation());
+            MessageUtils.sendConfigMessage(sender, "hologram.moved", Map.of("name", name));
+        } catch (final IllegalArgumentException exception) {
+            final String message = exception.getMessage();
+            if (message != null && message.contains("not found")) {
+                MessageUtils.sendConfigMessage(sender, "hologram.not_found", Map.of("name", name));
+            } else if (message != null && !message.isBlank()) {
+                MessageUtils.sendPrefixedMessage(sender, "&c" + message);
+            } else {
+                MessageUtils.sendPrefixedMessage(sender, "&cImpossible de déplacer cet hologramme.");
+            }
+        } catch (final IllegalStateException exception) {
+            final String message = exception.getMessage() != null ? exception.getMessage() : "Erreur";
+            MessageUtils.sendPrefixedMessage(sender, "&c" + message);
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cErreur lors du déplacement de l'hologramme !");
+            hologramManager.getPlugin().getLogger().warning("Failed to move hologram: " + exception.getMessage());
+        }
+        return true;
     }
 
     private boolean handleCreate(final CommandSender sender, final String[] args) {
