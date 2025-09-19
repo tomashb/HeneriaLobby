@@ -29,7 +29,7 @@ public class NpcDAO {
 
     public List<NPCData> loadAllNpcs() throws SQLException {
         final List<NPCData> npcs = new ArrayList<>();
-        final String sql = "SELECT name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, visible "
+        final String sql = "SELECT name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation, visible "
                 + "FROM npcs WHERE visible = TRUE";
 
         try (Connection connection = databaseManager.getConnection();
@@ -52,8 +52,8 @@ public class NpcDAO {
 
     public boolean createNpc(final NPCData data) throws SQLException {
         final String sql = """
-                INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, visible)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation, visible)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = databaseManager.getConnection();
@@ -70,7 +70,8 @@ public class NpcDAO {
             setNullableString(statement, 9, data.headTexture());
             setNullableString(statement, 10, data.armorColor());
             statement.setString(11, actionsToJson(data.actions()));
-            statement.setBoolean(12, data.visible());
+            setNullableString(statement, 12, data.animation());
+            statement.setBoolean(13, data.visible());
 
             return statement.executeUpdate() > 0;
         }
@@ -105,6 +106,16 @@ public class NpcDAO {
         }
     }
 
+    public boolean updateNpcAnimation(final String name, final String animation) throws SQLException {
+        final String sql = "UPDATE npcs SET animation = ? WHERE name = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            setNullableString(statement, 1, animation);
+            statement.setString(2, name);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
     private NPCData mapNpcData(final ResultSet resultSet) throws SQLException {
         final String actionsJson = resultSet.getString("actions");
         final List<String> actions = parseActions(actionsJson);
@@ -120,6 +131,7 @@ public class NpcDAO {
                 resultSet.getString("head_texture"),
                 resultSet.getString("armor_color"),
                 actions,
+                resultSet.getString("animation"),
                 resultSet.getBoolean("visible")
         );
     }
