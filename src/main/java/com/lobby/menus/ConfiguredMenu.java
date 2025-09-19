@@ -121,7 +121,7 @@ public class ConfiguredMenu implements Menu {
 
             if (itemSection.getBoolean("glow", false)) {
                 meta.addItemFlags(ItemFlag.values());
-                meta.addEnchant(org.bukkit.enchantments.Enchantment.DURABILITY, 1, true);
+                meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
             }
 
             if (meta instanceof SkullMeta skullMeta) {
