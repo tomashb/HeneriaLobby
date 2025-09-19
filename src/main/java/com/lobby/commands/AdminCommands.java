@@ -30,15 +30,17 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
     private final HologramCommands hologramCommands;
     private final NPCCommands npcCommands;
     private final LobbyManager lobbyManager;
+    private final ShopCommands shopCommands;
 
     public AdminCommands(final LobbyPlugin plugin, final EconomyManager economyManager,
                          final HologramManager hologramManager, final NPCManager npcManager,
-                         final LobbyManager lobbyManager) {
+                         final LobbyManager lobbyManager, final ShopCommands shopCommands) {
         this.plugin = plugin;
         this.economyManager = economyManager;
         this.hologramCommands = new HologramCommands(hologramManager);
         this.npcCommands = new NPCCommands(npcManager);
         this.lobbyManager = lobbyManager;
+        this.shopCommands = shopCommands;
     }
 
     @Override
@@ -49,6 +51,13 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         final String subCommand = args[0].toLowerCase(Locale.ROOT);
+        if (subCommand.equals("shop")) {
+            if (shopCommands != null) {
+                final String[] shopArgs = Arrays.copyOfRange(args, 1, args.length);
+                return shopCommands.handleAdminCommand(sender, shopArgs);
+            }
+            return true;
+        }
         if (subCommand.equals("holo") || subCommand.equals("hologram")) {
             final String[] hologramArgs = Arrays.copyOfRange(args, 1, args.length);
             hologramCommands.handle(sender, hologramArgs);
@@ -93,10 +102,14 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
                 final String[] hologramArgs = Arrays.copyOfRange(args, 1, args.length);
                 return hologramCommands.tabComplete(sender, hologramArgs);
             }
+            if (first.equals("shop")) {
+                final String[] shopArgs = Arrays.copyOfRange(args, 1, args.length);
+                return shopCommands != null ? shopCommands.tabCompleteAdmin(sender, shopArgs) : Collections.emptyList();
+            }
         }
 
         if (args.length == 1) {
-            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc", "setlobby", "bypass");
+            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc", "setlobby", "bypass", "shop");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.stream().filter(option -> option.startsWith(prefix)).toList();
         }
@@ -106,6 +119,7 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
                 case "give", "take" -> List.of("coins", "tokens");
                 case "balance" -> completePlayerNames(args[1]);
                 case "npc" -> npcCommands.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
+                case "shop" -> shopCommands != null ? shopCommands.tabCompleteAdmin(sender, Arrays.copyOfRange(args, 1, args.length)) : Collections.emptyList();
                 default -> Collections.emptyList();
             };
         }
