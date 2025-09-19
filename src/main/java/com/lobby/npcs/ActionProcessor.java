@@ -72,7 +72,7 @@ public class ActionProcessor {
             if (!menuId.isEmpty()) {
                 final MenuManager menuManager = plugin.getMenuManager();
                 if (menuManager != null) {
-                    Bukkit.getScheduler().runTask(plugin, (Runnable) () -> {
+                    Bukkit.getScheduler().runTask(plugin, task -> {
                         menuManager.openMenu(player, menuId);
                     });
                 } else {
