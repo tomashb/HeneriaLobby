@@ -11,7 +11,9 @@ import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -150,6 +152,14 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
         final String id = parameters.get(0);
         final String categoryId = parameters.get(1);
         final String displayName = parameters.get(2);
+        if (id == null || id.isBlank()) {
+            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_item_id");
+            return true;
+        }
+        if (displayName == null || displayName.isBlank()) {
+            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_item_name");
+            return true;
+        }
         final long priceCoins = parseLong(parameters.get(3));
         final long priceTokens = parseLong(parameters.get(4));
         if (priceCoins < 0 || priceTokens < 0) {
@@ -193,29 +203,62 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
         }
 
         final String commandPayload = joinCommands(commands);
-        final String sql = "INSERT INTO shop_items (id, category_id, display_name, description, icon_material, icon_head_texture, "
-                + "price_coins, price_tokens, commands, confirm_required, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection connection = plugin.getDatabaseManager().getConnection();
-             PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, id);
-            statement.setString(2, categoryId);
-            statement.setString(3, displayName);
-            statement.setString(4, description);
-            statement.setString(5, iconMaterial);
-            statement.setString(6, iconHead);
-            statement.setLong(7, priceCoins);
-            statement.setLong(8, priceTokens);
-            statement.setString(9, commandPayload);
-            statement.setBoolean(10, confirmRequired);
-            statement.setBoolean(11, enabled);
-            statement.executeUpdate();
-            MessageUtils.sendConfigMessage(sender, "shop.admin.item_created", Map.of("id", id));
-            shopManager.initialize();
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            final boolean hasNameColumn = tableHasColumn(connection, "shop_items", "name");
+            final String sql = hasNameColumn
+                    ? "INSERT INTO shop_items (id, name, category_id, display_name, description, icon_material, icon_head_texture, "
+                    + "price_coins, price_tokens, commands, confirm_required, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+                    : "INSERT INTO shop_items (id, category_id, display_name, description, icon_material, icon_head_texture, "
+                    + "price_coins, price_tokens, commands, confirm_required, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                int parameterIndex = 1;
+                statement.setString(parameterIndex++, id);
+                if (hasNameColumn) {
+                    statement.setString(parameterIndex++, displayName);
+                }
+                statement.setString(parameterIndex++, categoryId);
+                statement.setString(parameterIndex++, displayName);
+                statement.setString(parameterIndex++, description);
+                statement.setString(parameterIndex++, iconMaterial);
+                statement.setString(parameterIndex++, iconHead);
+                statement.setLong(parameterIndex++, priceCoins);
+                statement.setLong(parameterIndex++, priceTokens);
+                statement.setString(parameterIndex++, commandPayload);
+                statement.setBoolean(parameterIndex++, confirmRequired);
+                statement.setBoolean(parameterIndex, enabled);
+                statement.executeUpdate();
+                MessageUtils.sendConfigMessage(sender, "shop.admin.item_created", Map.of("id", id));
+                shopManager.initialize();
+            }
         } catch (final SQLException exception) {
             LogUtils.severe(plugin, "Failed to create shop item", exception);
             MessageUtils.sendConfigMessage(sender, "shop.admin.item_error");
         }
         return true;
+    }
+
+    private boolean tableHasColumn(final Connection connection, final String tableName, final String columnName) throws SQLException {
+        final DatabaseMetaData metaData = connection.getMetaData();
+        final String[] tableCandidates = {
+                tableName,
+                tableName.toLowerCase(Locale.ROOT),
+                tableName.toUpperCase(Locale.ROOT)
+        };
+        final String[] columnCandidates = {
+                columnName,
+                columnName.toLowerCase(Locale.ROOT),
+                columnName.toUpperCase(Locale.ROOT)
+        };
+        for (final String tableCandidate : tableCandidates) {
+            for (final String columnCandidate : columnCandidates) {
+                try (ResultSet resultSet = metaData.getColumns(connection.getCatalog(), null, tableCandidate, columnCandidate)) {
+                    if (resultSet.next()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private List<String> parseArguments(final String[] args, final int startIndex) {
