@@ -1,7 +1,6 @@
 package com.lobby.holograms;
 
 import com.lobby.LobbyPlugin;
-import com.lobby.core.ProxyServerStatusService;
 import com.lobby.economy.EconomyManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -19,11 +18,13 @@ import java.util.regex.Pattern;
 public class PlaceholderProcessor {
 
     private final LobbyPlugin plugin;
+    private final HologramManager hologramManager;
     private final Map<String, Function<Player, String>> handlers = new HashMap<>();
     private static final Pattern SERVER_ONLINE_PATTERN = Pattern.compile("%server_online_([a-zA-Z0-9_-]+)%");
 
-    public PlaceholderProcessor(final LobbyPlugin plugin) {
+    public PlaceholderProcessor(final LobbyPlugin plugin, final HologramManager hologramManager) {
         this.plugin = plugin;
+        this.hologramManager = hologramManager;
         registerHandlers();
     }
 
@@ -108,8 +109,7 @@ public class PlaceholderProcessor {
         if (text == null || text.isEmpty()) {
             return "";
         }
-        final ProxyServerStatusService statusService = plugin.getProxyServerStatusService();
-        if (statusService == null) {
+        if (hologramManager == null) {
             return text;
         }
         final Matcher matcher = SERVER_ONLINE_PATTERN.matcher(text);
@@ -119,8 +119,8 @@ public class PlaceholderProcessor {
         final StringBuffer buffer = new StringBuffer();
         do {
             final String serverName = matcher.group(1);
-            statusService.trackServer(serverName);
-            final int count = statusService.getCachedPlayerCount(serverName);
+            hologramManager.trackServer(serverName);
+            final int count = hologramManager.getCachedPlayerCount(serverName);
             matcher.appendReplacement(buffer, Matcher.quoteReplacement(String.valueOf(count)));
         } while (matcher.find());
         matcher.appendTail(buffer);

@@ -86,8 +86,9 @@ public class HologramCommands {
             MessageUtils.sendConfigMessage(sender, "hologram.not_found", Map.of("name", name));
             return true;
         }
+        final Location targetLocation = player.getLocation();
         try {
-            hologramManager.moveHologram(name, player.getLocation());
+            hologramManager.moveHologram(name, targetLocation);
             MessageUtils.sendConfigMessage(sender, "hologram.moved", Map.of("name", name));
         } catch (final IllegalArgumentException exception) {
             final String message = exception.getMessage();

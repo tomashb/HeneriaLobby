@@ -1,5 +1,8 @@
 package com.lobby.holograms;
 
+import com.google.common.io.ByteArrayDataInput;
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
 import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.data.HologramData;
@@ -10,9 +13,12 @@ import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.messaging.PluginMessageListener;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
 import java.sql.Connection;
@@ -23,28 +29,38 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-public class HologramManager implements Listener {
+public class HologramManager implements Listener, PluginMessageListener {
 
     private static final String EMPTY_LINE_MARKER = "__EMPTY_LINE__";
+    private static final String PROXY_CHANNEL = "lobby:status";
+    private static final String SUBCHANNEL_REQUEST = "PlayerCountRequest";
+    private static final String SUBCHANNEL_RESPONSE = "PlayerCountResponse";
+    private static final long STATUS_UPDATE_INTERVAL_TICKS = 200L;
 
     private final LobbyPlugin plugin;
     private final Map<String, Hologram> holograms = new ConcurrentHashMap<>();
     private final PlaceholderProcessor placeholderProcessor;
     private final AnimationManager animationManager;
     private final HologramRenderer renderer;
+    private final HologramDAO hologramDAO;
+    private final Map<String, Integer> serverPlayerCounts = new ConcurrentHashMap<>();
+    private final Map<String, String> trackedServers = new ConcurrentHashMap<>();
     private int updateTaskId = -1;
     private double maxViewDistance = 50.0D;
     private int maxPerWorld = 100;
+    private BukkitTask serverStatusTask;
 
     public HologramManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
-        this.placeholderProcessor = new PlaceholderProcessor(plugin);
+        this.hologramDAO = new HologramDAO(plugin.getDatabaseManager());
+        this.placeholderProcessor = new PlaceholderProcessor(plugin, this);
         this.animationManager = new AnimationManager(plugin);
         this.renderer = new HologramRenderer();
     }
@@ -52,9 +68,11 @@ public class HologramManager implements Listener {
     public void initialize() {
         reloadSettings();
         registerListener();
+        registerPluginMessaging();
         loadHologramsFromDatabase();
         loadDefaults();
         startUpdateTask();
+        startServerStatusTask();
         LogUtils.info(plugin, "HologramManager initialized with " + holograms.size() + " holograms");
     }
 
@@ -70,7 +88,11 @@ public class HologramManager implements Listener {
         }
         holograms.values().forEach(Hologram::remove);
         holograms.clear();
+        serverPlayerCounts.clear();
+        trackedServers.clear();
         HandlerList.unregisterAll(this);
+        unregisterPluginMessaging();
+        stopServerStatusTask();
         LogUtils.info(plugin, "HologramManager shut down");
     }
 
@@ -84,6 +106,10 @@ public class HologramManager implements Listener {
 
     public HologramRenderer getRenderer() {
         return renderer;
+    }
+
+    public HologramDAO getHologramDAO() {
+        return hologramDAO;
     }
 
     public Collection<Hologram> getAllHolograms() {
@@ -100,6 +126,23 @@ public class HologramManager implements Listener {
 
     public LobbyPlugin getPlugin() {
         return plugin;
+    }
+
+    public void trackServer(final String serverName) {
+        if (serverName == null || serverName.isBlank()) {
+            return;
+        }
+        final String key = serverName.toLowerCase(Locale.ROOT);
+        if (trackedServers.putIfAbsent(key, serverName) == null) {
+            requestServerCounts(Set.of(serverName));
+        }
+    }
+
+    public int getCachedPlayerCount(final String serverName) {
+        if (serverName == null || serverName.isBlank()) {
+            return 0;
+        }
+        return serverPlayerCounts.getOrDefault(serverName.toLowerCase(Locale.ROOT), 0);
     }
 
     public double getMaxViewDistance() {
@@ -404,17 +447,82 @@ public class HologramManager implements Listener {
     }
 
     private void persistLocationUpdate(final String name, final Location location) {
-        try (Connection connection = plugin.getDatabaseManager().getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "UPDATE holograms SET world = ?, x = ?, y = ?, z = ? WHERE name = ?")) {
-            statement.setString(1, location.getWorld() != null ? location.getWorld().getName() : null);
-            statement.setDouble(2, location.getX());
-            statement.setDouble(3, location.getY());
-            statement.setDouble(4, location.getZ());
-            statement.setString(5, name);
-            statement.executeUpdate();
+        try {
+            hologramDAO.updateLocation(name, location);
         } catch (final SQLException exception) {
             throw new RuntimeException("Failed to move hologram: " + exception.getMessage(), exception);
+        }
+    }
+
+    private void registerPluginMessaging() {
+        plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, PROXY_CHANNEL);
+        plugin.getServer().getMessenger().registerIncomingPluginChannel(plugin, PROXY_CHANNEL, this);
+    }
+
+    private void unregisterPluginMessaging() {
+        plugin.getServer().getMessenger().unregisterIncomingPluginChannel(plugin, PROXY_CHANNEL, this);
+        plugin.getServer().getMessenger().unregisterOutgoingPluginChannel(plugin, PROXY_CHANNEL);
+    }
+
+    private void startServerStatusTask() {
+        stopServerStatusTask();
+        serverStatusTask = Bukkit.getScheduler().runTaskTimer(plugin, this::requestTrackedServers,
+                STATUS_UPDATE_INTERVAL_TICKS, STATUS_UPDATE_INTERVAL_TICKS);
+    }
+
+    private void stopServerStatusTask() {
+        if (serverStatusTask != null) {
+            serverStatusTask.cancel();
+            serverStatusTask = null;
+        }
+    }
+
+    private void requestTrackedServers() {
+        if (trackedServers.isEmpty()) {
+            return;
+        }
+        requestServerCounts(trackedServers.values());
+    }
+
+    private void requestServerCounts(final Collection<String> servers) {
+        if (servers == null || servers.isEmpty()) {
+            return;
+        }
+        final Player sender = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
+        if (sender == null) {
+            return;
+        }
+        final ByteArrayDataOutput output = ByteStreams.newDataOutput();
+        output.writeUTF(SUBCHANNEL_REQUEST);
+        output.writeInt(servers.size());
+        for (String server : servers) {
+            output.writeUTF(server);
+        }
+        sender.sendPluginMessage(plugin, PROXY_CHANNEL, output.toByteArray());
+    }
+
+    @Override
+    public void onPluginMessageReceived(final String channel, final Player player, final byte[] message) {
+        if (!PROXY_CHANNEL.equalsIgnoreCase(channel) || message == null || message.length == 0) {
+            return;
+        }
+        try {
+            final ByteArrayDataInput input = ByteStreams.newDataInput(message);
+            final String subChannel = input.readUTF();
+            if (!SUBCHANNEL_RESPONSE.equalsIgnoreCase(subChannel)) {
+                return;
+            }
+            final int entries = input.readInt();
+            for (int index = 0; index < entries; index++) {
+                final String serverName = input.readUTF();
+                final int count = input.readInt();
+                if (serverName == null) {
+                    continue;
+                }
+                serverPlayerCounts.put(serverName.toLowerCase(Locale.ROOT), Math.max(count, 0));
+            }
+        } catch (final Exception exception) {
+            LogUtils.warning(plugin, "Failed to read server status response: " + exception.getMessage());
         }
     }
 
