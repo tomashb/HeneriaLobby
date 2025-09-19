@@ -1,6 +1,7 @@
 package com.lobby.holograms;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.core.ProxyServerStatusService;
 import com.lobby.economy.EconomyManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -12,11 +13,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PlaceholderProcessor {
 
     private final LobbyPlugin plugin;
     private final Map<String, Function<Player, String>> handlers = new HashMap<>();
+    private static final Pattern SERVER_ONLINE_PATTERN = Pattern.compile("%server_online_([a-zA-Z0-9_-]+)%");
 
     public PlaceholderProcessor(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -68,7 +72,7 @@ public class PlaceholderProcessor {
                 processed = processed.replace(placeholder, "ERROR");
             }
         }
-        return processed;
+        return handleServerSpecificPlaceholders(processed);
     }
 
     private String getTopPlayer(final String type, final int position) {
@@ -98,5 +102,28 @@ public class PlaceholderProcessor {
 
     private Optional<EconomyManager> resolveEconomyManager() {
         return Optional.ofNullable(plugin.getEconomyManager());
+    }
+
+    private String handleServerSpecificPlaceholders(final String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+        final ProxyServerStatusService statusService = plugin.getProxyServerStatusService();
+        if (statusService == null) {
+            return text;
+        }
+        final Matcher matcher = SERVER_ONLINE_PATTERN.matcher(text);
+        if (!matcher.find()) {
+            return text;
+        }
+        final StringBuffer buffer = new StringBuffer();
+        do {
+            final String serverName = matcher.group(1);
+            statusService.trackServer(serverName);
+            final int count = statusService.getCachedPlayerCount(serverName);
+            matcher.appendReplacement(buffer, Matcher.quoteReplacement(String.valueOf(count)));
+        } while (matcher.find());
+        matcher.appendTail(buffer);
+        return buffer.toString();
     }
 }

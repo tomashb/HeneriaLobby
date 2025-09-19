@@ -198,6 +198,30 @@ public class HologramManager implements Listener {
         updateHologramLines(name, currentLines);
     }
 
+    public void moveHologram(final String name, final Location location) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Hologram name is required");
+        }
+        if (location == null || location.getWorld() == null) {
+            throw new IllegalArgumentException("Invalid hologram location");
+        }
+        final Hologram hologram = holograms.get(name);
+        if (hologram == null) {
+            throw new IllegalArgumentException("Hologram '" + name + "' not found");
+        }
+        final HologramData currentData = hologram.getData();
+        final String targetWorld = location.getWorld().getName();
+        if (!targetWorld.equalsIgnoreCase(currentData.world())) {
+            validateWorldLimit(targetWorld);
+        }
+        final Location sanitized = location.clone();
+        sanitized.setPitch(0.0F);
+        sanitized.setYaw(0.0F);
+        persistLocationUpdate(name, sanitized);
+        hologram.teleport(sanitized);
+        LogUtils.info(plugin, "Moved hologram '" + name + "' to " + formatLocation(sanitized));
+    }
+
     public void insertHologramLine(final String name, final int lineNumber, final String text) {
         if (lineNumber < 0) {
             throw new IllegalArgumentException("Line number must be non-negative");
@@ -377,6 +401,29 @@ public class HologramManager implements Listener {
         } catch (final SQLException exception) {
             throw new RuntimeException("Failed to create hologram: " + exception.getMessage(), exception);
         }
+    }
+
+    private void persistLocationUpdate(final String name, final Location location) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "UPDATE holograms SET world = ?, x = ?, y = ?, z = ? WHERE name = ?")) {
+            statement.setString(1, location.getWorld() != null ? location.getWorld().getName() : null);
+            statement.setDouble(2, location.getX());
+            statement.setDouble(3, location.getY());
+            statement.setDouble(4, location.getZ());
+            statement.setString(5, name);
+            statement.executeUpdate();
+        } catch (final SQLException exception) {
+            throw new RuntimeException("Failed to move hologram: " + exception.getMessage(), exception);
+        }
+    }
+
+    private String formatLocation(final Location location) {
+        if (location == null || location.getWorld() == null) {
+            return "unknown";
+        }
+        return location.getWorld().getName() + " "
+                + String.format("(%.2f, %.2f, %.2f)", location.getX(), location.getY(), location.getZ());
     }
 
     private List<String> parseLines(final String linesJson) {
