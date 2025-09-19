@@ -11,10 +11,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * Data access object responsible for persisting NPC definitions.
@@ -132,15 +130,46 @@ public class NpcDAO {
         }
 
         try {
-            if (actionsJson.startsWith("[") && actionsJson.endsWith("]")) {
-                actionsJson = actionsJson.substring(1, actionsJson.length() - 1);
-                if (actionsJson.trim().isEmpty()) {
-                    return new ArrayList<>();
+            final String trimmed = actionsJson.trim();
+            if (!trimmed.startsWith("[") || !trimmed.endsWith("]")) {
+                return new ArrayList<>();
+            }
+
+            final List<String> parsedActions = new ArrayList<>();
+            final StringBuilder current = new StringBuilder();
+            boolean insideString = false;
+            boolean escaping = false;
+
+            for (int index = 1; index < trimmed.length() - 1; index++) {
+                final char character = trimmed.charAt(index);
+
+                if (escaping) {
+                    current.append(unescapeJsonCharacter(character));
+                    escaping = false;
+                    continue;
                 }
 
-                return Arrays.stream(actionsJson.split("\\",\\""))
-                        .map(s -> s.replace("\\"", ""))
-                        .collect(Collectors.toList());
+                if (character == '\\') {
+                    escaping = true;
+                    continue;
+                }
+
+                if (character == '"') {
+                    insideString = !insideString;
+                    if (!insideString) {
+                        parsedActions.add(current.toString());
+                        current.setLength(0);
+                    }
+                    continue;
+                }
+
+                if (insideString) {
+                    current.append(character);
+                }
+            }
+
+            if (!parsedActions.isEmpty()) {
+                return parsedActions;
             }
         } catch (final Exception exception) {
             if (plugin != null) {
@@ -155,7 +184,50 @@ public class NpcDAO {
         if (actions == null || actions.isEmpty()) {
             return "[]";
         }
-        return "[\"" + String.join("\",\"", actions) + "\"]";
+
+        final StringBuilder builder = new StringBuilder("[");
+        for (int index = 0; index < actions.size(); index++) {
+            if (index > 0) {
+                builder.append(',');
+            }
+
+            builder.append('"')
+                    .append(escapeJsonContent(actions.get(index)))
+                    .append('"');
+        }
+        builder.append(']');
+        return builder.toString();
+    }
+
+    private char unescapeJsonCharacter(final char character) {
+        return switch (character) {
+            case 'n' -> '\n';
+            case 'r' -> '\r';
+            case 't' -> '\t';
+            case '"' -> '"';
+            case '\\' -> '\\';
+            default -> character;
+        };
+    }
+
+    private String escapeJsonContent(final String value) {
+        if (value == null || value.isEmpty()) {
+            return "";
+        }
+
+        final StringBuilder escaped = new StringBuilder(value.length());
+        for (int index = 0; index < value.length(); index++) {
+            final char character = value.charAt(index);
+            escaped.append(switch (character) {
+                case '"' -> "\\\"";
+                case '\\' -> "\\\\";
+                case '\n' -> "\\n";
+                case '\r' -> "\\r";
+                case '\t' -> "\\t";
+                default -> String.valueOf(character);
+            });
+        }
+        return escaped.toString();
     }
 
     private void setNullableString(final PreparedStatement statement, final int index, final String value) throws SQLException {
