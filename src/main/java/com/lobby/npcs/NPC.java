@@ -73,6 +73,7 @@ public class NPC {
 
     public void despawn() {
         if (armorStand != null) {
+            manager.getAnimationManager().stopAnimation(armorStand);
             armorStand.remove();
             armorStand = null;
         }

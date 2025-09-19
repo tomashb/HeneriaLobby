@@ -24,6 +24,8 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
 
     private final LobbyPlugin plugin;
     private final NPCManager npcManager;
+    private static final List<String> AVAILABLE_ANIMATIONS = List.of("LEVER_BRAS_DROIT", "LEVER_JAMBE_GAUCHE", "MARCHER");
+    private static final List<String> ANIMATION_SUGGESTIONS = List.of("LEVER_BRAS_DROIT", "LEVER_JAMBE_GAUCHE", "MARCHER", "STOP");
 
     public NPCCommands(final LobbyPlugin plugin) {
         this(plugin, plugin != null ? plugin.getNpcManager() : null);
@@ -100,13 +102,13 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         }
 
         if (args.length == 1) {
-            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction", "equip", "setcolor"), args[0]);
+            return filterSuggestions(List.of("create", "delete", "list", "info", "addaction", "equip", "setcolor", "animate"), args[0]);
         }
 
         if (args.length == 2) {
             final String subCommand = args[0].toLowerCase(Locale.ROOT);
             if (subCommand.equals("delete") || subCommand.equals("info") || subCommand.equals("addaction")
-                    || subCommand.equals("equip") || subCommand.equals("setcolor")) {
+                    || subCommand.equals("equip") || subCommand.equals("setcolor") || subCommand.equals("animate")) {
                 return filterSuggestions(new ArrayList<>(npcManager.getNPCNames()), args[1]);
             }
         }
@@ -117,6 +119,10 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
 
         if (args.length == 3 && args[0].equalsIgnoreCase("setcolor")) {
             return filterSuggestions(List.of("#FF0000", "#00FF00", "#0000FF"), args[2]);
+        }
+
+        if (args.length == 3 && args[0].equalsIgnoreCase("animate")) {
+            return filterSuggestions(ANIMATION_SUGGESTIONS, args[2]);
         }
 
         return Collections.emptyList();
@@ -139,6 +145,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
             case "addaction" -> handleAddAction(sender, parameters);
             case "equip" -> handleEquip(sender, parameters);
             case "setcolor" -> handleSetColor(sender, parameters);
+            case "animate" -> handleAnimate(sender, parameters);
             default -> sendUsage(sender);
         }
         return true;
@@ -253,11 +260,67 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         MessageUtils.sendPrefixedMessage(sender, "&ePosition: &f" + String.format(Locale.ROOT,
                 "%.1f, %.1f, %.1f", data.x(), data.y(), data.z()));
         MessageUtils.sendPrefixedMessage(sender, "&eTête: &f" + (data.headTexture() != null ? data.headTexture() : "Par défaut"));
+        MessageUtils.sendPrefixedMessage(sender, "&eAnimation: &f" + (data.animation() != null ? data.animation() : "Aucune"));
         MessageUtils.sendPrefixedMessage(sender, "&eActions (&6" + data.actions().size() + "&e) :");
 
         final List<String> actions = data.actions();
         for (int index = 0; index < actions.size(); index++) {
             MessageUtils.sendPrefixedMessage(sender, "&a  " + (index + 1) + ". &f" + actions.get(index));
+        }
+    }
+
+    private void handleAnimate(final CommandSender sender, final String[] args) {
+        if (!sender.hasPermission("lobby.admin.npc")) {
+            MessageUtils.sendPrefixedMessage(sender, "&cVous n'avez pas la permission !");
+            return;
+        }
+        if (args.length < 2) {
+            MessageUtils.sendPrefixedMessage(sender, "&cUsage: /npc animate <nom> <animation|stop>");
+            return;
+        }
+
+        final String name = args[0];
+        final NPC npc = npcManager.getNPC(name);
+        if (npc == null) {
+            MessageUtils.sendPrefixedMessage(sender, "&cPNJ '&6" + name + "&c' introuvable !");
+            return;
+        }
+
+        final String animationArgument = args[1];
+
+        if (animationArgument.equalsIgnoreCase("stop")) {
+            try {
+                npcManager.stopNpcAnimation(name);
+                MessageUtils.sendPrefixedMessage(sender, "&aAnimation arrêtée pour le PNJ '&6" + name + "&a'.");
+            } catch (final RuntimeException exception) {
+                MessageUtils.sendPrefixedMessage(sender, "&cImpossible d'arrêter l'animation pour ce PNJ.");
+                if (plugin != null) {
+                    plugin.getLogger().severe("Error stopping NPC animation: " + exception.getMessage());
+                }
+            }
+            return;
+        }
+
+        final String normalized = animationArgument.toUpperCase(Locale.ROOT);
+        if (!AVAILABLE_ANIMATIONS.contains(normalized)) {
+            MessageUtils.sendPrefixedMessage(sender, "&cAnimation inconnue. Options: &7" + String.join(", ", AVAILABLE_ANIMATIONS));
+            return;
+        }
+
+        try {
+            final boolean started = npcManager.playNpcAnimation(name, normalized);
+            if (!started) {
+                MessageUtils.sendPrefixedMessage(sender, "&cImpossible de jouer cette animation.");
+                return;
+            }
+            MessageUtils.sendPrefixedMessage(sender, "&aAnimation '&6" + normalized + "&a' lancée pour le PNJ '&6" + name + "&a'.");
+        } catch (final IllegalStateException exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cLe PNJ n'est pas actuellement disponible.");
+        } catch (final RuntimeException exception) {
+            MessageUtils.sendPrefixedMessage(sender, "&cImpossible de mettre à jour l'animation de ce PNJ.");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error updating NPC animation: " + exception.getMessage());
+            }
         }
     }
 
@@ -389,6 +452,7 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc addaction <nom> <action>");
         MessageUtils.sendPrefixedMessage(sender, "&e/ladmin npc equip <nom>");
         MessageUtils.sendPrefixedMessage(sender, "&e/npc setcolor <nom> <#RRGGBB>");
+        MessageUtils.sendPrefixedMessage(sender, "&e/npc animate <nom> <animation|stop>");
     }
 
     private List<String> filterSuggestions(final List<String> options, final String prefix) {

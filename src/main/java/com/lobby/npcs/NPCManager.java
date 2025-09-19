@@ -2,6 +2,7 @@ package com.lobby.npcs;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.data.NPCData;
+import com.lobby.npcs.animation.AnimationManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
@@ -32,6 +33,7 @@ public class NPCManager {
     private final NamespacedKey npcKey;
     private final NPCInteractionHandler interactionHandler;
     private final NpcDAO npcDAO;
+    private final AnimationManager animationManager;
     private BukkitTask cleanupTask;
     private long interactionCooldownMillis = 1000L;
     private double maxInteractionDistance = 3.0D;
@@ -43,10 +45,12 @@ public class NPCManager {
         this.npcKey = new NamespacedKey(plugin, "npc_name");
         this.interactionHandler = new NPCInteractionHandler(this);
         this.npcDAO = new NpcDAO(plugin.getDatabaseManager(), plugin);
+        this.animationManager = new AnimationManager(plugin);
     }
 
     public void initialize() {
         reloadSettings();
+        animationManager.stopAll();
         loadNPCsFromDatabase();
         startCooldownCleanupTask();
         LogUtils.info(plugin, "NPCManager initialized with " + npcs.size() + " NPCs");
@@ -78,6 +82,7 @@ public class NPCManager {
                     final NPC npc = new NPC(data, this);
                     npcs.put(data.name(), npc);
                     npc.spawn();
+                    applyPersistedAnimation(npc);
                     loaded++;
                 } catch (final Exception exception) {
                     plugin.getLogger().warning("Failed to load NPC: " + exception.getMessage());
@@ -103,7 +108,7 @@ public class NPCManager {
                 location.getWorld().getName(),
                 location.getX(), location.getY(), location.getZ(),
                 location.getYaw(), location.getPitch(),
-                headTexture, null, actions, true
+                headTexture, null, actions, null, true
         );
 
         try {
@@ -117,6 +122,7 @@ public class NPCManager {
             final NPC npc = new NPC(data, this);
             npcs.put(name, npc);
             npc.spawn();
+            applyPersistedAnimation(npc);
             LogUtils.info(plugin, "Successfully created and spawned NPC: " + name);
         } catch (final SQLException exception) {
             LogUtils.severe(plugin, "SQL Error creating NPC: " + exception.getMessage(), exception);
@@ -166,6 +172,7 @@ public class NPCManager {
         final NPC newNPC = new NPC(newData, this);
         npcs.put(name, newNPC);
         newNPC.spawn();
+        applyPersistedAnimation(newNPC);
 
         if (!updated) {
             LogUtils.warning(plugin, "Updated actions for NPC '" + name + "' locally but no database row was modified.");
@@ -271,6 +278,59 @@ public class NPCManager {
         return applied;
     }
 
+    public boolean playNpcAnimation(final String name, final String animationType) {
+        final NPC npc = npcs.get(name);
+        if (npc == null) {
+            throw new IllegalArgumentException("NPC '" + name + "' not found");
+        }
+
+        final String normalized = normalizeAnimationName(animationType);
+        if (normalized == null) {
+            return false;
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand == null || armorStand.isDead()) {
+            throw new IllegalStateException("NPC '" + name + "' is not currently spawned");
+        }
+
+        final boolean started = animationManager.playAnimation(armorStand, normalized);
+        if (!started) {
+            return false;
+        }
+
+        try {
+            npcDAO.updateNpcAnimation(name, normalized);
+        } catch (final SQLException exception) {
+            LogUtils.severe(plugin, "Failed to update NPC animation: " + exception.getMessage(), exception);
+            throw new RuntimeException("Failed to update NPC animation: " + exception.getMessage(), exception);
+        }
+
+        npc.setData(npc.getData().withAnimation(normalized));
+        return true;
+    }
+
+    public void stopNpcAnimation(final String name) {
+        final NPC npc = npcs.get(name);
+        if (npc == null) {
+            throw new IllegalArgumentException("NPC '" + name + "' not found");
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand != null && !armorStand.isDead()) {
+            animationManager.stopAnimation(armorStand);
+        }
+
+        try {
+            npcDAO.updateNpcAnimation(name, null);
+        } catch (final SQLException exception) {
+            LogUtils.severe(plugin, "Failed to clear NPC animation: " + exception.getMessage(), exception);
+            throw new RuntimeException("Failed to clear NPC animation: " + exception.getMessage(), exception);
+        }
+
+        npc.setData(npc.getData().withAnimation(null));
+    }
+
     public boolean isOnCooldown(final UUID player, final String npcName) {
         final Map<String, Long> playerCooldowns = cooldowns.get(player);
         if (playerCooldowns == null) {
@@ -343,6 +403,10 @@ public class NPCManager {
         return npcKey;
     }
 
+    public AnimationManager getAnimationManager() {
+        return animationManager;
+    }
+
     public long getInteractionCooldownMillis() {
         return interactionCooldownMillis;
     }
@@ -360,6 +424,40 @@ public class NPCManager {
         interactionCooldownMillis = Math.max(0L, config.getLong("npcs.interaction_cooldown_ms", 1000L));
         maxInteractionDistance = Math.max(0D, config.getDouble("npcs.max_interaction_distance", 3.0D));
         lookAtPlayer = config.getBoolean("npcs.look_at_player", false);
+    }
+
+    private String normalizeAnimationName(final String animation) {
+        if (animation == null) {
+            return null;
+        }
+
+        final String trimmed = animation.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+
+        return trimmed.toUpperCase(Locale.ROOT);
+    }
+
+    private void applyPersistedAnimation(final NPC npc) {
+        if (npc == null) {
+            return;
+        }
+
+        final String animation = npc.getData().animation();
+        if (animation == null || animation.isBlank()) {
+            return;
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand == null || armorStand.isDead()) {
+            return;
+        }
+
+        final boolean started = animationManager.playAnimation(armorStand, animation);
+        if (!started) {
+            LogUtils.warning(plugin, "Ignoring unknown animation '" + animation + "' for NPC '" + npc.getData().name() + "'");
+        }
     }
 
     private String normalizeArmorColor(final String hexColor) {
@@ -394,6 +492,7 @@ public class NPCManager {
             cleanupTask.cancel();
             cleanupTask = null;
         }
+        animationManager.stopAll();
         npcs.values().forEach(NPC::despawn);
         npcs.clear();
         cooldowns.clear();
