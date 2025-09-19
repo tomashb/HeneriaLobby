@@ -226,6 +226,7 @@ public class DatabaseManager {
                         pitch REAL DEFAULT 0,
                         head_texture TEXT,
                         armor_color TEXT,
+                        animation TEXT,
                         actions TEXT,
                         visible INTEGER DEFAULT 1,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -235,19 +236,13 @@ public class DatabaseManager {
             executeSQL(sqliteCreate);
             plugin.getLogger().fine("Created npcs table for SQLite");
             addColumnIfNotExists("npcs", "armor_color", "TEXT");
+            addColumnIfNotExists("npcs", "animation", "TEXT");
             createNPCIndexes();
             return;
         }
 
-        try {
-            executeSQL("DROP TABLE IF EXISTS npcs");
-            LogUtils.info(plugin, "Dropped existing npcs table");
-        } catch (final SQLException exception) {
-            plugin.getLogger().fine("No existing npcs table to drop");
-        }
-
         final String createTable = """
-                CREATE TABLE npcs (
+                CREATE TABLE IF NOT EXISTS npcs (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(50) UNIQUE NOT NULL,
                     display_name VARCHAR(100),
@@ -258,7 +253,8 @@ public class DatabaseManager {
                     yaw FLOAT DEFAULT 0,
                     pitch FLOAT DEFAULT 0,
                     head_texture TEXT,
-                    armor_color VARCHAR(7),
+                    armor_color VARCHAR(7) NULL DEFAULT NULL,
+                    animation VARCHAR(50) NULL DEFAULT NULL,
                     actions TEXT,
                     visible BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -271,6 +267,7 @@ public class DatabaseManager {
         executeSQL(createTable);
         LogUtils.info(plugin, "Created npcs table with proper AUTO_INCREMENT");
         addColumnIfNotExists("npcs", "armor_color", "VARCHAR(7)");
+        addColumnIfNotExists("npcs", "animation", "VARCHAR(50)");
     }
 
     private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
