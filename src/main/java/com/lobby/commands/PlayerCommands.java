@@ -1,6 +1,7 @@
 package com.lobby.commands;
 
 import com.lobby.lobby.LobbyManager;
+import com.lobby.menus.MenuManager;
 import com.lobby.utils.MessageUtils;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,10 +23,18 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             "discord", "commands.discord_unavailable"
     );
 
-    private final LobbyManager lobbyManager;
+    private static final Map<String, String> MENU_COMMANDS = Map.of(
+            "shop", "shop_menu",
+            "serveurs", "servers_menu",
+            "profil", "profile_menu"
+    );
 
-    public PlayerCommands(final LobbyManager lobbyManager) {
+    private final LobbyManager lobbyManager;
+    private final MenuManager menuManager;
+
+    public PlayerCommands(final LobbyManager lobbyManager, final MenuManager menuManager) {
         this.lobbyManager = lobbyManager;
+        this.menuManager = menuManager;
     }
 
     @Override
@@ -36,12 +45,22 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
         }
 
         final String commandName = command.getName().toLowerCase(Locale.ROOT);
+        final Player player = (Player) sender;
         if (commandName.equals("lobby")) {
-            handleLobbyCommand((Player) sender);
+            handleLobbyCommand(player);
+            return true;
+        }
+        if (MENU_COMMANDS.containsKey(commandName)) {
+            final String menuId = MENU_COMMANDS.get(commandName);
+            final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
+            if (!opened) {
+                final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
+                MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
+            }
             return true;
         }
         final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
-        MessageUtils.sendConfigMessage(sender, messagePath, Map.of("command", "/" + label));
+        MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
         return true;
     }
 

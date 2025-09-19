@@ -1,0 +1,227 @@
+menus:
+  main_menu:
+    title: "&6Menu Principal"
+    size: 27
+    items:
+      profile:
+        slot: 11
+        material: PLAYER_HEAD
+        head: "%player_name%"
+        name: "&bProfil de %player_name%"
+        lore:
+          - "&7Coins: &6%player_coins%"
+          - "&7Tokens: &d%player_tokens%"
+          - "&7Temps de jeu: &f%player_playtime%"
+          - ""
+          - "&eClique pour consulter ton profil"
+        actions:
+          - "[MENU] profile_menu"
+      shop:
+        slot: 13
+        material: EMERALD
+        name: "&aBoutique"
+        lore:
+          - "&7Découvre des offres exclusives"
+          - "&7Solde disponible: &6%player_coins%"
+        actions:
+          - "[MENU] shop_menu"
+      servers:
+        slot: 15
+        material: COMPASS
+        name: "&eSélecteur de serveurs"
+        lore:
+          - "&7Joueurs sur le réseau: &f%server_online%"
+          - "&7Clique pour choisir une destination"
+        actions:
+          - "[MENU] servers_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  shop_menu:
+    title: "&aBoutique"
+    size: 27
+    items:
+      cosmetics:
+        slot: 11
+        material: NETHER_STAR
+        name: "&dCosmétiques"
+        lore:
+          - "&7Débloque des effets uniques"
+          - "&7Solde: &6%player_coins%"
+        actions:
+          - "[COMMAND] warp cosmetics"
+      boosters:
+        slot: 13
+        material: EXPERIENCE_BOTTLE
+        name: "&bBoosters"
+        lore:
+          - "&7Accélère ta progression"
+          - "&7Tokens: &d%player_tokens%"
+        actions:
+          - "[COMMAND] warp boosters"
+      ranks:
+        slot: 15
+        material: GOLD_INGOT
+        name: "&6Grades"
+        lore:
+          - "&7Profite d'avantages spéciaux"
+        actions:
+          - "[COMMAND] warp ranks"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu principal"
+        actions:
+          - "[MENU] main_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer la boutique"
+        actions:
+          - "[CLOSE]"
+
+  servers_menu:
+    title: "&eSélecteur de serveurs"
+    size: 36
+    items:
+      lobby:
+        slot: 10
+        material: GRASS_BLOCK
+        name: "&aLobby Principal"
+        lore:
+          - "&7Joueurs: &f%server_online_lobby%"
+          - "&7Clique pour rejoindre"
+        actions:
+          - "[COMMAND] send %player_name% lobby"
+      skyblock:
+        slot: 12
+        material: OAK_SAPLING
+        name: "&2Skyblock"
+        lore:
+          - "&7Joueurs: &f%server_online_skyblock%"
+          - "&7Îles et automation"
+        actions:
+          - "[COMMAND] send %player_name% skyblock"
+      practice:
+        slot: 14
+        material: IRON_SWORD
+        name: "&cPractice"
+        lore:
+          - "&7Joueurs: &f%server_online_practice%"
+          - "&7Entraîne-toi au PvP"
+        actions:
+          - "[COMMAND] send %player_name% practice"
+      creative:
+        slot: 16
+        material: BRICKS
+        name: "&dCréatif"
+        lore:
+          - "&7Joueurs: &f%server_online_creative%"
+          - "&7Construis sans limites"
+        actions:
+          - "[COMMAND] send %player_name% creative"
+      back:
+        slot: 27
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour au menu principal"
+        actions:
+          - "[MENU] main_menu"
+      close:
+        slot: 35
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le sélecteur"
+        actions:
+          - "[CLOSE]"
+
+  profile_menu:
+    title: "&bProfil de %player_name%"
+    size: 27
+    items:
+      overview:
+        slot: 11
+        material: BOOK
+        name: "&aRésumé"
+        lore:
+          - "&7Coins: &6%player_coins%"
+          - "&7Tokens: &d%player_tokens%"
+          - "&7Temps de jeu: &f%player_playtime%"
+          - "&7Dernière connexion: &f%player_last_join%"
+        actions:
+          - "[MENU] stats_menu"
+      rewards:
+        slot: 13
+        material: CHEST
+        name: "&6Récompenses quotidiennes"
+        lore:
+          - "&7Récupère ton bonus journalier"
+        actions:
+          - "[COMMAND] reward daily"
+      settings:
+        slot: 15
+        material: REDSTONE_COMPARATOR
+        name: "&cParamètres"
+        lore:
+          - "&7Personnalise ton expérience"
+        actions:
+          - "[COMMAND] settings open %player_name%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour au menu principal"
+        actions:
+          - "[MENU] main_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le profil"
+        actions:
+          - "[CLOSE]"
+
+  stats_menu:
+    title: "&bStatistiques"
+    size: 27
+    items:
+      summary:
+        slot: 13
+        material: CLOCK
+        name: "&fRésumé de &b%player_name%"
+        lore:
+          - "&7Coins: &6%player_coins%"
+          - "&7Tokens: &d%player_tokens%"
+          - "&7Temps de jeu: &f%player_playtime%"
+          - "&7Première connexion: &f%player_first_join%"
+          - "&7Dernière connexion: &f%player_last_join%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour au profil"
+        actions:
+          - "[MENU] profile_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer les statistiques"
+        actions:
+          - "[CLOSE]"

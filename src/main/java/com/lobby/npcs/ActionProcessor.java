@@ -1,8 +1,10 @@
 package com.lobby.npcs;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.menus.MenuManager;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
+import com.lobby.utils.PlaceholderUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
@@ -54,10 +56,26 @@ public class ActionProcessor {
             }
             return;
         }
+        if (startsWithIgnoreCase(trimmed, "[CLOSE]")) {
+            Bukkit.getScheduler().runTask(plugin, player::closeInventory);
+            return;
+        }
         if (startsWithIgnoreCase(trimmed, "[COMMAND]")) {
             final String command = processed.substring(9).trim();
             if (!command.isEmpty()) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+            }
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[MENU]")) {
+            final String menuId = processed.substring(6).trim();
+            if (!menuId.isEmpty()) {
+                final MenuManager menuManager = plugin.getMenuManager();
+                if (menuManager != null) {
+                    Bukkit.getScheduler().runTask(plugin, () -> menuManager.openMenu(player, menuId));
+                } else {
+                    LogUtils.warning(plugin, "Menu action requested but MenuManager is not available: " + menuId);
+                }
             }
             return;
         }
@@ -119,13 +137,7 @@ public class ActionProcessor {
         if (text == null) {
             return "";
         }
-        final var economyManager = plugin.getEconomyManager();
-        final long coins = economyManager != null ? economyManager.getCoins(player.getUniqueId()) : 0L;
-        final long tokens = economyManager != null ? economyManager.getTokens(player.getUniqueId()) : 0L;
-        return text
-                .replace("%player_name%", player.getName())
-                .replace("%player_coins%", String.valueOf(coins))
-                .replace("%player_tokens%", String.valueOf(tokens));
+        return PlaceholderUtils.applyPlaceholders(plugin, text, player);
     }
 
     private boolean startsWithIgnoreCase(final String text, final String prefix) {
