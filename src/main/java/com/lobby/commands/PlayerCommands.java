@@ -17,14 +17,11 @@ import java.util.Map;
 public class PlayerCommands implements CommandExecutor, TabExecutor {
 
     private static final Map<String, String> COMMAND_MESSAGES = Map.of(
-            "shop", "commands.shop_unavailable",
-            "serveurs", "commands.servers_unavailable",
             "profil", "commands.profile_unavailable",
             "discord", "commands.discord_unavailable"
     );
 
     private static final Map<String, String> MENU_COMMANDS = Map.of(
-            "shop", "shop_menu",
             "serveurs", "servers_menu",
             "profil", "profile_menu"
     );

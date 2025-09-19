@@ -11,6 +11,26 @@ commands:
   profile_unavailable: "&cLe profil joueur n'est pas encore disponible."
   discord_unavailable: "&cLa liaison Discord n'est pas encore disponible."
   unavailable: "&cLa commande {command} n'est pas encore disponible."
+shop:
+  purchase_success: "&aVous avez acheté &6{item}&a !"
+  insufficient_coins: "&cPas assez de coins !"
+  insufficient_tokens: "&cPas assez de tokens !"
+  category_not_found: "&cCatégorie introuvable !"
+  confirmation_required: "&eCliquez à nouveau pour confirmer l'achat de &6{item}&e."
+  admin:
+    usage: "&cUtilisation: /ladmin shop <addcategory|additem|reload>"
+    reloaded: "&aBoutique rechargée !"
+    addcategory_usage: "&cUtilisation: /ladmin shop addcategory <id> <nom> [description] [icon] [ordre] [visible]"
+    additem_usage: "&cUtilisation: /ladmin shop additem <id> <categorie> <nom> <prixCoins> <prixTokens> <commande...>"
+    invalid_category_id: "&cIdentifiant de catégorie invalide."
+    category_exists: "&cLa catégorie &6{id} &cexiste déjà."
+    category_created: "&aCatégorie &6{id} &acréée !"
+    category_error: "&cErreur lors de la création de la catégorie."
+    invalid_price: "&cPrix invalide."
+    unknown_category: "&cCatégorie inconnue: &6{category}&c."
+    no_commands: "&cVous devez fournir au moins une commande pour l'item."
+    item_created: "&aItem &6{id} &acréé !"
+    item_error: "&cErreur lors de la création de l'item."
 menus:
   not_found: "&cLe menu &e{menu} &cn'est pas disponible pour le moment."
 economy:

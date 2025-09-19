@@ -63,3 +63,5 @@ permissions:
     default: op
   lobby.admin.bypass:
     default: op
+  lobby.admin.shop:
+    default: op

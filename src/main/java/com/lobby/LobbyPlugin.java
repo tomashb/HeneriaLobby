@@ -4,6 +4,7 @@ import com.lobby.commands.AdminCommands;
 import com.lobby.commands.EconomyCommands;
 import com.lobby.commands.NPCCommands;
 import com.lobby.commands.PlayerCommands;
+import com.lobby.commands.ShopCommands;
 import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
@@ -16,6 +17,7 @@ import com.lobby.events.PlayerJoinLeaveEvent;
 import com.lobby.lobby.LobbyManager;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
+import com.lobby.shop.ShopManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -33,6 +35,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
     private MenuManager menuManager;
+    private ShopManager shopManager;
+    private ShopCommands shopCommands;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -61,6 +65,9 @@ public final class LobbyPlugin extends JavaPlugin {
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
         menuManager = new MenuManager(this);
+        shopManager = new ShopManager(this);
+        shopManager.initialize();
+        shopCommands = new ShopCommands(this, shopManager);
 
         registerCommands();
 
@@ -82,6 +89,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (economyManager != null) {
             economyManager.shutdown();
+        }
+        if (shopManager != null) {
+            shopManager.shutdown();
         }
         if (databaseManager != null) {
             databaseManager.shutdown();
@@ -123,6 +133,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return menuManager;
     }
 
+    public ShopManager getShopManager() {
+        return shopManager;
+    }
+
     public LobbyManager getLobbyManager() {
         return lobbyManager;
     }
@@ -154,10 +168,13 @@ public final class LobbyPlugin extends JavaPlugin {
     private void registerCommands() {
         final PlayerCommands playerCommands = new PlayerCommands(lobbyManager, menuManager);
         registerCommand("lobby", playerCommands);
-        registerCommand("shop", playerCommands);
         registerCommand("serveurs", playerCommands);
         registerCommand("profil", playerCommands);
         registerCommand("discord", playerCommands);
+
+        if (shopCommands != null) {
+            registerCommand("shop", shopCommands);
+        }
 
         final EconomyCommands economyCommands = new EconomyCommands(this, economyManager);
         registerCommand("coins", economyCommands);
@@ -165,7 +182,7 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("pay", economyCommands);
         registerCommand("top", economyCommands);
 
-        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager, lobbyManager);
+        final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager, lobbyManager, shopCommands);
         registerCommand("lobbyadmin", adminCommands);
 
         final NPCCommands npcCommands = new NPCCommands(this);

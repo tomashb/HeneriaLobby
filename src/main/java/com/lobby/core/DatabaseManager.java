@@ -141,7 +141,9 @@ public class DatabaseManager {
                     ? "VARCHAR(32) DEFAULT 'NONE'"
                     : "TEXT DEFAULT 'NONE'";
             addColumnIfMissing("holograms", "animation", animationDefinition);
-            executeSQL(getCreateShopTableSQL());
+            executeSQL(getCreateShopCategoriesTableSQL());
+            executeSQL(getCreateShopItemsTableSQL());
+            ensureShopTables();
             executeSQL(getCreateTransactionsTableSQL());
 
             createTransactionIndexes();
@@ -546,36 +548,139 @@ public class DatabaseManager {
                 """;
     }
 
-    private String getCreateShopTableSQL() {
+    private String getCreateShopCategoriesTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS shop_categories (
+                        id VARCHAR(50) PRIMARY KEY,
+                        display_name VARCHAR(100) NOT NULL,
+                        description TEXT,
+                        icon_material VARCHAR(50) DEFAULT 'CHEST',
+                        sort_order INT DEFAULT 0,
+                        visible BOOLEAN DEFAULT TRUE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
+        return """
+                CREATE TABLE IF NOT EXISTS shop_categories (
+                    id TEXT PRIMARY KEY,
+                    display_name TEXT NOT NULL,
+                    description TEXT,
+                    icon_material TEXT DEFAULT 'CHEST',
+                    sort_order INTEGER DEFAULT 0,
+                    visible INTEGER DEFAULT 1
+                )
+                """;
+    }
+
+    private String getCreateShopItemsTableSQL() {
         if (databaseType == DatabaseType.MYSQL) {
             return """
                     CREATE TABLE IF NOT EXISTS shop_items (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        category VARCHAR(50) NOT NULL,
-                        item_name VARCHAR(100) NOT NULL,
+                        id VARCHAR(50) PRIMARY KEY,
+                        category_id VARCHAR(50) NOT NULL,
+                        display_name VARCHAR(100) NOT NULL,
                         description TEXT,
+                        icon_material VARCHAR(50) DEFAULT 'PLAYER_HEAD',
+                        icon_head_texture VARCHAR(200) DEFAULT 'hdb:35472',
                         price_coins BIGINT DEFAULT 0,
                         price_tokens BIGINT DEFAULT 0,
                         commands TEXT,
+                        confirm_required BOOLEAN DEFAULT FALSE,
                         enabled BOOLEAN DEFAULT TRUE,
-                        INDEX idx_category (category),
-                        INDEX idx_enabled (enabled)
+                        FOREIGN KEY (category_id) REFERENCES shop_categories(id)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """;
         }
 
         return """
                 CREATE TABLE IF NOT EXISTS shop_items (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    category TEXT NOT NULL,
-                    item_name TEXT NOT NULL,
+                    id TEXT PRIMARY KEY,
+                    category_id TEXT NOT NULL,
+                    display_name TEXT NOT NULL,
                     description TEXT,
-                    price_coins INTEGER DEFAULT 0,
-                    price_tokens INTEGER DEFAULT 0,
+                    icon_material TEXT DEFAULT 'PLAYER_HEAD',
+                    icon_head_texture TEXT DEFAULT 'hdb:35472',
+                    price_coins BIGINT DEFAULT 0,
+                    price_tokens BIGINT DEFAULT 0,
                     commands TEXT,
-                    enabled INTEGER DEFAULT 1
+                    confirm_required INTEGER DEFAULT 0,
+                    enabled INTEGER DEFAULT 1,
+                    FOREIGN KEY (category_id) REFERENCES shop_categories(id)
                 )
                 """;
+    }
+
+    private void ensureShopTables() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            addColumnIfNotExists("shop_items", "category_id", "VARCHAR(50) NOT NULL DEFAULT ''");
+            addColumnIfNotExists("shop_items", "display_name", "VARCHAR(100) NOT NULL DEFAULT ''");
+            addColumnIfNotExists("shop_items", "description", "TEXT");
+            addColumnIfNotExists("shop_items", "icon_material", "VARCHAR(50) DEFAULT 'PLAYER_HEAD'");
+            addColumnIfNotExists("shop_items", "icon_head_texture", "VARCHAR(200) DEFAULT 'hdb:35472'");
+            addColumnIfNotExists("shop_items", "price_coins", "BIGINT DEFAULT 0");
+            addColumnIfNotExists("shop_items", "price_tokens", "BIGINT DEFAULT 0");
+            addColumnIfNotExists("shop_items", "commands", "TEXT");
+            addColumnIfNotExists("shop_items", "confirm_required", "BOOLEAN DEFAULT FALSE");
+            addColumnIfNotExists("shop_items", "enabled", "BOOLEAN DEFAULT TRUE");
+        } else {
+            addColumnIfNotExists("shop_items", "category_id", "TEXT DEFAULT ''");
+            addColumnIfNotExists("shop_items", "display_name", "TEXT DEFAULT ''");
+            addColumnIfNotExists("shop_items", "description", "TEXT");
+            addColumnIfNotExists("shop_items", "icon_material", "TEXT DEFAULT 'PLAYER_HEAD'");
+            addColumnIfNotExists("shop_items", "icon_head_texture", "TEXT DEFAULT 'hdb:35472'");
+            addColumnIfNotExists("shop_items", "price_coins", "BIGINT DEFAULT 0");
+            addColumnIfNotExists("shop_items", "price_tokens", "BIGINT DEFAULT 0");
+            addColumnIfNotExists("shop_items", "commands", "TEXT");
+            addColumnIfNotExists("shop_items", "confirm_required", "INTEGER DEFAULT 0");
+            addColumnIfNotExists("shop_items", "enabled", "INTEGER DEFAULT 1");
+        }
+
+        if (columnExists("shop_items", "category") && columnExists("shop_items", "category_id")) {
+            final String migrateCategory = "UPDATE shop_items SET category_id = category WHERE (category_id IS NULL OR category_id = '')";
+            executeSQL(migrateCategory);
+        }
+        if (columnExists("shop_items", "item_name") && columnExists("shop_items", "display_name")) {
+            final String migrateName = "UPDATE shop_items SET display_name = item_name WHERE (display_name IS NULL OR display_name = '')";
+            executeSQL(migrateName);
+        }
+    }
+
+    private boolean columnExists(final String table, final String column) {
+        try (Connection connection = getConnection()) {
+            if (databaseType == DatabaseType.MYSQL) {
+                final String checkSql = """
+                        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = ?
+                          AND COLUMN_NAME = ?
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+                    statement.setString(1, table);
+                    statement.setString(2, column);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        if (resultSet.next()) {
+                            return resultSet.getInt(1) > 0;
+                        }
+                    }
+                }
+            } else {
+                final String pragmaSql = "PRAGMA table_info(" + table + ")";
+                try (Statement statement = connection.createStatement();
+                     ResultSet resultSet = statement.executeQuery(pragmaSql)) {
+                    while (resultSet.next()) {
+                        final String existing = resultSet.getString("name");
+                        if (existing != null && existing.equalsIgnoreCase(column)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Failed to check column existence for " + table + '.' + column, exception);
+        }
+        return false;
     }
 
     private String getCreateTransactionsTableSQL() {
