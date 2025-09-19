@@ -14,7 +14,9 @@ public class ConfigManager {
 
     private final LobbyPlugin plugin;
     private FileConfiguration messagesConfig;
+    private FileConfiguration menusConfig;
     private File messagesFile;
+    private File menusFile;
 
     public ConfigManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -24,11 +26,13 @@ public class ConfigManager {
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
         loadMessages();
+        loadMenus();
     }
 
     public void reloadConfigs() {
         plugin.reloadConfig();
         loadMessages();
+        loadMenus();
     }
 
     public FileConfiguration getMainConfig() {
@@ -40,6 +44,13 @@ public class ConfigManager {
             loadMessages();
         }
         return messagesConfig;
+    }
+
+    public FileConfiguration getMenusConfig() {
+        if (menusConfig == null) {
+            loadMenus();
+        }
+        return menusConfig;
     }
 
     public boolean isDebugEnabled() {
@@ -77,6 +88,44 @@ public class ConfigManager {
             }
         } catch (IOException | InvalidConfigurationException exception) {
             plugin.getLogger().severe("Unable to load default messages.yml: " + exception.getMessage());
+        }
+    }
+
+    private void loadMenus() {
+        if (menusFile == null) {
+            final File configDirectory = new File(plugin.getDataFolder(), "config");
+            if (!configDirectory.exists() && !configDirectory.mkdirs()) {
+                plugin.getLogger().severe("Unable to create config directory for menus.");
+            }
+            menusFile = new File(configDirectory, "menus.yml");
+        }
+
+        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+            plugin.getLogger().severe("Unable to create plugin data folder for configuration files.");
+        }
+
+        if (!menusFile.exists()) {
+            plugin.saveResource("config/menus.yml", false);
+        }
+
+        menusConfig = new YamlConfiguration();
+        try {
+            menusConfig.load(menusFile);
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load config/menus.yml: " + exception.getMessage());
+            loadDefaultMenus();
+        }
+    }
+
+    private void loadDefaultMenus() {
+        menusConfig = new YamlConfiguration();
+        try (InputStream inputStream = plugin.getResource("config/menus.yml")) {
+            if (inputStream != null) {
+                Files.copy(inputStream, menusFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                menusConfig.load(menusFile);
+            }
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load default config/menus.yml: " + exception.getMessage());
         }
     }
 }

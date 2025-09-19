@@ -11,6 +11,8 @@ commands:
   profile_unavailable: "&cLe profil joueur n'est pas encore disponible."
   discord_unavailable: "&cLa liaison Discord n'est pas encore disponible."
   unavailable: "&cLa commande {command} n'est pas encore disponible."
+menus:
+  not_found: "&cLe menu &e{menu} &cn'est pas disponible pour le moment."
 economy:
   player_only: "&cSeuls les joueurs peuvent exécuter cette commande."
   player_not_found: "&cLe joueur &e{player} &cest introuvable."

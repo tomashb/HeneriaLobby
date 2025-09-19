@@ -9,6 +9,7 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
+import com.lobby.menus.MenuManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -31,6 +32,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private HologramManager hologramManager;
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
+    private MenuManager menuManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -58,6 +60,7 @@ public final class LobbyPlugin extends JavaPlugin {
         npcManager.initialize();
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
+        menuManager = new MenuManager(this);
 
         registerCommands();
 
@@ -86,6 +89,9 @@ public final class LobbyPlugin extends JavaPlugin {
         if (lobbyManager != null) {
             lobbyManager.shutdown();
         }
+        if (menuManager != null) {
+            menuManager.closeAll();
+        }
         instance = null;
     }
 
@@ -113,6 +119,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return npcManager;
     }
 
+    public MenuManager getMenuManager() {
+        return menuManager;
+    }
+
     public LobbyManager getLobbyManager() {
         return lobbyManager;
     }
@@ -136,10 +146,13 @@ public final class LobbyPlugin extends JavaPlugin {
         if (lobbyManager != null) {
             lobbyManager.reload();
         }
+        if (menuManager != null) {
+            menuManager.closeAll();
+        }
     }
 
     private void registerCommands() {
-        final PlayerCommands playerCommands = new PlayerCommands(lobbyManager);
+        final PlayerCommands playerCommands = new PlayerCommands(lobbyManager, menuManager);
         registerCommand("lobby", playerCommands);
         registerCommand("shop", playerCommands);
         registerCommand("serveurs", playerCommands);
