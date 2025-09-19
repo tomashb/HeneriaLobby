@@ -521,6 +521,7 @@ public class DatabaseManager {
                         yaw FLOAT DEFAULT 0,
                         pitch FLOAT DEFAULT 0,
                         head_texture TEXT,
+                        armor_color VARCHAR(7),
                         `actions` TEXT,
                         visible BOOLEAN DEFAULT TRUE,
                         INDEX idx_world (world),
@@ -541,6 +542,7 @@ public class DatabaseManager {
                     yaw REAL DEFAULT 0,
                     pitch REAL DEFAULT 0,
                     head_texture TEXT,
+                    armor_color TEXT,
                     actions TEXT,
                     visible INTEGER DEFAULT 1
                 )

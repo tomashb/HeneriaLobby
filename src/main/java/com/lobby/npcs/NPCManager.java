@@ -13,20 +13,14 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
-import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class NPCManager {
@@ -37,6 +31,7 @@ public class NPCManager {
     private final ActionProcessor actionProcessor;
     private final NamespacedKey npcKey;
     private final NPCInteractionHandler interactionHandler;
+    private final NpcDAO npcDAO;
     private BukkitTask cleanupTask;
     private long interactionCooldownMillis = 1000L;
     private double maxInteractionDistance = 3.0D;
@@ -47,6 +42,7 @@ public class NPCManager {
         this.actionProcessor = new ActionProcessor(plugin);
         this.npcKey = new NamespacedKey(plugin, "npc_name");
         this.interactionHandler = new NPCInteractionHandler(this);
+        this.npcDAO = new NpcDAO(plugin.getDatabaseManager(), plugin);
     }
 
     public void initialize() {
@@ -62,33 +58,22 @@ public class NPCManager {
     }
 
     private void loadNPCsFromDatabase() {
-        try (Connection conn = plugin.getDatabaseManager().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM npcs WHERE visible = TRUE");
-             ResultSet rs = stmt.executeQuery()) {
-
+        try {
+            final List<NPCData> npcDataList = npcDAO.loadAllNpcs();
             int loaded = 0;
-            while (rs.next()) {
+            for (final NPCData npcData : npcDataList) {
                 try {
-                    final String name = rs.getString("name");
-                    final String rawColor = rs.getString("armor_color");
-                    final String armorColor = normalizeArmorColor(rawColor);
-                    if (rawColor != null && armorColor == null) {
-                        LogUtils.warning(plugin, "Ignoring invalid armor color '" + rawColor + "' for NPC '" + name + "'");
+                    NPCData data = npcData;
+                    final String rawColor = npcData.armorColor();
+                    if (rawColor != null) {
+                        final String normalized = normalizeArmorColor(rawColor);
+                        if (normalized == null) {
+                            LogUtils.warning(plugin, "Ignoring invalid armor color '" + rawColor + "' for NPC '" + npcData.name() + "'");
+                            data = data.withArmorColor(null);
+                        } else {
+                            data = data.withArmorColor(normalized);
+                        }
                     }
-                    final NPCData data = new NPCData(
-                            name,
-                            rs.getString("display_name"),
-                            rs.getString("world"),
-                            rs.getDouble("x"),
-                            rs.getDouble("y"),
-                            rs.getDouble("z"),
-                            rs.getFloat("yaw"),
-                            rs.getFloat("pitch"),
-                            rs.getString("head_texture"),
-                            armorColor,
-                            parseActions(rs.getString("actions")),
-                            rs.getBoolean("visible")
-                    );
 
                     final NPC npc = new NPC(data, this);
                     npcs.put(data.name(), npc);
@@ -121,37 +106,18 @@ public class NPCManager {
                 headTexture, null, actions, true
         );
 
-        try (Connection conn = plugin.getDatabaseManager().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("""
-                     INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, visible)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                     """)) {
+        try {
+            final boolean created = npcDAO.createNpc(data);
+            plugin.getLogger().fine("Insert result: " + (created ? 1 : 0) + " rows affected");
 
-            stmt.setString(1, name);
-            stmt.setString(2, displayName);
-            stmt.setString(3, location.getWorld().getName());
-            stmt.setDouble(4, location.getX());
-            stmt.setDouble(5, location.getY());
-            stmt.setDouble(6, location.getZ());
-            stmt.setFloat(7, location.getYaw());
-            stmt.setFloat(8, location.getPitch());
-            stmt.setString(9, headTexture);
-            stmt.setString(10, data.armorColor());
-            stmt.setString(11, actionsToJson(actions));
-            stmt.setBoolean(12, true);
-
-            final int result = stmt.executeUpdate();
-            plugin.getLogger().fine("Insert result: " + result + " rows affected");
-
-            if (result > 0) {
-                final NPC npc = new NPC(data, this);
-                npcs.put(name, npc);
-                npc.spawn();
-                LogUtils.info(plugin, "Successfully created and spawned NPC: " + name);
-            } else {
+            if (!created) {
                 throw new SQLException("No rows were inserted");
             }
 
+            final NPC npc = new NPC(data, this);
+            npcs.put(name, npc);
+            npc.spawn();
+            LogUtils.info(plugin, "Successfully created and spawned NPC: " + name);
         } catch (final SQLException exception) {
             LogUtils.severe(plugin, "SQL Error creating NPC: " + exception.getMessage(), exception);
             throw new RuntimeException("Failed to create NPC: " + exception.getMessage(), exception);
@@ -159,20 +125,26 @@ public class NPCManager {
     }
 
     public void deleteNPC(final String name) {
-        final NPC npc = npcs.remove(name);
+        final NPC npc = npcs.get(name);
         if (npc == null) {
             throw new IllegalArgumentException("NPC '" + name + "' not found");
         }
 
-        npc.despawn();
-
-        try (Connection conn = plugin.getDatabaseManager().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("DELETE FROM npcs WHERE name = ?")) {
-            stmt.setString(1, name);
-            stmt.executeUpdate();
-            LogUtils.info(plugin, "Deleted NPC: " + name);
+        final boolean deleted;
+        try {
+            deleted = npcDAO.deleteNpc(name);
         } catch (final SQLException exception) {
             LogUtils.severe(plugin, "Failed to delete NPC from database: " + exception.getMessage(), exception);
+            throw new RuntimeException("Failed to delete NPC: " + exception.getMessage(), exception);
+        }
+
+        npc.despawn();
+        npcs.remove(name);
+
+        if (deleted) {
+            LogUtils.info(plugin, "Deleted NPC: " + name);
+        } else {
+            LogUtils.warning(plugin, "NPC '" + name + "' was removed locally but no database row was deleted.");
         }
     }
 
@@ -182,21 +154,23 @@ public class NPCManager {
             throw new IllegalArgumentException("NPC '" + name + "' not found");
         }
 
-        try (Connection conn = plugin.getDatabaseManager().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE npcs SET actions = ? WHERE name = ?")) {
-            stmt.setString(1, actionsToJson(newActions));
-            stmt.setString(2, name);
-            stmt.executeUpdate();
-
-            npc.despawn();
-            final NPCData newData = npc.getData().withActions(newActions);
-            final NPC newNPC = new NPC(newData, this);
-            npcs.put(name, newNPC);
-            newNPC.spawn();
-
-            LogUtils.info(plugin, "Updated NPC actions: " + name);
+        final boolean updated;
+        try {
+            updated = npcDAO.updateNpcActions(name, newActions);
         } catch (final SQLException exception) {
             throw new RuntimeException("Failed to update NPC: " + exception.getMessage(), exception);
+        }
+
+        npc.despawn();
+        final NPCData newData = npc.getData().withActions(newActions);
+        final NPC newNPC = new NPC(newData, this);
+        npcs.put(name, newNPC);
+        newNPC.spawn();
+
+        if (!updated) {
+            LogUtils.warning(plugin, "Updated actions for NPC '" + name + "' locally but no database row was modified.");
+        } else {
+            LogUtils.info(plugin, "Updated NPC actions: " + name);
         }
     }
 
@@ -211,11 +185,9 @@ public class NPCManager {
             throw new IllegalArgumentException("Invalid armor color: " + hexColor);
         }
 
-        try (Connection conn = plugin.getDatabaseManager().getConnection();
-             PreparedStatement stmt = conn.prepareStatement("UPDATE npcs SET armor_color = ? WHERE name = ?")) {
-            stmt.setString(1, normalized);
-            stmt.setString(2, name);
-            stmt.executeUpdate();
+        final boolean updated;
+        try {
+            updated = npcDAO.updateNpcArmorColor(name, normalized);
         } catch (final SQLException exception) {
             throw new RuntimeException("Failed to update NPC color: " + exception.getMessage(), exception);
         }
@@ -226,36 +198,10 @@ public class NPCManager {
         }
 
         npc.setData(npc.getData().withArmorColor(normalized));
-    }
 
-    private List<String> parseActions(String actionsJson) {
-        if (actionsJson == null || actionsJson.trim().isEmpty()) {
-            return new ArrayList<>();
+        if (!updated) {
+            LogUtils.warning(plugin, "Updated armor color for NPC '" + name + "' locally but no database row was modified.");
         }
-
-        try {
-            if (actionsJson.startsWith("[") && actionsJson.endsWith("]")) {
-                actionsJson = actionsJson.substring(1, actionsJson.length() - 1);
-                if (actionsJson.trim().isEmpty()) {
-                    return new ArrayList<>();
-                }
-
-                return Arrays.stream(actionsJson.split("\",\""))
-                        .map(s -> s.replace("\"", ""))
-                        .collect(Collectors.toList());
-            }
-        } catch (final Exception exception) {
-            plugin.getLogger().warning("Failed to parse NPC actions: " + actionsJson);
-        }
-
-        return Arrays.asList("[MESSAGE] &cError loading NPC actions");
-    }
-
-    private String actionsToJson(final List<String> actions) {
-        if (actions == null || actions.isEmpty()) {
-            return "[]";
-        }
-        return "[\"" + String.join("\",\"", actions) + "\"]";
     }
 
     public boolean isValidArmorColor(final String color) {
