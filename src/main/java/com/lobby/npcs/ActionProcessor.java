@@ -57,7 +57,7 @@ public class ActionProcessor {
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[CLOSE]")) {
-            Bukkit.getScheduler().runTask(plugin, player::closeInventory);
+            Bukkit.getScheduler().runTask(plugin, (Runnable) player::closeInventory);
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[COMMAND]")) {
@@ -72,7 +72,7 @@ public class ActionProcessor {
             if (!menuId.isEmpty()) {
                 final MenuManager menuManager = plugin.getMenuManager();
                 if (menuManager != null) {
-                    Bukkit.getScheduler().runTask(plugin, task -> {
+                    Bukkit.getScheduler().runTask(plugin, (Runnable) () -> {
                         menuManager.openMenu(player, menuId);
                     });
                 } else {
