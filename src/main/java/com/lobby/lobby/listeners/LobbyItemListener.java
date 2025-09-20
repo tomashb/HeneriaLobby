@@ -37,7 +37,10 @@ public class LobbyItemListener implements Listener {
         if (!itemManager.isEnabled()) {
             return;
         }
-        if (!itemManager.shouldPreventMove() && lobbyManager.isBypassing(player)) {
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
             return;
         }
         final ItemStack currentItem = event.getCurrentItem();
@@ -53,6 +56,14 @@ public class LobbyItemListener implements Listener {
         if (itemManager.isLobbyItem(currentItem) || itemManager.isLobbyItem(cursorItem)) {
             event.setCancelled(true);
             player.updateInventory();
+            return;
+        }
+        if (!itemManager.shouldPreventMove()) {
+            return;
+        }
+        if (event.getClickedInventory() != null && event.getClickedInventory().equals(player.getInventory())) {
+            event.setCancelled(true);
+            player.updateInventory();
         }
     }
 
@@ -64,7 +75,10 @@ public class LobbyItemListener implements Listener {
         if (!itemManager.isEnabled()) {
             return;
         }
-        if (!itemManager.shouldPreventMove() && lobbyManager.isBypassing(player)) {
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
             return;
         }
         if (itemManager.isLobbyItem(event.getOldCursor())) {
@@ -79,7 +93,13 @@ public class LobbyItemListener implements Listener {
         if (!itemManager.isEnabled()) {
             return;
         }
-        if (!itemManager.shouldPreventDrop() && lobbyManager.isBypassing(player)) {
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
+            return;
+        }
+        if (!itemManager.shouldPreventDrop()) {
             return;
         }
         if (itemManager.isLobbyItem(event.getItemDrop().getItemStack())) {
@@ -94,7 +114,10 @@ public class LobbyItemListener implements Listener {
         if (!itemManager.isEnabled()) {
             return;
         }
-        if (!itemManager.shouldPreventMove() && lobbyManager.isBypassing(player)) {
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
             return;
         }
         if (itemManager.isLobbyItem(event.getMainHandItem()) || itemManager.isLobbyItem(event.getOffHandItem())) {
@@ -108,6 +131,13 @@ public class LobbyItemListener implements Listener {
         if (!itemManager.shouldPreventDamage()) {
             return;
         }
+        final Player player = event.getPlayer();
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
+            return;
+        }
         if (itemManager.isLobbyItem(event.getItem())) {
             event.setCancelled(true);
         }
@@ -116,6 +146,13 @@ public class LobbyItemListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onItemConsume(final PlayerItemConsumeEvent event) {
         if (!itemManager.shouldPreventConsume()) {
+            return;
+        }
+        final Player player = event.getPlayer();
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
             return;
         }
         if (itemManager.isLobbyItem(event.getItem())) {
@@ -127,6 +164,12 @@ public class LobbyItemListener implements Listener {
     public void onInteract(final PlayerInteractEvent event) {
         final Player player = event.getPlayer();
         if (!itemManager.isEnabled()) {
+            return;
+        }
+        if (!itemManager.isProtected(player)) {
+            return;
+        }
+        if (lobbyManager.isBypassing(player)) {
             return;
         }
         if (event.getHand() == EquipmentSlot.OFF_HAND) {
@@ -150,6 +193,9 @@ public class LobbyItemListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDeath(final PlayerDeathEvent event) {
         if (!itemManager.isEnabled()) {
+            return;
+        }
+        if (!itemManager.isProtected(event.getEntity())) {
             return;
         }
         final Iterator<ItemStack> iterator = event.getDrops().iterator();

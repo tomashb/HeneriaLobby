@@ -28,6 +28,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LobbyItemManager {
 
@@ -43,6 +46,7 @@ public class LobbyItemManager {
     private boolean preventDamage = true;
     private boolean preventConsume = true;
     private int heldSlot = -1;
+    private final Set<UUID> protectedPlayers = ConcurrentHashMap.newKeySet();
 
     public LobbyItemManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -122,6 +126,7 @@ public class LobbyItemManager {
 
         if (items.isEmpty()) {
             player.updateInventory();
+            removeProtection(player);
             return;
         }
 
@@ -134,6 +139,7 @@ public class LobbyItemManager {
         }
 
         player.updateInventory();
+        markProtected(player);
     }
 
     public boolean isEnabled() {
@@ -178,6 +184,42 @@ public class LobbyItemManager {
             return Optional.empty();
         }
         return Optional.ofNullable(items.get(identifier.toLowerCase(Locale.ROOT)));
+    }
+
+    public Optional<LobbyItem> getLobbyItem(final String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(items.get(identifier.toLowerCase(Locale.ROOT)));
+    }
+
+    public void markProtected(final Player player) {
+        if (player == null) {
+            return;
+        }
+        protectedPlayers.add(player.getUniqueId());
+    }
+
+    public boolean isProtected(final Player player) {
+        return player != null && isProtected(player.getUniqueId());
+    }
+
+    public boolean isProtected(final UUID uniqueId) {
+        return uniqueId != null && protectedPlayers.contains(uniqueId);
+    }
+
+    public void removeProtection(final Player player) {
+        if (player == null) {
+            return;
+        }
+        removeProtection(player.getUniqueId());
+    }
+
+    public void removeProtection(final UUID uniqueId) {
+        if (uniqueId == null) {
+            return;
+        }
+        protectedPlayers.remove(uniqueId);
     }
 
     public boolean isLobbyItem(final ItemStack itemStack) {
@@ -230,6 +272,7 @@ public class LobbyItemManager {
 
     public void shutdown() {
         items.clear();
+        protectedPlayers.clear();
     }
 
     private void placeItem(final Player player, final PlayerInventory inventory, final LobbyItem lobbyItem) {

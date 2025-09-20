@@ -21,8 +21,8 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 public class ConfiguredMenu implements Menu {
@@ -49,8 +49,21 @@ public class ConfiguredMenu implements Menu {
 
         final ItemStack filler = createFillerItem(menuSection.getString("fill_material"));
         if (filler != null) {
-            for (int slot = 0; slot < inventory.getSize(); slot++) {
-                inventory.setItem(slot, filler.clone());
+            final List<Integer> fillSlots = menuSection.getIntegerList("fill_slots");
+            if (fillSlots == null || fillSlots.isEmpty()) {
+                for (int slot = 0; slot < inventory.getSize(); slot++) {
+                    inventory.setItem(slot, filler.clone());
+                }
+            } else {
+                for (Integer slot : fillSlots) {
+                    if (slot == null) {
+                        continue;
+                    }
+                    final int index = slot;
+                    if (index >= 0 && index < inventory.getSize()) {
+                        inventory.setItem(index, filler.clone());
+                    }
+                }
             }
         }
 
@@ -62,7 +75,7 @@ public class ConfiguredMenu implements Menu {
                     continue;
                 }
                 final Optional<Integer> slot = createItem(player, itemSection);
-                slot.ifPresent(index -> storeActions(index, itemSection.getStringList("actions")));
+                slot.ifPresent(index -> storeActions(index, itemSection));
             }
         }
 
@@ -107,7 +120,10 @@ public class ConfiguredMenu implements Menu {
         }
 
         final int amount = Math.max(1, itemSection.getInt("amount", 1));
-        final String rawHead = itemSection.getString("head");
+        String rawHead = itemSection.getString("head");
+        if (rawHead == null) {
+            rawHead = itemSection.getString("head_id");
+        }
         final String resolvedHead = resolveHeadValue(rawHead, player);
 
         final ItemStack itemStack;
@@ -217,16 +233,21 @@ public class ConfiguredMenu implements Menu {
         return processed;
     }
 
-    private void storeActions(final int slot, final List<String> actions) {
-        if (actions == null || actions.isEmpty()) {
-            return;
-        }
+    private void storeActions(final int slot, final ConfigurationSection itemSection) {
         final List<String> sanitized = new ArrayList<>();
-        for (String action : actions) {
-            if (action == null || action.isBlank()) {
-                continue;
+        if (itemSection.isString("action")) {
+            final String action = itemSection.getString("action");
+            if (action != null && !action.isBlank()) {
+                sanitized.add(action.trim());
             }
-            sanitized.add(action.trim());
+        }
+        if (itemSection.isList("actions")) {
+            for (String action : itemSection.getStringList("actions")) {
+                if (action == null || action.isBlank()) {
+                    continue;
+                }
+                sanitized.add(action.trim());
+            }
         }
         if (!sanitized.isEmpty()) {
             actionsBySlot.put(slot, List.copyOf(sanitized));
