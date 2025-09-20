@@ -182,8 +182,6 @@ public class EconomyManager implements EconomyAPI {
             }
             cache.put(uuid, updated);
             leaderboardManager.invalidate();
-        } catch (final SQLException exception) {
-            plugin.getLogger().log(Level.WARNING, "Failed to open connection for balance synchronization", exception);
         } finally {
             lock.unlock();
         }
