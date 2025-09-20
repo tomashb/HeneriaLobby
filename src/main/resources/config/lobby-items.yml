@@ -1,0 +1,63 @@
+lobby_items:
+  enabled: true
+  clear_inventory_on_join: true
+  restore_on_death: true
+  held_slot: 0
+
+  items:
+    games_selector:
+      slot: 0
+      material: PLAYER_HEAD
+      head_id: "hdb:35517"
+      name: "&aMenu des Jeux &7(Clic-droit)"
+      lore:
+        - "&7Rejoignez un mode de jeu."
+        - "&7Statistiques dynamiques disponibles."
+      actions:
+        - "[MENU] jeux_menu"
+
+    profile:
+      slot: 1
+      material: PLAYER_HEAD
+      head_id: "%player_name%"
+      name: "&6Mon Profil &7(Clic-droit)"
+      lore:
+        - "&7Consulte tes informations personnelles."
+      actions:
+        - "[MENU] profil_menu"
+
+    shop:
+      slot: 4
+      material: PLAYER_HEAD
+      head_id: "hdb:35472"
+      name: "&eBoutique &7(Clic-droit)"
+      lore:
+        - "&7Découvre des offres exclusives."
+      actions:
+        - "[MENU] shop_menu"
+
+    cosmetics:
+      slot: 7
+      material: PLAYER_HEAD
+      head_id: "hdb:67678"
+      name: "&dCosmétiques &7(Clic-droit)"
+      lore:
+        - "&7Personnalise ton expérience."
+      actions:
+        - "[MENU] cosmetiques_menu"
+
+    hub_selector:
+      slot: 8
+      material: PLAYER_HEAD
+      head_id: "hdb:15082"
+      name: "&bSélecteur de Hub &7(Clic-droit)"
+      lore:
+        - "&7Navigue entre les hubs."
+      actions:
+        - "[MENU] hub_menu"
+
+  protection:
+    prevent_drop: true
+    prevent_move: true
+    prevent_damage: true
+    prevent_consume: true

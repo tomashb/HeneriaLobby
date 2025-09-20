@@ -15,8 +15,10 @@ public class ConfigManager {
     private final LobbyPlugin plugin;
     private FileConfiguration messagesConfig;
     private FileConfiguration menusConfig;
+    private FileConfiguration lobbyItemsConfig;
     private File messagesFile;
     private File menusFile;
+    private File lobbyItemsFile;
 
     public ConfigManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -27,12 +29,14 @@ public class ConfigManager {
         plugin.reloadConfig();
         loadMessages();
         loadMenus();
+        loadLobbyItems();
     }
 
     public void reloadConfigs() {
         plugin.reloadConfig();
         loadMessages();
         loadMenus();
+        loadLobbyItems();
     }
 
     public FileConfiguration getMainConfig() {
@@ -51,6 +55,13 @@ public class ConfigManager {
             loadMenus();
         }
         return menusConfig;
+    }
+
+    public FileConfiguration getLobbyItemsConfig() {
+        if (lobbyItemsConfig == null) {
+            loadLobbyItems();
+        }
+        return lobbyItemsConfig;
     }
 
     public boolean isDebugEnabled() {
@@ -126,6 +137,44 @@ public class ConfigManager {
             }
         } catch (IOException | InvalidConfigurationException exception) {
             plugin.getLogger().severe("Unable to load default config/menus.yml: " + exception.getMessage());
+        }
+    }
+
+    private void loadLobbyItems() {
+        if (lobbyItemsFile == null) {
+            final File configDirectory = new File(plugin.getDataFolder(), "config");
+            if (!configDirectory.exists() && !configDirectory.mkdirs()) {
+                plugin.getLogger().severe("Unable to create config directory for lobby items.");
+            }
+            lobbyItemsFile = new File(configDirectory, "lobby-items.yml");
+        }
+
+        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+            plugin.getLogger().severe("Unable to create plugin data folder for configuration files.");
+        }
+
+        if (!lobbyItemsFile.exists()) {
+            plugin.saveResource("config/lobby-items.yml", false);
+        }
+
+        lobbyItemsConfig = new YamlConfiguration();
+        try {
+            lobbyItemsConfig.load(lobbyItemsFile);
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load config/lobby-items.yml: " + exception.getMessage());
+            loadDefaultLobbyItems();
+        }
+    }
+
+    private void loadDefaultLobbyItems() {
+        lobbyItemsConfig = new YamlConfiguration();
+        try (InputStream inputStream = plugin.getResource("config/lobby-items.yml")) {
+            if (inputStream != null) {
+                Files.copy(inputStream, lobbyItemsFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                lobbyItemsConfig.load(lobbyItemsFile);
+            }
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load default config/lobby-items.yml: " + exception.getMessage());
         }
     }
 }

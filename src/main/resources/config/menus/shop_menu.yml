@@ -1,0 +1,44 @@
+menu:
+  id: "shop_menu"
+  title: "&8» &eBoutique"
+  size: 45
+  fill_material: "LIGHT_BLUE_STAINED_GLASS_PANE"
+
+  items:
+    ranks:
+      slot: 20
+      material: "EMERALD"
+      name: "&aGrades"
+      lore:
+        - "&7Découvrez les grades premium"
+        - "&7et leurs avantages exclusifs."
+      actions:
+        - "[COMMAND] shop open ranks"
+
+    boosters:
+      slot: 22
+      material: "NETHER_STAR"
+      name: "&dBoosters"
+      lore:
+        - "&7Augmentez vos gains"
+        - "&7pendant une durée limitée."
+      actions:
+        - "[COMMAND] shop open boosters"
+
+    cosmetics:
+      slot: 24
+      material: "FIREWORK_ROCKET"
+      name: "&bCosmétiques"
+      lore:
+        - "&7Particules, gadgets et plus encore."
+      actions:
+        - "[MENU] cosmetiques_menu"
+
+    close:
+      slot: 40
+      material: "BARRIER"
+      name: "&cFermer"
+      lore:
+        - "&7Retour"
+      actions:
+        - "[CLOSE_MENU]"

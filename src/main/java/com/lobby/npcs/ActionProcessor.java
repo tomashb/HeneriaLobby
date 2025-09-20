@@ -12,6 +12,9 @@ import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
@@ -60,10 +63,21 @@ public class ActionProcessor {
             Bukkit.getScheduler().runTask(plugin, (Runnable) player::closeInventory);
             return;
         }
+        if (startsWithIgnoreCase(trimmed, "[CLOSE_MENU]")) {
+            Bukkit.getScheduler().runTask(plugin, (Runnable) player::closeInventory);
+            return;
+        }
         if (startsWithIgnoreCase(trimmed, "[COMMAND]")) {
             final String command = processed.substring(9).trim();
             if (!command.isEmpty()) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+            }
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[PLAYER_COMMAND]")) {
+            final String command = processed.substring(15).trim();
+            if (!command.isEmpty()) {
+                Bukkit.getScheduler().runTask(plugin, (Runnable) () -> player.performCommand(command));
             }
             return;
         }
@@ -81,6 +95,18 @@ public class ActionProcessor {
             }
             return;
         }
+        if (startsWithIgnoreCase(trimmed, "[OPEN_MENU]")) {
+            final String menuId = processed.substring(10).trim();
+            if (!menuId.isEmpty()) {
+                final MenuManager menuManager = plugin.getMenuManager();
+                if (menuManager != null) {
+                    Bukkit.getScheduler().runTask(plugin, (Runnable) () -> menuManager.openMenu(player, menuId));
+                } else {
+                    LogUtils.warning(plugin, "Menu action requested but MenuManager is not available: " + menuId);
+                }
+            }
+            return;
+        }
         if (startsWithIgnoreCase(trimmed, "[COINS_ADD]")) {
             final String amountRaw = processed.substring(11).trim();
             parseAmountAndApply(amountRaw, value -> plugin.getEconomyManager().addCoins(player.getUniqueId(), value,
@@ -91,6 +117,13 @@ public class ActionProcessor {
             final String amountRaw = processed.substring(12).trim();
             parseAmountAndApply(amountRaw, value -> plugin.getEconomyManager().addTokens(player.getUniqueId(), value,
                     "NPC interaction"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[SERVER_SEND]")) {
+            final String server = processed.substring(12).trim();
+            if (!server.isEmpty()) {
+                sendToServer(player, server);
+            }
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[TELEPORT]")) {
@@ -132,6 +165,26 @@ public class ActionProcessor {
         } catch (final NumberFormatException exception) {
             LogUtils.warning(plugin, "Invalid teleport coordinates for NPC '" + (npc != null ? npc.getData().name()
                     : "unknown") + "': " + coordinates);
+        }
+    }
+
+    private void sendToServer(final Player player, final String server) {
+        if (player == null || server == null || server.isBlank()) {
+            return;
+        }
+        final String target = server.trim();
+        try {
+            final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            try (DataOutputStream dataOutputStream = new DataOutputStream(outputStream)) {
+                dataOutputStream.writeUTF("Connect");
+                dataOutputStream.writeUTF(target);
+            }
+            final byte[] payload = outputStream.toByteArray();
+            player.sendPluginMessage(plugin, "BungeeCord", payload);
+            player.sendPluginMessage(plugin, "bungeecord:main", payload);
+        } catch (final IOException exception) {
+            LogUtils.warning(plugin, "Failed to send player '" + player.getName() + "' to server '" + target + "': "
+                    + exception.getMessage());
         }
     }
 

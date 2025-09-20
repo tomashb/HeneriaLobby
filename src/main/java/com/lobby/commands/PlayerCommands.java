@@ -74,7 +74,7 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
         final boolean hasSpawn = lobbyManager.hasLobbySpawn();
         final boolean teleported = lobbyManager.teleportToLobby(player);
         if (!lobbyManager.isBypassing(player)) {
-            lobbyManager.preparePlayer(player);
+            lobbyManager.preparePlayer(player, LobbyManager.PreparationCause.COMMAND);
         }
         if (!hasSpawn) {
             if (player.hasPermission("lobby.admin")) {

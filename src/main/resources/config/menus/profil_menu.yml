@@ -1,0 +1,38 @@
+menu:
+  id: "profil_menu"
+  title: "&8» &6Mon Profil"
+  size: 27
+  fill_material: "GRAY_STAINED_GLASS_PANE"
+
+  items:
+    profile_overview:
+      slot: 11
+      material: "PLAYER_HEAD"
+      head: "%player_name%"
+      name: "&eStatistiques"
+      lore:
+        - "&7Pseudo: &f%player_name%"
+        - "&7Coins: &f%player_coins%"
+        - "&7Tokens: &f%player_tokens%"
+        - "&7Première connexion: &f%player_first_join%"
+        - "&7Dernière connexion: &f%player_last_join%"
+        - "&7Temps de jeu: &f%player_playtime%"
+
+    economy_history:
+      slot: 13
+      material: "GOLD_INGOT"
+      name: "&6Historique économique"
+      lore:
+        - "&7Consulte tes transactions"
+        - "&7et récompenses récentes."
+      actions:
+        - "[MESSAGE] &eFonctionnalité à venir !"
+
+    close:
+      slot: 15
+      material: "BARRIER"
+      name: "&cFermer"
+      lore:
+        - "&7Revenir au jeu"
+      actions:
+        - "[CLOSE_MENU]"
