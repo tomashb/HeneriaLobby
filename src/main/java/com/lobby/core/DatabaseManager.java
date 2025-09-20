@@ -148,6 +148,8 @@ public class DatabaseManager {
 
             createTransactionIndexes();
 
+            createSocialTables();
+
             plugin.getLogger().info("All database tables created/updated successfully");
             return true;
         } catch (final Exception exception) {
@@ -711,6 +713,241 @@ public class DatabaseManager {
                     FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
                 )
                 """;
+    }
+
+    private void createSocialTables() throws SQLException {
+        createFriendsTable();
+        createFriendSettingsTable();
+        createGroupsTable();
+        createGroupMembersTable();
+        createGroupInvitationsTable();
+        createClansTable();
+        createClanMembersTable();
+        createClanRanksTable();
+        createClanInvitationsTable();
+    }
+
+    private void createFriendsTable() throws SQLException {
+        final String statusType = databaseType == DatabaseType.MYSQL
+                ? "ENUM('PENDING','ACCEPTED','BLOCKED') DEFAULT 'PENDING'"
+                : "TEXT DEFAULT 'PENDING'";
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String foreignKeySuffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS friends (
+                    id %s,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    friend_uuid VARCHAR(36) NOT NULL,
+                    status %s,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    accepted_at TIMESTAMP NULL,
+                    UNIQUE (player_uuid, friend_uuid),
+                    FOREIGN KEY (player_uuid) REFERENCES players(uuid),
+                    FOREIGN KEY (friend_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, statusType, foreignKeySuffix);
+        executeSQL(sql);
+    }
+
+    private void createFriendSettingsTable() throws SQLException {
+        final String foreignKeySuffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String acceptDefinition = databaseType == DatabaseType.MYSQL
+                ? "ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL'"
+                : "TEXT DEFAULT 'ALL'";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS friend_settings (
+                    player_uuid VARCHAR(36) PRIMARY KEY,
+                    accept_requests %s,
+                    show_online_status BOOLEAN DEFAULT 1,
+                    receive_notifications BOOLEAN DEFAULT 1,
+                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
+                )%s
+                """, acceptDefinition, foreignKeySuffix);
+        executeSQL(sql);
+    }
+
+    private void createGroupsTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS groups_table (
+                    id %s,
+                    leader_uuid VARCHAR(36) NOT NULL,
+                    name VARCHAR(50),
+                    max_members INT DEFAULT 8,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    disbanded_at TIMESTAMP NULL,
+                    FOREIGN KEY (leader_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, suffix);
+        executeSQL(sql);
+    }
+
+    private void createGroupMembersTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String roleDefinition = databaseType == DatabaseType.MYSQL
+                ? "ENUM('LEADER','MODERATOR','MEMBER') DEFAULT 'MEMBER'"
+                : "TEXT DEFAULT 'MEMBER'";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS group_members (
+                    id %s,
+                    group_id INT NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    role %s,
+                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (group_id, player_uuid),
+                    FOREIGN KEY (group_id) REFERENCES groups_table(id),
+                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, roleDefinition, suffix);
+        executeSQL(sql);
+    }
+
+    private void createGroupInvitationsTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String statusDefinition = databaseType == DatabaseType.MYSQL
+                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING'"
+                : "TEXT DEFAULT 'PENDING'";
+        final String expiresDefault = databaseType == DatabaseType.MYSQL
+                ? "TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 5 MINUTE)"
+                : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS group_invitations (
+                    id %s,
+                    group_id INT NOT NULL,
+                    inviter_uuid VARCHAR(36) NOT NULL,
+                    invited_uuid VARCHAR(36) NOT NULL,
+                    status %s,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at %s,
+                    FOREIGN KEY (group_id) REFERENCES groups_table(id),
+                    FOREIGN KEY (inviter_uuid) REFERENCES players(uuid),
+                    FOREIGN KEY (invited_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, statusDefinition, expiresDefault, suffix);
+        executeSQL(sql);
+    }
+
+    private void createClansTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS clans (
+                    id %s,
+                    name VARCHAR(50) UNIQUE NOT NULL,
+                    tag VARCHAR(6) UNIQUE NOT NULL,
+                    description TEXT,
+                    leader_uuid VARCHAR(36) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    max_members INT DEFAULT 50,
+                    points INT DEFAULT 0,
+                    level INT DEFAULT 1,
+                    bank_coins BIGINT DEFAULT 0,
+                    FOREIGN KEY (leader_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, suffix);
+        executeSQL(sql);
+    }
+
+    private void createClanMembersTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS clan_members (
+                    id %s,
+                    clan_id INT NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    rank_name VARCHAR(30) DEFAULT 'Membre',
+                    permissions TEXT,
+                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_contribution TIMESTAMP NULL,
+                    total_contributions BIGINT DEFAULT 0,
+                    UNIQUE (clan_id, player_uuid),
+                    FOREIGN KEY (clan_id) REFERENCES clans(id),
+                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, suffix);
+        executeSQL(sql);
+    }
+
+    private void createClanRanksTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS clan_ranks (
+                    id %s,
+                    clan_id INT NOT NULL,
+                    name VARCHAR(30) NOT NULL,
+                    permissions TEXT,
+                    priority INT DEFAULT 0,
+                    UNIQUE (clan_id, name),
+                    FOREIGN KEY (clan_id) REFERENCES clans(id)
+                )%s
+                """, autoIncrement, suffix);
+        executeSQL(sql);
+    }
+
+    private void createClanInvitationsTable() throws SQLException {
+        final String autoIncrement = databaseType == DatabaseType.MYSQL
+                ? "INT AUTO_INCREMENT PRIMARY KEY"
+                : "INTEGER PRIMARY KEY AUTOINCREMENT";
+        final String statusDefinition = databaseType == DatabaseType.MYSQL
+                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING'"
+                : "TEXT DEFAULT 'PENDING'";
+        final String expiresDefault = databaseType == DatabaseType.MYSQL
+                ? "TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 7 DAY)"
+                : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+        final String suffix = databaseType == DatabaseType.MYSQL
+                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                : "";
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS clan_invitations (
+                    id %s,
+                    clan_id INT NOT NULL,
+                    inviter_uuid VARCHAR(36) NOT NULL,
+                    invited_uuid VARCHAR(36) NOT NULL,
+                    message TEXT,
+                    status %s,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at %s,
+                    FOREIGN KEY (clan_id) REFERENCES clans(id),
+                    FOREIGN KEY (inviter_uuid) REFERENCES players(uuid),
+                    FOREIGN KEY (invited_uuid) REFERENCES players(uuid)
+                )%s
+                """, autoIncrement, statusDefinition, expiresDefault, suffix);
+        executeSQL(sql);
     }
 
     public enum DatabaseType {
