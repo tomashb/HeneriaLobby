@@ -116,6 +116,18 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
             MessageUtils.sendConfigMessage(sender, "shop.admin.addcategory_usage");
             return true;
         }
+        final String id = parameters.get(0).trim().toLowerCase(Locale.ROOT);
+        final String displayName = parameters.get(1).trim();
+        if (id.isEmpty() || displayName.isEmpty()) {
+            MessageUtils.sendConfigMessage(sender, "shop.admin.addcategory_usage");
+            return true;
+        }
+        final String description = parameters.size() >= 3 ? parameters.get(2) : "";
+        final String iconMaterial = parameters.size() >= 4
+                ? parameters.get(3).trim().toUpperCase(Locale.ROOT)
+                : "CHEST";
+        final int sortOrder = parameters.size() >= 5 ? parseInteger(parameters.get(4)) : 0;
+        final boolean visible = parameters.size() >= 6 ? parseBoolean(parameters.get(5), true) : true;
         if (shopManager.categoryExists(id)) {
             MessageUtils.sendConfigMessage(sender, "shop.admin.category_exists", Map.of("id", id));
             return true;
