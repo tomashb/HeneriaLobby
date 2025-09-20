@@ -149,6 +149,7 @@ public class DatabaseManager {
             createTransactionIndexes();
 
             createSocialTables();
+            addForeignKeyConstraints();
 
             plugin.getLogger().info("All database tables created/updated successfully");
             return true;
@@ -716,8 +717,8 @@ public class DatabaseManager {
     }
 
     private void createSocialTables() throws SQLException {
-        createFriendsTable();
         createFriendSettingsTable();
+        createFriendsTable();
         createGroupsTable();
         createGroupMembersTable();
         createGroupInvitationsTable();
@@ -728,48 +729,157 @@ public class DatabaseManager {
     }
 
     private void createFriendsTable() throws SQLException {
-        final String statusType = databaseType == DatabaseType.MYSQL
-                ? "ENUM('PENDING','ACCEPTED','BLOCKED') DEFAULT 'PENDING'"
-                : "TEXT DEFAULT 'PENDING'";
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String foreignKeySuffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS friends (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        friend_uuid VARCHAR(36) NOT NULL,
+                        status ENUM('PENDING','ACCEPTED','BLOCKED') DEFAULT 'PENDING' NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        accepted_at TIMESTAMP NULL,
+                        UNIQUE KEY unique_friendship (player_uuid, friend_uuid),
+                        KEY idx_friends_player_uuid (player_uuid),
+                        KEY idx_friends_friend_uuid (friend_uuid),
+                        KEY idx_friends_status (status),
+                        KEY idx_friends_created_at (created_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
                 CREATE TABLE IF NOT EXISTS friends (
-                    id %s,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     player_uuid VARCHAR(36) NOT NULL,
                     friend_uuid VARCHAR(36) NOT NULL,
-                    status %s,
+                    status TEXT DEFAULT 'PENDING',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     accepted_at TIMESTAMP NULL,
-                    UNIQUE (player_uuid, friend_uuid),
-                    FOREIGN KEY (player_uuid) REFERENCES players(uuid),
-                    FOREIGN KEY (friend_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, statusType, foreignKeySuffix);
+                    UNIQUE (player_uuid, friend_uuid)
+                )
+                """;
         executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_player_uuid ON friends(player_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_friend_uuid ON friends(friend_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
     }
 
     private void createFriendSettingsTable() throws SQLException {
-        final String foreignKeySuffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String acceptDefinition = databaseType == DatabaseType.MYSQL
-                ? "ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL'"
-                : "TEXT DEFAULT 'ALL'";
-        final String sql = String.format("""
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS friend_settings (
+                        player_uuid VARCHAR(36) PRIMARY KEY,
+                        accept_requests ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL' NOT NULL,
+                        show_online_status BOOLEAN DEFAULT TRUE NOT NULL,
+                        receive_notifications BOOLEAN DEFAULT TRUE NOT NULL,
+                        INDEX idx_friend_settings_accept_requests (accept_requests)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
                 CREATE TABLE IF NOT EXISTS friend_settings (
                     player_uuid VARCHAR(36) PRIMARY KEY,
-                    accept_requests %s,
+                    accept_requests TEXT DEFAULT 'ALL',
                     show_online_status BOOLEAN DEFAULT 1,
-                    receive_notifications BOOLEAN DEFAULT 1,
-                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
-                )%s
-                """, acceptDefinition, foreignKeySuffix);
+                    receive_notifications BOOLEAN DEFAULT 1
+                )
+                """;
         executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
+    }
+
+    private void addForeignKeyConstraints() {
+        if (databaseType != DatabaseType.MYSQL) {
+            return;
+        }
+
+        try (Connection connection = getConnection()) {
+            if (!tableExists(connection, "players")) {
+                plugin.getLogger().warning("Cannot add foreign keys: players table does not exist");
+                return;
+            }
+
+            if (tableExists(connection, "friends")) {
+                addForeignKeyIfNotExists(connection, "friends", "fk_friends_player", "player_uuid", "players", "uuid");
+                addForeignKeyIfNotExists(connection, "friends", "fk_friends_friend", "friend_uuid", "players", "uuid");
+            } else {
+                plugin.getLogger().warning("Cannot add foreign keys: friends table does not exist");
+            }
+
+            if (tableExists(connection, "friend_settings")) {
+                addForeignKeyIfNotExists(connection, "friend_settings", "fk_friend_settings_player",
+                        "player_uuid", "players", "uuid");
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not add foreign key constraints: " + exception.getMessage(), exception);
+        }
+    }
+
+    private void addForeignKeyIfNotExists(final Connection connection,
+                                          final String table,
+                                          final String constraintName,
+                                          final String column,
+                                          final String referencedTable,
+                                          final String referencedColumn) throws SQLException {
+        final String checkSql = """
+                SELECT CONSTRAINT_NAME
+                FROM information_schema.TABLE_CONSTRAINTS
+                WHERE TABLE_SCHEMA = DATABASE()
+                  AND TABLE_NAME = ?
+                  AND CONSTRAINT_NAME = ?
+                  AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+                """;
+
+        try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+            statement.setString(1, table);
+            statement.setString(2, constraintName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return;
+                }
+            }
+        }
+
+        final String alterSql = String.format(
+                "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s) ON DELETE CASCADE",
+                table, constraintName, column, referencedTable, referencedColumn);
+
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(alterSql);
+            plugin.getLogger().info("Added foreign key constraint '" + constraintName + "' on table '" + table + "'");
+        }
+    }
+
+    private boolean tableExists(final Connection connection, final String tableName) throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    SELECT COUNT(*)
+                    FROM information_schema.tables
+                    WHERE table_schema = DATABASE()
+                      AND table_name = ?
+                    """;
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, tableName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    return resultSet.next() && resultSet.getInt(1) > 0;
+                }
+            }
+        }
+
+        final String sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, tableName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        }
     }
 
     private void createGroupsTable() throws SQLException {
