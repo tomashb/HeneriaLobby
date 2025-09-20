@@ -225,6 +225,9 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
             final String sql;
             if (hasCategoryId && hasDisplayName) {
                 final StringBuilder builder = new StringBuilder("INSERT INTO shop_items (id, category_id, display_name");
+                if (hasNameColumn) {
+                    builder.append(", name");
+                }
                 if (hasDescription) {
                     builder.append(", description");
                 }
@@ -242,6 +245,9 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
                     builder.append(", enabled");
                 }
                 builder.append(") VALUES (?, ?, ?");
+                if (hasNameColumn) {
+                    builder.append(", ?");
+                }
                 if (hasDescription) {
                     builder.append(", ?");
                 }
@@ -271,6 +277,9 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
                     statement.setString(index++, itemId);
                     statement.setString(index++, categoryId);
                     statement.setString(index++, name);
+                    if (hasNameColumn) {
+                        statement.setString(index++, name);
+                    }
                     if (hasDescription) {
                         statement.setString(index++, description);
                     }
