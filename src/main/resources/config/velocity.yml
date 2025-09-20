@@ -1,0 +1,31 @@
+velocity:
+  enabled: true
+  messaging_channel: "lobbysync"
+
+servers:
+  bedwars:
+    name: "bedwars"
+    display_name: "&c&lBedWars"
+    description: "Mode de jeu populaire"
+    enabled: true
+  nexus:
+    name: "nexus"
+    display_name: "&b&lNexus"
+    description: "Nouveauté exclusive"
+    enabled: true
+  zombie:
+    name: "zombie"
+    display_name: "&2&lZombie"
+    description: "Survie intense"
+    enabled: true
+  custom:
+    name: "custom"
+    display_name: "&6&lJeux Inédits"
+    description: "Modes créatifs"
+    enabled: true
+
+sync:
+  economy: true
+  stats: true
+  friends: true
+  interval_seconds: 30

@@ -147,6 +147,48 @@ public class EconomyManager implements EconomyAPI {
         return performTransfer(from, to, amount, reason);
     }
 
+    public void synchronizeBalances(final UUID uuid, final long coins, final long tokens) {
+        if (uuid == null) {
+            return;
+        }
+        final ReentrantLock lock = locks.computeIfAbsent(uuid, key -> new ReentrantLock());
+        lock.lock();
+        try {
+            final PlayerData data = getPlayerData(uuid);
+            final long sanitizedCoins = sanitizeBalance(coins, maxCoins);
+            final long sanitizedTokens = sanitizeBalance(tokens, maxTokens);
+            final boolean coinsChanged = data.coins() != sanitizedCoins;
+            final boolean tokensChanged = data.tokens() != sanitizedTokens;
+            if (!coinsChanged && !tokensChanged) {
+                return;
+            }
+            try (Connection connection = databaseManager.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "UPDATE players SET coins = ?, tokens = ? WHERE uuid = ?")) {
+                statement.setLong(1, coinsChanged ? sanitizedCoins : data.coins());
+                statement.setLong(2, tokensChanged ? sanitizedTokens : data.tokens());
+                statement.setString(3, uuid.toString());
+                statement.executeUpdate();
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.WARNING, "Failed to synchronize balances for " + uuid, exception);
+                return;
+            }
+            PlayerData updated = data;
+            if (coinsChanged) {
+                updated = updated.withCoins(sanitizedCoins);
+            }
+            if (tokensChanged) {
+                updated = updated.withTokens(sanitizedTokens);
+            }
+            cache.put(uuid, updated);
+            leaderboardManager.invalidate();
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING, "Failed to open connection for balance synchronization", exception);
+        } finally {
+            lock.unlock();
+        }
+    }
+
     @Override
     public List<String> getTopCoins(final int limit) {
         return leaderboardManager.getTopCoins(limit).stream()
@@ -315,6 +357,13 @@ public class EconomyManager implements EconomyAPI {
             return -Math.min(current, Math.abs(delta));
         }
         return 0;
+    }
+
+    private long sanitizeBalance(final long value, final long max) {
+        if (value < 0L) {
+            return 0L;
+        }
+        return Math.min(value, max);
     }
 
     private PlayerData loadPlayerData(final UUID uuid) {

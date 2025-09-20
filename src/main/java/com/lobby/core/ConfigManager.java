@@ -20,7 +20,9 @@ public class ConfigManager {
     private File menusFile;
     private File lobbyItemsFile;
     private File serversFile;
+    private File velocityFile;
     private FileConfiguration serversConfig;
+    private FileConfiguration velocityConfig;
 
     public ConfigManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -33,6 +35,7 @@ public class ConfigManager {
         loadMenus();
         loadLobbyItems();
         loadServers();
+        loadVelocity();
     }
 
     public void reloadConfigs() {
@@ -41,6 +44,7 @@ public class ConfigManager {
         loadMenus();
         loadLobbyItems();
         loadServers();
+        loadVelocity();
     }
 
     public FileConfiguration getMainConfig() {
@@ -73,6 +77,13 @@ public class ConfigManager {
             loadServers();
         }
         return serversConfig;
+    }
+
+    public FileConfiguration getVelocityConfig() {
+        if (velocityConfig == null) {
+            loadVelocity();
+        }
+        return velocityConfig;
     }
 
     public boolean isDebugEnabled() {
@@ -224,6 +235,44 @@ public class ConfigManager {
             }
         } catch (IOException | InvalidConfigurationException exception) {
             plugin.getLogger().severe("Unable to load default config/servers.yml: " + exception.getMessage());
+        }
+    }
+
+    private void loadVelocity() {
+        if (velocityFile == null) {
+            final File configDirectory = new File(plugin.getDataFolder(), "config");
+            if (!configDirectory.exists() && !configDirectory.mkdirs()) {
+                plugin.getLogger().severe("Unable to create config directory for velocity configuration.");
+            }
+            velocityFile = new File(configDirectory, "velocity.yml");
+        }
+
+        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+            plugin.getLogger().severe("Unable to create plugin data folder for configuration files.");
+        }
+
+        if (!velocityFile.exists()) {
+            plugin.saveResource("config/velocity.yml", false);
+        }
+
+        velocityConfig = new YamlConfiguration();
+        try {
+            velocityConfig.load(velocityFile);
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load config/velocity.yml: " + exception.getMessage());
+            loadDefaultVelocity();
+        }
+    }
+
+    private void loadDefaultVelocity() {
+        velocityConfig = new YamlConfiguration();
+        try (InputStream inputStream = plugin.getResource("config/velocity.yml")) {
+            if (inputStream != null) {
+                Files.copy(inputStream, velocityFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                velocityConfig.load(velocityFile);
+            }
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load default config/velocity.yml: " + exception.getMessage());
         }
     }
 }

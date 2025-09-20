@@ -4,6 +4,7 @@ import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.servers.ServerInfo;
 import com.lobby.servers.ServerManager;
+import com.lobby.velocity.VelocityManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -110,6 +111,11 @@ public class FriendManager {
             senderPlayer.sendMessage("§6" + player.getName() + " §aa accepté votre demande d'ami !");
             senderPlayer.playSound(senderPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        if (velocityManager != null) {
+            velocityManager.broadcastFriendUpdate(player.getUniqueId(), "ACCEPT", senderUUID);
+            velocityManager.broadcastFriendUpdate(senderUUID, "ACCEPT", player.getUniqueId());
+        }
     }
 
     public void denyFriendRequest(final Player player, final String senderName) {
@@ -158,6 +164,11 @@ public class FriendManager {
         final Player targetPlayer = Bukkit.getPlayer(targetUUID);
         if (targetPlayer != null) {
             targetPlayer.sendMessage("§c" + player.getName() + " vous a retiré de sa liste d'amis.");
+        }
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        if (velocityManager != null) {
+            velocityManager.broadcastFriendUpdate(player.getUniqueId(), "REMOVE", targetUUID);
+            velocityManager.broadcastFriendUpdate(targetUUID, "REMOVE", player.getUniqueId());
         }
     }
 
