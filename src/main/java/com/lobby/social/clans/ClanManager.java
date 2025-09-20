@@ -320,6 +320,174 @@ public class ClanManager {
         Bukkit.getScheduler().runTaskLater(plugin, () -> updateInvitationStatus(invitation.getId(), "EXPIRED"), ticks);
     }
 
+    /**
+     * Diffuse un message à tous les membres en ligne d'un clan.
+     *
+     * @param clan    Le clan concerné
+     * @param message Le message à diffuser
+     */
+    public void broadcastClanMessage(final Clan clan, final String message) {
+        if (clan == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+
+        final Map<UUID, ClanMember> members = clan.getMembers();
+        if (members.isEmpty()) {
+            return;
+        }
+
+        int onlineCount = 0;
+        for (final UUID memberUuid : members.keySet()) {
+            final Player member = Bukkit.getPlayer(memberUuid);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§6[Clan] §r" + message);
+                onlineCount++;
+            }
+        }
+
+        plugin.getLogger().info("Broadcast clan message to " + onlineCount + " online members of clan " + clan.getName());
+    }
+
+    /**
+     * Diffuse un message à tous les membres en ligne d'un clan avec un préfixe personnalisé.
+     *
+     * @param clan    Le clan concerné
+     * @param message Le message à diffuser
+     * @param prefix  Le préfixe personnalisé (sans les couleurs)
+     */
+    public void broadcastClanMessage(final Clan clan, final String message, final String prefix) {
+        if (clan == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+
+        final Map<UUID, ClanMember> members = clan.getMembers();
+        if (members.isEmpty()) {
+            return;
+        }
+
+        final String formattedPrefix = prefix != null && !prefix.trim().isEmpty() ? "§6[" + prefix + "] §r" : "§6[Clan] §r";
+        for (final UUID memberUuid : members.keySet()) {
+            final Player member = Bukkit.getPlayer(memberUuid);
+            if (member != null && member.isOnline()) {
+                member.sendMessage(formattedPrefix + message);
+            }
+        }
+    }
+
+    /**
+     * Diffuse un message d'annonce importante à tous les membres du clan.
+     *
+     * @param clan         Le clan concerné
+     * @param announcement L'annonce à diffuser
+     */
+    public void broadcastClanAnnouncement(final Clan clan, final String announcement) {
+        if (clan == null || announcement == null || announcement.trim().isEmpty()) {
+            return;
+        }
+
+        final Map<UUID, ClanMember> members = clan.getMembers();
+        if (members.isEmpty()) {
+            return;
+        }
+
+        for (final UUID memberUuid : members.keySet()) {
+            final Player member = Bukkit.getPlayer(memberUuid);
+            if (member != null && member.isOnline()) {
+                member.sendMessage("§6§l[" + clan.getTag() + "] ANNONCE §r§e" + announcement);
+                member.playSound(member.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
+            }
+        }
+    }
+
+    /**
+     * Diffuse un message de bienvenue à un nouveau membre du clan.
+     *
+     * @param clan      Le clan concerné
+     * @param newMember Le nouveau membre
+     */
+    public void broadcastWelcomeMessage(final Clan clan, final Player newMember) {
+        if (clan == null || newMember == null) {
+            return;
+        }
+
+        final String welcomeMessage = "§a" + newMember.getName() + " §7a rejoint le clan ! Souhaitez-lui la bienvenue ! 🎉";
+        broadcastClanMessage(clan, welcomeMessage);
+    }
+
+    /**
+     * Diffuse un message de départ d'un membre du clan.
+     *
+     * @param clan               Le clan concerné
+     * @param leavingMemberName  Le nom du membre qui part
+     * @param reason             La raison du départ (optionnel)
+     */
+    public void broadcastLeaveMessage(final Clan clan, final String leavingMemberName, final String reason) {
+        if (clan == null || leavingMemberName == null) {
+            return;
+        }
+
+        String leaveMessage = "§c" + leavingMemberName + " §7a quitté le clan.";
+        if (reason != null && !reason.trim().isEmpty()) {
+            leaveMessage += " §8(" + reason + ")";
+        }
+
+        broadcastClanMessage(clan, leaveMessage);
+    }
+
+    /**
+     * Diffuse un message de promotion ou de rétrogradation dans le clan.
+     *
+     * @param clan       Le clan concerné
+     * @param targetName Le nom du membre concerné
+     * @param newRank    Le nouveau rang
+     * @param promotion  true si c'est une promotion, false si c'est une rétrogradation
+     */
+    public void broadcastRankChangeMessage(final Clan clan, final String targetName, final String newRank, final boolean promotion) {
+        if (clan == null || targetName == null || newRank == null) {
+            return;
+        }
+
+        final String action = promotion ? "promu" : "rétrogradé";
+        final String color = promotion ? "§a" : "§c";
+        final String rankMessage = color + targetName + " §7a été " + action + " au rang §e" + newRank + "§7 !";
+        broadcastClanMessage(clan, rankMessage);
+    }
+
+    /**
+     * Envoie un message privé à tous les membres disposant d'un rang avec une priorité minimale.
+     *
+     * @param clan                 Le clan concerné
+     * @param message              Le message à envoyer
+     * @param minimumRankPriority  La priorité minimale du rang requis
+     */
+    public void broadcastToRank(final Clan clan, final String message, final int minimumRankPriority) {
+        if (clan == null || message == null || message.trim().isEmpty()) {
+            return;
+        }
+
+        final Map<UUID, ClanMember> members = clan.getMembers();
+        if (members.isEmpty()) {
+            return;
+        }
+
+        for (final UUID memberUuid : members.keySet()) {
+            final Player member = Bukkit.getPlayer(memberUuid);
+            if (member == null || !member.isOnline()) {
+                continue;
+            }
+
+            final ClanMember clanMember = clan.getMember(memberUuid);
+            if (clanMember == null) {
+                continue;
+            }
+
+            final ClanRank rank = clan.getRank(clanMember.getRankName());
+            if (rank != null && rank.getPriority() >= minimumRankPriority) {
+                member.sendMessage("§6[Clan Staff] §r" + message);
+            }
+        }
+    }
+
     private void updateInvitationStatus(final int invitationId, final String status) {
         final String query = "UPDATE clan_invitations SET status = ? WHERE id = ?";
         try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
