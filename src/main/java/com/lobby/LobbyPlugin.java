@@ -9,6 +9,7 @@ import com.lobby.core.ConfigManager;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
+import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.menus.MenuManager;
 import com.lobby.npcs.NPCInteractionHandler;
@@ -36,6 +37,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
     private MenuManager menuManager;
+    private HeadDatabaseManager headDatabaseManager;
     private ShopManager shopManager;
     private ShopCommands shopCommands;
 
@@ -52,6 +54,8 @@ public final class LobbyPlugin extends JavaPlugin {
 
         configManager = new ConfigManager(this);
         configManager.loadConfigs();
+
+        headDatabaseManager = new HeadDatabaseManager(this);
 
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.initialize()) {
@@ -99,6 +103,9 @@ public final class LobbyPlugin extends JavaPlugin {
         if (shopManager != null) {
             shopManager.shutdown();
         }
+        if (headDatabaseManager != null) {
+            headDatabaseManager.clearCache();
+        }
         if (databaseManager != null) {
             databaseManager.shutdown();
         }
@@ -139,6 +146,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return menuManager;
     }
 
+    public HeadDatabaseManager getHeadDatabaseManager() {
+        return headDatabaseManager;
+    }
+
     public ShopManager getShopManager() {
         return shopManager;
     }
@@ -159,6 +170,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (hologramManager != null) {
             hologramManager.reload();
+        }
+        if (headDatabaseManager != null) {
+            headDatabaseManager.reload();
         }
         if (npcManager != null) {
             npcManager.reload();

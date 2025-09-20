@@ -2,6 +2,7 @@ name: LobbyCore
 version: '${project.version}'
 main: com.lobby.LobbyPlugin
 api-version: '1.21'
+softdepend: [HeadDatabase]
 commands:
   lobby:
     description: Commande principale du lobby

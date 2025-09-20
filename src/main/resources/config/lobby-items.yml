@@ -1,5 +1,6 @@
 lobby_items:
   enabled: true
+  debug_heads: false
   clear_inventory_on_join: true
   restore_on_death: true
   held_slot: 0
@@ -9,6 +10,7 @@ lobby_items:
       slot: 0
       material: PLAYER_HEAD
       head_id: "hdb:35517"
+      fallback_material: COMPASS
       name: "&aMenu des Jeux &7(Clic-droit)"
       lore:
         - "&7Rejoignez un mode de jeu."
@@ -20,6 +22,7 @@ lobby_items:
       slot: 1
       material: PLAYER_HEAD
       head_id: "%player_name%"
+      fallback_material: PLAYER_HEAD
       name: "&6Mon Profil &7(Clic-droit)"
       lore:
         - "&7Consulte tes informations personnelles."
@@ -30,6 +33,7 @@ lobby_items:
       slot: 4
       material: PLAYER_HEAD
       head_id: "hdb:35472"
+      fallback_material: CHEST
       name: "&eBoutique &7(Clic-droit)"
       lore:
         - "&7Découvre des offres exclusives."
@@ -40,6 +44,7 @@ lobby_items:
       slot: 7
       material: PLAYER_HEAD
       head_id: "hdb:67678"
+      fallback_material: ARMOR_STAND
       name: "&dCosmétiques &7(Clic-droit)"
       lore:
         - "&7Personnalise ton expérience."
@@ -50,6 +55,7 @@ lobby_items:
       slot: 8
       material: PLAYER_HEAD
       head_id: "hdb:15082"
+      fallback_material: COMPASS
       name: "&bSélecteur de Hub &7(Clic-droit)"
       lore:
         - "&7Navigue entre les hubs."
