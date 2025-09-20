@@ -1,6 +1,6 @@
 velocity:
   enabled: true
-  messaging_channel: "lobbysync"
+  messaging_channel: "lobbycore:sync"
 
 servers:
   bedwars:

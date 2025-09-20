@@ -26,6 +26,7 @@ public class VelocityManager {
 
     private static final String LEGACY_CHANNEL = "BungeeCord";
     private static final String MODERN_CHANNEL = "bungeecord:main";
+    private static final String DEFAULT_MESSAGING_CHANNEL = "lobbycore:sync";
 
     private final LobbyPlugin plugin;
     private final Map<String, VelocityServerInfo> servers = new ConcurrentHashMap<>();
@@ -47,7 +48,7 @@ public class VelocityManager {
                 .orElse(null);
         if (configuration == null) {
             plugin.getLogger().warning("Velocity configuration could not be loaded. Disabling proxy features.");
-            messagingChannel = "lobbysync";
+            messagingChannel = DEFAULT_MESSAGING_CHANNEL;
             enabled = false;
             syncEconomy = false;
             syncStats = false;
@@ -57,7 +58,7 @@ public class VelocityManager {
             syncMessageListener = new SyncMessageListener(this);
             return;
         }
-        this.messagingChannel = configuration.getString("velocity.messaging_channel", "lobbysync");
+        this.messagingChannel = resolveMessagingChannel(configuration.getString("velocity.messaging_channel"));
         this.enabled = configuration.getBoolean("velocity.enabled", true);
         this.syncEconomy = configuration.getBoolean("sync.economy", true);
         this.syncStats = configuration.getBoolean("sync.stats", false);
@@ -90,6 +91,12 @@ public class VelocityManager {
     }
 
     private void registerPluginChannels() {
+        try {
+            validateChannelFormat(messagingChannel);
+        } catch (final IllegalArgumentException exception) {
+            plugin.getLogger().severe("Failed to register proxy messaging channel: " + exception.getMessage());
+            throw exception;
+        }
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, LEGACY_CHANNEL);
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, MODERN_CHANNEL);
         plugin.getServer().getMessenger().registerOutgoingPluginChannel(plugin, messagingChannel);
@@ -249,6 +256,42 @@ public class VelocityManager {
         out.writeUTF(type);
         out.writeUTF(data);
         anyPlayer.sendPluginMessage(plugin, messagingChannel, out.toByteArray());
+    }
+
+    private String resolveMessagingChannel(final String configuredChannel) {
+        final String channel = configuredChannel == null ? DEFAULT_MESSAGING_CHANNEL
+                : configuredChannel.trim().toLowerCase(Locale.ROOT);
+        try {
+            validateChannelFormat(channel);
+            return channel;
+        } catch (final IllegalArgumentException exception) {
+            if (!DEFAULT_MESSAGING_CHANNEL.equals(channel)) {
+                plugin.getLogger().warning("Invalid messaging channel '" + configuredChannel + "': "
+                        + exception.getMessage() + ". Falling back to '" + DEFAULT_MESSAGING_CHANNEL + "'.");
+            }
+            return DEFAULT_MESSAGING_CHANNEL;
+        }
+    }
+
+    private void validateChannelFormat(final String channel) {
+        if (channel == null || channel.isBlank()) {
+            throw new IllegalArgumentException("Channel name cannot be null or empty");
+        }
+        final String[] parts = channel.split(":", -1);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("Channel name must contain exactly one ':' separator");
+        }
+        final String namespace = parts[0];
+        final String name = parts[1];
+        if (namespace.isBlank() || name.isBlank()) {
+            throw new IllegalArgumentException("Channel namespace and name must be non-empty");
+        }
+        if (!namespace.matches("[a-z0-9_-]+")) {
+            throw new IllegalArgumentException("Invalid namespace '" + namespace + "'");
+        }
+        if (!name.matches("[a-z0-9_-]+")) {
+            throw new IllegalArgumentException("Invalid channel name '" + name + "'");
+        }
     }
 
     private void syncPlayerDataBeforeTransfer(final Player player, final String targetServer) {
