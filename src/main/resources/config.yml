@@ -9,6 +9,10 @@ database:
   database: "s2_s2_lobby"
   username: "u2_4Dk3IV5sj2"
   password: "sodAFf^dGcR0TGTTuR.xgQaD"
+  foreign_keys_enabled: false
+  create_indexes: true
+  verify_structure: true
+  debug: false
 
   pool:
     maximum_size: 10
