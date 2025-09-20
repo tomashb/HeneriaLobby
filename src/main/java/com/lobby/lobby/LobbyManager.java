@@ -98,15 +98,20 @@ public class LobbyManager {
         final UUID uniqueId = player.getUniqueId();
         if (bypassPlayers.contains(uniqueId)) {
             bypassPlayers.remove(uniqueId);
+            preparePlayer(player, PreparationCause.COMMAND);
             return false;
         }
         bypassPlayers.add(uniqueId);
+        itemManager.removeProtection(uniqueId);
+        itemManager.removeLobbyItems(player.getInventory());
+        player.updateInventory();
         return true;
     }
 
     public void removeBypass(final UUID uniqueId) {
         if (uniqueId != null) {
             bypassPlayers.remove(uniqueId);
+            itemManager.removeProtection(uniqueId);
         }
     }
 
