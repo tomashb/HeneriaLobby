@@ -19,6 +19,8 @@ public class ConfigManager {
     private File messagesFile;
     private File menusFile;
     private File lobbyItemsFile;
+    private File serversFile;
+    private FileConfiguration serversConfig;
 
     public ConfigManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -30,6 +32,7 @@ public class ConfigManager {
         loadMessages();
         loadMenus();
         loadLobbyItems();
+        loadServers();
     }
 
     public void reloadConfigs() {
@@ -37,6 +40,7 @@ public class ConfigManager {
         loadMessages();
         loadMenus();
         loadLobbyItems();
+        loadServers();
     }
 
     public FileConfiguration getMainConfig() {
@@ -62,6 +66,13 @@ public class ConfigManager {
             loadLobbyItems();
         }
         return lobbyItemsConfig;
+    }
+
+    public FileConfiguration getServersConfig() {
+        if (serversConfig == null) {
+            loadServers();
+        }
+        return serversConfig;
     }
 
     public boolean isDebugEnabled() {
@@ -175,6 +186,44 @@ public class ConfigManager {
             }
         } catch (IOException | InvalidConfigurationException exception) {
             plugin.getLogger().severe("Unable to load default config/lobby-items.yml: " + exception.getMessage());
+        }
+    }
+
+    private void loadServers() {
+        if (serversFile == null) {
+            final File configDirectory = new File(plugin.getDataFolder(), "config");
+            if (!configDirectory.exists() && !configDirectory.mkdirs()) {
+                plugin.getLogger().severe("Unable to create config directory for servers configuration.");
+            }
+            serversFile = new File(configDirectory, "servers.yml");
+        }
+
+        if (!plugin.getDataFolder().exists() && !plugin.getDataFolder().mkdirs()) {
+            plugin.getLogger().severe("Unable to create plugin data folder for configuration files.");
+        }
+
+        if (!serversFile.exists()) {
+            plugin.saveResource("config/servers.yml", false);
+        }
+
+        serversConfig = new YamlConfiguration();
+        try {
+            serversConfig.load(serversFile);
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load config/servers.yml: " + exception.getMessage());
+            loadDefaultServers();
+        }
+    }
+
+    private void loadDefaultServers() {
+        serversConfig = new YamlConfiguration();
+        try (InputStream inputStream = plugin.getResource("config/servers.yml")) {
+            if (inputStream != null) {
+                Files.copy(inputStream, serversFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                serversConfig.load(serversFile);
+            }
+        } catch (IOException | InvalidConfigurationException exception) {
+            plugin.getLogger().severe("Unable to load default config/servers.yml: " + exception.getMessage());
         }
     }
 }

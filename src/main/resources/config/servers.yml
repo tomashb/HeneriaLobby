@@ -1,0 +1,21 @@
+servers:
+  bedwars:
+    name: "BedWars"
+    display_name: "&c&lBedWars &8- &ePopulaire"
+    server_name: "bedwars"
+    enabled: true
+  nexus:
+    name: "Nexus"
+    display_name: "&b&lNexus &8- &dNouveauté"
+    server_name: "nexus"
+    enabled: true
+  zombie:
+    name: "Zombie"
+    display_name: "&2&lZombie &8- &cSurvie"
+    server_name: "zombie"
+    enabled: true
+  custom:
+    name: "Custom"
+    display_name: "&6&lJeux Inédits &8- &5Exclusif"
+    server_name: "custom"
+    enabled: true
