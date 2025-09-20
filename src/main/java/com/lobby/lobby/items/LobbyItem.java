@@ -13,6 +13,7 @@ public record LobbyItem(
         List<String> lore,
         List<String> actions,
         String headId,
+        Material fallbackMaterial,
         boolean glow,
         Integer customModelData
 ) {

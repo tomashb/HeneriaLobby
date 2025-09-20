@@ -1,8 +1,8 @@
 package com.lobby.lobby.items;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.lobby.LobbyManager;
-import com.lobby.shop.HeadItemBuilder;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -33,6 +33,7 @@ public class LobbyItemManager {
 
     private final LobbyPlugin plugin;
     private final NamespacedKey lobbyItemKey;
+    private final HeadDatabaseManager headDatabaseManager;
     private final Map<String, LobbyItem> items = new LinkedHashMap<>();
     private boolean enabled = true;
     private boolean clearInventoryOnJoin = true;
@@ -46,6 +47,7 @@ public class LobbyItemManager {
     public LobbyItemManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.lobbyItemKey = new NamespacedKey(plugin, "lobby_item");
+        this.headDatabaseManager = plugin.getHeadDatabaseManager();
         reload();
     }
 
@@ -62,6 +64,12 @@ public class LobbyItemManager {
         clearInventoryOnJoin = root.getBoolean("clear_inventory_on_join", true);
         restoreOnDeath = root.getBoolean("restore_on_death", true);
         heldSlot = root.getInt("held_slot", -1);
+
+        final boolean debugHeads = root.getBoolean("debug_heads", false);
+        if (headDatabaseManager != null) {
+            headDatabaseManager.setDebugLogging(debugHeads);
+            headDatabaseManager.clearCache();
+        }
 
         final ConfigurationSection protectionSection = root.getConfigurationSection("protection");
         if (protectionSection != null) {
@@ -234,8 +242,10 @@ public class LobbyItemManager {
     }
 
     private ItemStack createItemStack(final Player player, final LobbyItem lobbyItem) {
-        ItemStack baseItem = createBaseItem(player, lobbyItem);
-        if (baseItem.getType() != lobbyItem.material()) {
+        final ItemStack baseItem = createBaseItem(player, lobbyItem);
+        final Material fallbackMaterial = lobbyItem.fallbackMaterial();
+        final boolean usingFallbackMaterial = fallbackMaterial != null && baseItem.getType() == fallbackMaterial;
+        if (!usingFallbackMaterial && baseItem.getType() != lobbyItem.material()) {
             baseItem.setType(lobbyItem.material());
         }
         baseItem.setAmount(Math.max(1, lobbyItem.amount()));
@@ -277,38 +287,66 @@ public class LobbyItemManager {
     }
 
     private ItemStack createBaseItem(final Player player, final LobbyItem lobbyItem) {
-        if (lobbyItem.material() == Material.PLAYER_HEAD) {
-            final String headId = lobbyItem.headId();
-            if (headId != null && !headId.isBlank()) {
-                if ("%player_name%".equalsIgnoreCase(headId.trim())) {
-                    final ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-                    final ItemMeta meta = head.getItemMeta();
-                    if (meta instanceof SkullMeta skullMeta && player != null) {
-                        skullMeta.setOwningPlayer(player);
-                        head.setItemMeta(skullMeta);
-                    }
-                    return head;
-                }
-                if (headId.startsWith("hdb:")) {
-                    final ItemStack databaseHead = HeadItemBuilder.createHeadItem(headId);
-                    if (databaseHead != null) {
-                        return databaseHead;
-                    }
-                }
-            }
-            final ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-            if (player != null && headId != null && !headId.isBlank()) {
-                final ItemMeta meta = skull.getItemMeta();
-                if (meta instanceof SkullMeta skullMeta) {
-                    final String processed = PlaceholderUtils.applyPlaceholders(plugin, headId, player);
-                    final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(processed);
-                    skullMeta.setOwningPlayer(offlinePlayer);
-                    skull.setItemMeta(skullMeta);
-                }
-            }
-            return skull;
+        if (lobbyItem.material() != Material.PLAYER_HEAD) {
+            return new ItemStack(lobbyItem.material());
         }
-        return new ItemStack(lobbyItem.material());
+
+        final String headId = lobbyItem.headId();
+        final Material fallbackMaterial = lobbyItem.fallbackMaterial();
+        if (headId != null && !headId.isBlank()) {
+            final String trimmed = headId.trim();
+            if ("%player_name%".equalsIgnoreCase(trimmed)) {
+                return createPlayerHead(player);
+            }
+
+            if (trimmed.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+                if (headDatabaseManager != null) {
+                    return headDatabaseManager.getHead(trimmed, fallbackMaterial);
+                }
+                return createFallbackItem(fallbackMaterial);
+            }
+
+            final String processed = PlaceholderUtils.applyPlaceholders(plugin, trimmed, player);
+            if (processed != null && !processed.isBlank()) {
+                final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(processed);
+                return createPlayerHead(offlinePlayer);
+            }
+        }
+
+        return createFallbackItem(fallbackMaterial);
+    }
+
+    private ItemStack createPlayerHead(final Player player) {
+        if (headDatabaseManager != null) {
+            return headDatabaseManager.getPlayerHead(player);
+        }
+        final ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        if (player == null) {
+            return head;
+        }
+        final ItemMeta meta = head.getItemMeta();
+        if (meta instanceof SkullMeta skullMeta) {
+            skullMeta.setOwningPlayer(player);
+            head.setItemMeta(skullMeta);
+        }
+        return head;
+    }
+
+    private ItemStack createPlayerHead(final OfflinePlayer player) {
+        if (headDatabaseManager != null) {
+            return headDatabaseManager.getPlayerHead(player);
+        }
+        final ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        final ItemMeta meta = head.getItemMeta();
+        if (meta instanceof SkullMeta skullMeta) {
+            skullMeta.setOwningPlayer(player);
+            head.setItemMeta(skullMeta);
+        }
+        return head;
+    }
+
+    private ItemStack createFallbackItem(final Material fallbackMaterial) {
+        return fallbackMaterial != null ? new ItemStack(fallbackMaterial) : new ItemStack(Material.PLAYER_HEAD);
     }
 
     private Optional<LobbyItem> parseItem(final String id, final ConfigurationSection section) {
@@ -325,11 +363,21 @@ public class LobbyItemManager {
         final List<String> lore = sanitizeList(section.getStringList("lore"));
         final List<String> actions = extractActions(section);
         final String headId = section.getString("head_id");
+        Material fallbackMaterial = null;
+        if (section.isString("fallback_material")) {
+            final String fallbackName = section.getString("fallback_material");
+            if (fallbackName != null && !fallbackName.isBlank()) {
+                fallbackMaterial = Material.matchMaterial(fallbackName);
+                if (fallbackMaterial == null) {
+                    LogUtils.warning(plugin, "Invalid fallback material '" + fallbackName + "' for lobby item '" + id + "'.");
+                }
+            }
+        }
         final boolean glow = section.getBoolean("glow", false);
         final Integer customModelData = section.contains("custom_model_data") ? section.getInt("custom_model_data") : null;
 
-        final LobbyItem lobbyItem = new LobbyItem(id, material, slot, amount, name, lore, actions, headId, glow,
-                customModelData);
+        final LobbyItem lobbyItem = new LobbyItem(id, material, slot, amount, name, lore, actions, headId,
+                fallbackMaterial, glow, customModelData);
         return Optional.of(lobbyItem);
     }
 
