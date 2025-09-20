@@ -211,6 +211,43 @@ public class FriendManager {
         return new ArrayList<>(requests);
     }
 
+    public int countSentRequests(final UUID playerUUID) {
+        final String query = "SELECT COUNT(*) FROM friends WHERE player_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to count sent friend requests for " + playerUUID, exception);
+        }
+        return 0;
+    }
+
+    public long getOldestPendingRequestTimestamp(final UUID playerUUID) {
+        final String query = "SELECT MIN(created_at) AS oldest FROM friends WHERE friend_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    final Timestamp timestamp = resultSet.getTimestamp("oldest");
+                    if (timestamp != null) {
+                        return timestamp.getTime();
+                    }
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to fetch oldest pending friend request for " + playerUUID, exception);
+        }
+        return 0L;
+    }
+
     public boolean areFriends(final UUID player1, final UUID player2) {
         final Set<UUID> friends = friendsCache.computeIfAbsent(player1, this::loadFriendsFromDatabase);
         return friends.contains(player2);
@@ -327,7 +364,7 @@ public class FriendManager {
         return false;
     }
 
-    private FriendSettings getFriendSettings(final UUID uuid) {
+    public FriendSettings getFriendSettings(final UUID uuid) {
         return settingsCache.computeIfAbsent(uuid, this::loadSettings);
     }
 

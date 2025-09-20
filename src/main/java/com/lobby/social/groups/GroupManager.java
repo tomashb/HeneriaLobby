@@ -178,6 +178,46 @@ public class GroupManager {
         return getPlayerGroup(uuid) != null;
     }
 
+    public int countPendingInvitations(final UUID playerUUID) {
+        final String query = "SELECT COUNT(*) FROM group_invitations WHERE invited_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to count pending group invitations for " + playerUUID, exception);
+        }
+        return 0;
+    }
+
+    public int countSentInvitations(final UUID inviterUUID) {
+        final String query = "SELECT COUNT(*) FROM group_invitations WHERE inviter_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, inviterUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to count sent group invitations for " + inviterUUID, exception);
+        }
+        return 0;
+    }
+
+    public int countCachedOpenGroups() {
+        return (int) groupCache.values().stream()
+                .filter(group -> group != null && !group.isFull())
+                .count();
+    }
+
     private Group getGroupById(final int id) {
         final Group cached = groupCache.get(id);
         if (cached != null) {
