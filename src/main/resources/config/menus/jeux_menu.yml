@@ -75,7 +75,7 @@ menu:
         - "[NONE]"
 
     bedwars:
-      slot: 21
+      slot: 20
       material: "PLAYER_HEAD"
       head: "hdb:67957"
       name: "&c&lBedWars &8- &ePopulaire"
@@ -111,7 +111,7 @@ menu:
         - "[SERVER_SEND] nexus"
 
     zombie:
-      slot: 23
+      slot: 24
       material: "PLAYER_HEAD"
       head: "hdb:23022"
       name: "&2&lZombie &8- &cSurvie"
@@ -129,7 +129,7 @@ menu:
         - "[SERVER_SEND] zombie"
 
     custom_games:
-      slot: 31
+      slot: 30
       material: "PLAYER_HEAD"
       head: "hdb:60776"
       name: "&6&lJeux Inédits &8- &5Exclusif"
