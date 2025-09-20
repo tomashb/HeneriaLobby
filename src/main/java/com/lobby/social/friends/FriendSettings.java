@@ -4,12 +4,20 @@ public class FriendSettings {
 
     private final AcceptMode acceptRequests;
     private final boolean showOnlineStatus;
-    private final boolean receiveNotifications;
+    private final boolean allowNotifications;
+    private final boolean autoAcceptFavorites;
+    private final int maxFriends;
 
-    public FriendSettings(final AcceptMode acceptRequests, final boolean showOnlineStatus, final boolean receiveNotifications) {
+    public FriendSettings(final AcceptMode acceptRequests,
+                          final boolean showOnlineStatus,
+                          final boolean allowNotifications,
+                          final boolean autoAcceptFavorites,
+                          final int maxFriends) {
         this.acceptRequests = acceptRequests;
         this.showOnlineStatus = showOnlineStatus;
-        this.receiveNotifications = receiveNotifications;
+        this.allowNotifications = allowNotifications;
+        this.autoAcceptFavorites = autoAcceptFavorites;
+        this.maxFriends = maxFriends;
     }
 
     public AcceptMode getAcceptRequests() {
@@ -20,7 +28,15 @@ public class FriendSettings {
         return showOnlineStatus;
     }
 
-    public boolean isReceiveNotifications() {
-        return receiveNotifications;
+    public boolean isAllowNotifications() {
+        return allowNotifications;
+    }
+
+    public boolean isAutoAcceptFavorites() {
+        return autoAcceptFavorites;
+    }
+
+    public int getMaxFriends() {
+        return maxFriends;
     }
 }

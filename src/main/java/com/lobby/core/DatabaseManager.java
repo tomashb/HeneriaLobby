@@ -814,6 +814,7 @@ public class DatabaseManager {
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                         accepted_at TIMESTAMP NULL,
                         blocked_at TIMESTAMP NULL,
+                        is_favorite BOOLEAN DEFAULT FALSE NOT NULL,
                         UNIQUE KEY unique_friendship (player_uuid, friend_uuid),
                         KEY idx_friends_player_uuid (player_uuid),
                         KEY idx_friends_friend_uuid (friend_uuid),
@@ -835,6 +836,7 @@ public class DatabaseManager {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     accepted_at TIMESTAMP NULL,
                     blocked_at TIMESTAMP NULL,
+                    is_favorite BOOLEAN DEFAULT 0,
                     UNIQUE (player_uuid, friend_uuid)
                 )
                 """;
@@ -846,6 +848,7 @@ public class DatabaseManager {
             executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
         }
         addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
+        addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
     }
 
     private void createFriendSettingsTable() throws SQLException {
@@ -855,15 +858,21 @@ public class DatabaseManager {
                         player_uuid VARCHAR(36) PRIMARY KEY,
                         accept_requests ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL' NOT NULL,
                         show_online_status BOOLEAN DEFAULT TRUE NOT NULL,
+                        allow_notifications BOOLEAN DEFAULT TRUE NOT NULL,
                         receive_notifications BOOLEAN DEFAULT TRUE NOT NULL,
+                        auto_accept_favorites BOOLEAN DEFAULT FALSE NOT NULL,
                         auto_accept_friends BOOLEAN DEFAULT FALSE NOT NULL,
+                        max_friends INT DEFAULT 100 NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         INDEX idx_friend_settings_accept_requests (accept_requests)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             executeSQL(sql);
+            addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT TRUE NOT NULL");
+            addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT FALSE NOT NULL");
             addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100 NOT NULL");
             addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
             addColumnIfNotExists("friend_settings", "updated_at",
                     "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
@@ -875,8 +884,11 @@ public class DatabaseManager {
                     player_uuid VARCHAR(36) PRIMARY KEY,
                     accept_requests TEXT DEFAULT 'ALL',
                     show_online_status BOOLEAN DEFAULT 1,
+                    allow_notifications BOOLEAN DEFAULT 1,
                     receive_notifications BOOLEAN DEFAULT 1,
+                    auto_accept_favorites BOOLEAN DEFAULT 0,
                     auto_accept_friends BOOLEAN DEFAULT 0,
+                    max_friends INT DEFAULT 100,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
@@ -885,7 +897,10 @@ public class DatabaseManager {
         if (createIndexes) {
             executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
         }
+        addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT 1");
+        addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT 0");
         addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100");
         addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         addColumnIfNotExists("friend_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     }

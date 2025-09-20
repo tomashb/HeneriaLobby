@@ -95,9 +95,18 @@ public class SocialPlaceholderManager {
 
         final List<FriendInfo> friends = friendManager.getFriendsList(player.getUniqueId());
         final long online = friends.stream().filter(FriendInfo::isOnline).count();
+        final long favoritesCount = friends.stream().filter(FriendInfo::isFavorite).count();
         replacements.put("%friends_total%", String.valueOf(friends.size()));
         replacements.put("%friends_online%", String.valueOf(online));
         replacements.put("%friends_online_count%", String.valueOf(online));
+        replacements.put("%friends_favorites_count%", String.valueOf(favoritesCount));
+        if (favoritesCount > 0) {
+            final String favoritesNames = friends.stream()
+                    .filter(FriendInfo::isFavorite)
+                    .map(FriendInfo::getName)
+                    .collect(Collectors.joining(", "));
+            replacements.put("%friends_favorites%", favoritesNames);
+        }
 
         final String popularServers = friends.stream()
                 .filter(FriendInfo::isOnline)
@@ -134,9 +143,14 @@ public class SocialPlaceholderManager {
         }
 
         final FriendSettings settings = friendManager.getFriendSettings(player.getUniqueId());
-        replacements.put("%friend_auto_accept%", formatAcceptMode(settings.getAcceptRequests()));
-        replacements.put("%friend_notifications%", settings.isReceiveNotifications() ? "Activées" : "Désactivées");
+        replacements.put("%friend_auto_accept%", settings.isAutoAcceptFavorites()
+                ? "Favoris auto"
+                : formatAcceptMode(settings.getAcceptRequests()));
+        replacements.put("%friend_notifications%", settings.isAllowNotifications() ? "Activées" : "Désactivées");
         replacements.put("%friend_visibility%", settings.isShowOnlineStatus() ? "Visible" : "Caché");
+        replacements.put("%friend_limits%", settings.getMaxFriends() <= 0
+                ? "Illimité"
+                : settings.getMaxFriends() + " slots");
 
         if (settings.getAcceptRequests() == AcceptMode.NONE) {
             replacements.put("%friend_request_status%", "Demandes désactivées");
