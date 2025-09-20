@@ -299,8 +299,7 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
                     sender.sendMessage("§7├─ Description: §f" + description);
                     final String priceDisplay = buildPriceDisplay(priceCoins, priceTokens);
                     sender.sendMessage("§7├─ Prix: " + priceDisplay);
-                    sender.sendMessage("§7└─ Commandes: §f" + commandPayload.replace('
-', ' '));
+                    sender.sendMessage("§7└─ Commandes: §f" + commandPayload.replace("\n", "§7, §f"));
                     plugin.getLogger().info("Shop item created: '" + name + "' by " + sender.getName()
                             + " (Coins: " + priceCoins + ", Tokens: " + priceTokens + ")");
                     shopManager.initialize();
