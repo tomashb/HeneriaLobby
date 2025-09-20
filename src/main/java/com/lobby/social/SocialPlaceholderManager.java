@@ -5,8 +5,12 @@ import com.lobby.economy.EconomyManager;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.clans.ClanMember;
+import com.lobby.social.clans.ClanPermission;
+import com.lobby.social.clans.ClanRank;
+import com.lobby.social.friends.AcceptMode;
 import com.lobby.social.friends.FriendInfo;
 import com.lobby.social.friends.FriendManager;
+import com.lobby.social.friends.FriendSettings;
 import com.lobby.social.groups.Group;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.velocity.VelocityManager;
@@ -14,9 +18,17 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class SocialPlaceholderManager {
 
@@ -47,83 +59,237 @@ public class SocialPlaceholderManager {
         if (economyManager == null) {
             return text;
         }
-        String replaced = text;
-        replaced = replaced.replace("%player_coins%", String.valueOf(economyManager.getCoins(player.getUniqueId())));
-        replaced = replaced.replace("%player_tokens%", String.valueOf(economyManager.getTokens(player.getUniqueId())));
-        return replaced;
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("%player_coins%", String.valueOf(economyManager.getCoins(player.getUniqueId())));
+        replacements.put("%player_tokens%", String.valueOf(economyManager.getTokens(player.getUniqueId())));
+        return replaceAll(text, replacements);
     }
 
     private String applyFriendPlaceholders(final Player player, final String text) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("%friends_total%", "0");
+        replacements.put("%friends_online%", "0");
+        replacements.put("%friends_online_count%", "0");
+        replacements.put("%friends_popular_servers%", "Aucun");
+        replacements.put("%friends_recent_activity%", "Aucune activité");
+        replacements.put("%friend_requests_received%", "0");
+        replacements.put("%friend_requests_sent%", "0");
+        replacements.put("%friend_requests_oldest%", "Aucune");
+        replacements.put("%friends_favorites%", "0");
+        replacements.put("%friends_favorites_count%", "0");
+        replacements.put("%friends_last_seen%", "Aucune donnée");
+        replacements.put("%friend_limits%", "Illimité");
+        replacements.put("%friend_request_status%", "Disponibles");
+        replacements.put("%friend_auto_accept%", "Tous");
+        replacements.put("%friend_notifications%", "Activées");
+        replacements.put("%friend_visibility%", "Visible");
+
         if (player == null) {
-            return text;
+            return replaceAll(text, replacements);
         }
+
         final FriendManager friendManager = plugin.getFriendManager();
         if (friendManager == null) {
-            return text;
+            return replaceAll(text, replacements);
         }
+
         final List<FriendInfo> friends = friendManager.getFriendsList(player.getUniqueId());
         final long online = friends.stream().filter(FriendInfo::isOnline).count();
-        final int requests = friendManager.getPendingRequests(player.getUniqueId()).size();
-        String replaced = text;
-        replaced = replaced.replace("%friends_total%", String.valueOf(friends.size()));
-        replaced = replaced.replace("%friends_online%", String.valueOf(online));
-        replaced = replaced.replace("%friend_requests%", String.valueOf(requests));
-        return replaced;
+        replacements.put("%friends_total%", String.valueOf(friends.size()));
+        replacements.put("%friends_online%", String.valueOf(online));
+        replacements.put("%friends_online_count%", String.valueOf(online));
+
+        final String popularServers = friends.stream()
+                .filter(FriendInfo::isOnline)
+                .map(FriendInfo::getServer)
+                .filter(Objects::nonNull)
+                .collect(Collectors.groupingBy(server -> server, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(2)
+                .map(entry -> entry.getKey() + " (" + entry.getValue() + ")")
+                .collect(Collectors.joining(", "));
+        if (!popularServers.isEmpty()) {
+            replacements.put("%friends_popular_servers%", popularServers);
+        }
+
+        final Optional<FriendInfo> mostRecentFriend = friends.stream()
+                .max(Comparator.comparingLong(FriendInfo::getLastSeen));
+        mostRecentFriend.ifPresent(friend -> {
+            final String relative = formatRelativeTime(friend.getLastSeen());
+            replacements.put("%friends_recent_activity%", friend.getName() + " - " + relative);
+            replacements.put("%friends_last_seen%", friend.getName() + " - " + relative);
+        });
+
+        final int requestsReceived = friendManager.getPendingRequests(player.getUniqueId()).size();
+        replacements.put("%friend_requests_received%", String.valueOf(requestsReceived));
+
+        final int requestsSent = friendManager.countSentRequests(player.getUniqueId());
+        replacements.put("%friend_requests_sent%", String.valueOf(requestsSent));
+
+        final long oldestRequest = friendManager.getOldestPendingRequestTimestamp(player.getUniqueId());
+        if (oldestRequest > 0L) {
+            replacements.put("%friend_requests_oldest%", formatRelativeTime(oldestRequest));
+        }
+
+        final FriendSettings settings = friendManager.getFriendSettings(player.getUniqueId());
+        replacements.put("%friend_auto_accept%", formatAcceptMode(settings.getAcceptRequests()));
+        replacements.put("%friend_notifications%", settings.isReceiveNotifications() ? "Activées" : "Désactivées");
+        replacements.put("%friend_visibility%", settings.isShowOnlineStatus() ? "Visible" : "Caché");
+
+        if (settings.getAcceptRequests() == AcceptMode.NONE) {
+            replacements.put("%friend_request_status%", "Demandes désactivées");
+        } else if (requestsSent > 0) {
+            replacements.put("%friend_request_status%", requestsSent + " en attente");
+        } else {
+            replacements.put("%friend_request_status%", "Ouvert");
+        }
+
+        return replaceAll(text, replacements);
     }
 
     private String applyGroupPlaceholders(final Player player, final String text) {
-        if (player == null) {
-            return text;
-        }
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("%group_name%", "Aucun");
+        replacements.put("%group_leader%", "Aucun");
+        replacements.put("%group_members%", "0");
+        replacements.put("%group_max%", "0");
+        replacements.put("%group_gamemode%", "Libre");
+        replacements.put("%group_status%", "Aucun");
+        replacements.put("%group_slots_free%", "0");
+        replacements.put("%group_auto_accept%", "Désactivé");
+        replacements.put("%group_preferred_mode%", "Automatique");
+        replacements.put("%group_visibility%", "Public");
+        replacements.put("%group_invitations%", "0");
+        replacements.put("%group_invites_sent%", "0");
+        replacements.put("%groups_open%", "0");
+        replacements.put("%groups_friends%", "0");
+        replacements.put("%friends_online_count%", "0");
+        replacements.put("%queue_available%", "0");
+        replacements.put("%queue_wait_time%", "N/A");
+        replacements.put("%queue_players%", "0");
+
         final GroupManager groupManager = plugin.getGroupManager();
-        if (groupManager == null) {
-            return text;
+        final FriendManager friendManager = plugin.getFriendManager();
+
+        if (player != null && friendManager != null) {
+            final List<FriendInfo> friends = friendManager.getFriendsList(player.getUniqueId());
+            final long online = friends.stream().filter(FriendInfo::isOnline).count();
+            replacements.put("%friends_online_count%", String.valueOf(online));
+            if (groupManager != null) {
+                final long friendsInGroups = friends.stream()
+                        .map(FriendInfo::getUuid)
+                        .map(groupManager::getPlayerGroup)
+                        .filter(Objects::nonNull)
+                        .count();
+                replacements.put("%groups_friends%", String.valueOf(friendsInGroups));
+            }
         }
+
+        if (player == null || groupManager == null) {
+            return replaceAll(text, replacements);
+        }
+
         final Group group = groupManager.getPlayerGroup(player.getUniqueId());
-        if (group == null) {
-            return text.replace("%group_name%", "Aucun")
-                    .replace("%group_members%", "0")
-                    .replace("%group_max%", "0")
-                    .replace("%group_leader%", "Aucun");
+        if (group != null) {
+            replacements.put("%group_name%", Objects.requireNonNullElse(group.getDisplayName(), "Groupe"));
+            replacements.put("%group_leader%", resolveName(group.getLeaderUUID()));
+            replacements.put("%group_members%", String.valueOf(group.getSize()));
+            replacements.put("%group_max%", String.valueOf(group.getMaxSize()));
+            replacements.put("%group_slots_free%", String.valueOf(Math.max(0, group.getMaxSize() - group.getSize())));
+            replacements.put("%group_status%", group.isFull() ? "Complet" : "Ouvert");
+            replacements.put("%group_auto_accept%", "Invitations manuelles");
+            replacements.put("%group_preferred_mode%", "Toutes les files");
+            replacements.put("%group_visibility%", "Privé");
         }
-        final String leaderName = resolveName(group.getLeaderUUID());
-        final int memberCount = group.getMembers().size();
-        final int max = group.getMaxSize();
-        String replaced = text.replace("%group_name%", Objects.requireNonNullElse(group.getDisplayName(), "Aucun"))
-                .replace("%group_members%", String.valueOf(memberCount))
-                .replace("%group_max%", String.valueOf(max))
-                .replace("%group_leader%", leaderName);
-        return replaced;
+
+        replacements.put("%group_invitations%", String.valueOf(groupManager.countPendingInvitations(player.getUniqueId())));
+        replacements.put("%group_invites_sent%", String.valueOf(groupManager.countSentInvitations(player.getUniqueId())));
+        replacements.put("%groups_open%", String.valueOf(groupManager.countCachedOpenGroups()));
+
+        return replaceAll(text, replacements);
     }
 
     private String applyClanPlaceholders(final Player player, final String text) {
-        if (player == null) {
-            return text;
-        }
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("%clan_name%", "Aucun");
+        replacements.put("%clan_tag%", "");
+        replacements.put("%clan_rank%", "Aucun");
+        replacements.put("%clan_members%", "0");
+        replacements.put("%clan_max%", "0");
+        replacements.put("%clan_points%", "0");
+        replacements.put("%clan_level%", "0");
+        replacements.put("%clan_online%", "0");
+        replacements.put("%clan_last_activity%", "Aucune activité");
+        replacements.put("%clan_permissions%", "Standard");
+        replacements.put("%clan_player_level%", "Membre");
+        replacements.put("%clan_available_perms%", String.valueOf(ClanPermission.values().length));
+        replacements.put("%clan_ranks_count%", "0");
+        replacements.put("%clan_coins%", "0");
+        replacements.put("%clan_contributions%", "0");
+        replacements.put("%clan_vault_access%", "Réservé");
+        replacements.put("%clan_war_status%", "Inactif");
+        replacements.put("%clan_war_wins%", "0");
+        replacements.put("%clan_war_losses%", "0");
+        replacements.put("%clan_war_ratio%", formatRatio(0, 0));
+        replacements.put("%clans_open_count%", "0");
+        replacements.put("%clans_invite_count%", "0");
+
         final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            return text;
+        if (player == null || clanManager == null) {
+            return replaceAll(text, replacements);
         }
+
+        replacements.put("%clans_open_count%", String.valueOf(clanManager.countCachedOpenClans()));
+        replacements.put("%clans_invite_count%", String.valueOf(clanManager.countPendingInvitations(player.getUniqueId())));
+
         final Clan clan = clanManager.getPlayerClan(player.getUniqueId());
         if (clan == null) {
-            return text.replace("%clan_name%", "Aucun")
-                    .replace("%clan_tag%", "")
-                    .replace("%clan_rank%", "Aucun")
-                    .replace("%clan_members%", "0")
-                    .replace("%clan_max%", "0")
-                    .replace("%clan_points%", "0")
-                    .replace("%clan_level%", "0");
+            return replaceAll(text, replacements);
         }
+
+        replacements.put("%clan_name%", clan.getName());
+        replacements.put("%clan_tag%", clan.getTag());
+        replacements.put("%clan_members%", String.valueOf(clan.getMembers().size()));
+        replacements.put("%clan_max%", String.valueOf(clan.getMaxMembers()));
+        replacements.put("%clan_points%", String.valueOf(clan.getPoints()));
+        replacements.put("%clan_level%", String.valueOf(clan.getLevel()));
+        replacements.put("%clan_ranks_count%", String.valueOf(clan.getRanks().size()));
+        replacements.put("%clan_coins%", String.valueOf(clan.getBankCoins()));
+
+        final long onlineCount = clan.getMembers().keySet().stream()
+                .map(Bukkit::getPlayer)
+                .filter(Objects::nonNull)
+                .filter(Player::isOnline)
+                .count();
+        replacements.put("%clan_online%", String.valueOf(onlineCount));
+
         final ClanMember member = clan.getMember(player.getUniqueId());
-        String replaced = text;
-        replaced = replaced.replace("%clan_name%", clan.getName());
-        replaced = replaced.replace("%clan_tag%", clan.getTag());
-        replaced = replaced.replace("%clan_rank%", member != null ? member.getRankName() : "Membre");
-        replaced = replaced.replace("%clan_members%", String.valueOf(clan.getMembers().size()));
-        replaced = replaced.replace("%clan_max%", String.valueOf(clan.getMaxMembers()));
-        replaced = replaced.replace("%clan_points%", String.valueOf(clan.getPoints()));
-        replaced = replaced.replace("%clan_level%", String.valueOf(clan.getLevel()));
-        return replaced;
+        if (member != null) {
+            replacements.put("%clan_rank%", member.getRankName());
+            replacements.put("%clan_player_level%", member.getRankName());
+            replacements.put("%clan_contributions%", String.valueOf(member.getTotalContributions()));
+            replacements.put("%clan_last_activity%", formatRelativeTime(member.getJoinedAt()));
+        }
+
+        final ClanRank rank = member != null ? clan.getRank(member.getRankName()) : null;
+        if (rank != null) {
+            final String permissions = rank.getPermissions().isEmpty()
+                    ? "Standard"
+                    : rank.getPermissions().stream()
+                    .map(this::formatPermissionName)
+                    .collect(Collectors.joining(", "));
+            replacements.put("%clan_permissions%", permissions);
+            replacements.put("%clan_available_perms%", String.valueOf(Math.max(0,
+                    ClanPermission.values().length - rank.getPermissions().size())));
+            replacements.put("%clan_player_level%", rank.getDisplayName());
+        }
+
+        final boolean vaultAccess = clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_BANK);
+        replacements.put("%clan_vault_access%", vaultAccess ? "Autorisé" : "Réservé");
+
+        return replaceAll(text, replacements);
     }
 
     private String applyServerPlaceholders(final String text) {
@@ -141,6 +307,73 @@ public class SocialPlaceholderManager {
         replaced = replaced.replace("%server_online_custom%",
                 String.valueOf(velocityManager.getServerPlayerCount("custom")));
         return replaced;
+    }
+
+    private String replaceAll(final String text, final Map<String, String> replacements) {
+        if (text == null || text.isEmpty() || replacements.isEmpty()) {
+            return text;
+        }
+        String replaced = text;
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            if (entry.getKey() == null || entry.getValue() == null) {
+                continue;
+            }
+            replaced = replaced.replace(entry.getKey(), entry.getValue());
+        }
+        return replaced;
+    }
+
+    private String formatRelativeTime(final long timestamp) {
+        if (timestamp <= 0L) {
+            return "Inconnu";
+        }
+        Duration duration = Duration.between(Instant.ofEpochMilli(timestamp), Instant.now());
+        if (duration.isNegative()) {
+            duration = Duration.ZERO;
+        }
+        final long days = duration.toDays();
+        if (days > 0) {
+            return "il y a " + days + "j";
+        }
+        final long hours = duration.toHours();
+        if (hours > 0) {
+            return "il y a " + hours + "h";
+        }
+        final long minutes = duration.toMinutes();
+        if (minutes > 0) {
+            return "il y a " + minutes + "m";
+        }
+        final long seconds = duration.getSeconds();
+        if (seconds <= 5) {
+            return "à l'instant";
+        }
+        return "il y a " + seconds + "s";
+    }
+
+    private String formatAcceptMode(final AcceptMode mode) {
+        if (mode == null) {
+            return "Tous";
+        }
+        return switch (mode) {
+            case ALL -> "Tous";
+            case FRIENDS_OF_FRIENDS -> "Amis d'amis";
+            case NONE -> "Personne";
+        };
+    }
+
+    private String formatPermissionName(final ClanPermission permission) {
+        final String formatted = permission.name().toLowerCase(Locale.ROOT).replace('_', ' ');
+        return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
+    }
+
+    private String formatRatio(final int wins, final int losses) {
+        if (wins <= 0 && losses <= 0) {
+            return "0.0";
+        }
+        if (losses <= 0) {
+            return String.format(Locale.US, "%.2f", (double) wins);
+        }
+        return String.format(Locale.US, "%.2f", (double) wins / Math.max(1, losses));
     }
 
     private String resolveName(final UUID uuid) {

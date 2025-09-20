@@ -17,6 +17,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -178,6 +179,31 @@ public class ClanManager {
             return true;
         }
         return loadClanForPlayer(uuid) != null;
+    }
+
+    public int countPendingInvitations(final UUID playerUUID) {
+        final String query = "SELECT COUNT(*) FROM clan_invitations WHERE invited_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getInt(1);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to count clan invitations for " + playerUUID, exception);
+        }
+        return 0;
+    }
+
+    public int countCachedOpenClans() {
+        return (int) clanCache.values().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .filter(clan -> !clan.isFull())
+                .count();
     }
 
     private void cacheClan(final Clan clan) {

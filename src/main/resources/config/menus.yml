@@ -149,7 +149,7 @@ menus:
 
   profile_menu:
     title: "&bProfil de %player_name%"
-    size: 27
+    size: 45
     items:
       overview:
         slot: 11
@@ -178,8 +178,48 @@ menus:
           - "&7Personnalise ton expérience"
         actions:
           - "[COMMAND] settings open %player_name%"
+      clan_menu_entry:
+        slot: 28
+        material: PLAYER_HEAD
+        head: "hdb:8971"
+        name: "&cGestion de Clan"
+        lore:
+          - "&7Gérez votre clan et ses membres"
+          - "&8▸ &7Clan: &c%clan_name%"
+          - "&8▸ &7Rang: &6%clan_rank%"
+          - "&8▸ &7Membres: &a%clan_members%/%clan_max%"
+          - ""
+          - "&c▶ Cliquez pour ouvrir"
+        actions:
+          - "[MENU] clan_menu"
+      friends_menu_entry:
+        slot: 30
+        material: PLAYER_HEAD
+        head: "hdb:9945"
+        name: "&aGestion d'Amis"
+        lore:
+          - "&7Retrouvez vos amis rapidement"
+          - "&8▸ &7En ligne: &a%friends_online_count%/%friends_total%"
+          - "&8▸ &7Demandes: &e%friend_requests_received%"
+          - ""
+          - "&a▶ Cliquez pour ouvrir"
+        actions:
+          - "[MENU] friends_menu"
+      groups_menu_entry:
+        slot: 32
+        material: PLAYER_HEAD
+        head: "hdb:9723"
+        name: "&eGestion de Groupes"
+        lore:
+          - "&7Organisez vos sessions de jeu"
+          - "&8▸ &7Membres: &a%group_members%/%group_max%"
+          - "&8▸ &7Invitations: &e%group_invitations%"
+          - ""
+          - "&e▶ Cliquez pour ouvrir"
+        actions:
+          - "[MENU] groups_menu"
       back:
-        slot: 18
+        slot: 36
         material: ARROW
         name: "&aRetour"
         lore:
@@ -187,7 +227,7 @@ menus:
         actions:
           - "[MENU] main_menu"
       close:
-        slot: 26
+        slot: 44
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -223,5 +263,934 @@ menus:
         name: "&cFermer"
         lore:
           - "&7Fermer les statistiques"
+        actions:
+          - "[CLOSE]"
+
+  clan_menu:
+    title: "&8» &c&lGestion de Clan"
+    size: 54
+    items:
+      decor_0:
+        slot: 0
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_1:
+        slot: 1
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_2:
+        slot: 2
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_6:
+        slot: 6
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_7:
+        slot: 7
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_8:
+        slot: 8
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_9:
+        slot: 9
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_17:
+        slot: 17
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_45:
+        slot: 45
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      decor_53:
+        slot: 53
+        material: RED_STAINED_GLASS_PANE
+        name: "&7"
+      clan_overview:
+        slot: 19
+        material: PLAYER_HEAD
+        head: "hdb:8971"
+        name: "&c&lMon Clan"
+        lore:
+          - "&7Informations sur votre clan actuel"
+          - "&r"
+          - "&8▸ &7Clan: &c%clan_name%"
+          - "&8▸ &7Rang: &6%clan_rank%"
+          - "&8▸ &7Membres: &a%clan_members%/%clan_max%"
+          - "&8▸ &7Points: &e%clan_points%"
+          - "&8▸ &7Niveau: &b%clan_level%"
+          - "&r"
+          - "&a▶ Cliquez pour voir les détails !"
+        actions:
+          - "[MENU] clan_info_menu"
+      clan_members:
+        slot: 21
+        material: PLAYER_HEAD
+        head: "hdb:9969"
+        name: "&e&lMembres du Clan"
+        lore:
+          - "&7Gérez les membres de votre clan"
+          - "&r"
+          - "&8▸ &7Membres connectés: &a%clan_online%/%clan_members%"
+          - "&8▸ &7Dernière activité: %clan_last_activity%"
+          - "&8▸ &7Permissions: %clan_permissions%"
+          - "&r"
+          - "&a▶ Cliquez pour gérer !"
+        actions:
+          - "[MENU] clan_members_menu"
+      clan_ranks:
+        slot: 23
+        material: PLAYER_HEAD
+        head: "hdb:1218"
+        name: "&d&lRangs et Permissions"
+        lore:
+          - "&7Configurez les rangs de votre clan"
+          - "&r"
+          - "&8▸ &7Votre niveau: &6%clan_player_level%"
+          - "&8▸ &7Permissions disponibles: %clan_available_perms%"
+          - "&8▸ &7Rangs configurés: &e%clan_ranks_count%"
+          - "&r"
+          - "&6⚠ Nécessite rang Officier+"
+        actions:
+          - "[MENU] clan_ranks_menu"
+      clan_vault:
+        slot: 25
+        material: PLAYER_HEAD
+        head: "hdb:35472"
+        name: "&a&lTrésor du Clan"
+        lore:
+          - "&7Gérez les ressources du clan"
+          - "&r"
+          - "&8▸ &7Coins du clan: &e%clan_coins%"
+          - "&8▸ &7Contributions mensuelles: &6%clan_contributions%"
+          - "&8▸ &7Accès coffre: %clan_vault_access%"
+          - "&r"
+          - "&a▶ Cliquez pour accéder !"
+        actions:
+          - "[MENU] clan_vault_menu"
+      clan_wars:
+        slot: 31
+        material: PLAYER_HEAD
+        head: "hdb:38878"
+        name: "&b&lGuerres de Clans"
+        lore:
+          - "&7Participez aux guerres épiques !"
+          - "&r"
+          - "&8▸ &7Guerre actuelle: %clan_war_status%"
+          - "&8▸ &7Victoires: &a%clan_war_wins%"
+          - "&8▸ &7Défaites: &c%clan_war_losses%"
+          - "&8▸ &7Ratio: &6%clan_war_ratio%"
+          - "&r"
+          - "&c⚔ Cliquez pour les guerres !"
+        actions:
+          - "[MENU] clan_wars_menu"
+      clan_create:
+        slot: 37
+        material: PLAYER_HEAD
+        head: "hdb:12654"
+        name: "&6&lCréer un Clan"
+        lore:
+          - "&7Créez votre propre clan !"
+          - "&r"
+          - "&8▸ &7Coût: &e10,000 coins"
+          - "&8▸ &7Membres max: &a20 joueurs"
+          - "&8▸ &7Avantages: Coffre, Guerres, Chat privé"
+          - "&r"
+          - "&a▶ Cliquez pour créer !"
+        actions:
+          - "[COMMAND] clan create"
+      clan_join:
+        slot: 43
+        material: PLAYER_HEAD
+        head: "hdb:23022"
+        name: "&e&lRejoindre un Clan"
+        lore:
+          - "&7Explorez les clans disponibles"
+          - "&r"
+          - "&8▸ &7Clans ouverts: &a%clans_open_count%"
+          - "&8▸ &7Clans avec invitations: &e%clans_invite_count%"
+          - "&8▸ &7Popularité: Top clans actifs"
+          - "&r"
+          - "&a▶ Cliquez pour explorer !"
+        actions:
+          - "[MENU] clan_browse_menu"
+      clan_back:
+        slot: 49
+        material: PLAYER_HEAD
+        head: "hdb:9334"
+        name: "&c&lRetour"
+        lore:
+          - "&7Retourner au menu principal"
+        actions:
+          - "[MENU] profil_menu"
+
+  friends_menu:
+    title: "&8» &a&lGestion d'Amis"
+    size: 54
+    items:
+      decor_0:
+        slot: 0
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_1:
+        slot: 1
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_2:
+        slot: 2
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_6:
+        slot: 6
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_7:
+        slot: 7
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_8:
+        slot: 8
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_9:
+        slot: 9
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_17:
+        slot: 17
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_45:
+        slot: 45
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      decor_53:
+        slot: 53
+        material: GREEN_STAINED_GLASS_PANE
+        name: "&7"
+      friends_online:
+        slot: 20
+        material: PLAYER_HEAD
+        head: "hdb:9945"
+        name: "&a&lAmis En Ligne"
+        lore:
+          - "&7Vos amis actuellement connectés"
+          - "&r"
+          - "&8▸ &7Amis en ligne: &a%friends_online_count%/%friends_total%"
+          - "&8▸ &7Serveurs populaires: %friends_popular_servers%"
+          - "&8▸ &7Activité récente: %friends_recent_activity%"
+          - "&r"
+          - "&a▶ Cliquez pour voir la liste !"
+        actions:
+          - "[MENU] friends_online_menu"
+      friend_requests:
+        slot: 22
+        material: PLAYER_HEAD
+        head: "hdb:1455"
+        name: "&e&lDemandes d'Amis"
+        lore:
+          - "&7Gérez vos demandes d'amitié"
+          - "&r"
+          - "&8▸ &7Demandes reçues: &e%friend_requests_received%"
+          - "&8▸ &7Demandes envoyées: &b%friend_requests_sent%"
+          - "&8▸ &7En attente depuis: %friend_requests_oldest%"
+          - "&r"
+          - "&e▶ Cliquez pour gérer !"
+        actions:
+          - "[MENU] friend_requests_menu"
+      friends_all:
+        slot: 24
+        material: PLAYER_HEAD
+        head: "hdb:13389"
+        name: "&b&lTous mes Amis"
+        lore:
+          - "&7Liste complète de vos amis"
+          - "&r"
+          - "&8▸ &7Total d'amis: &a%friends_total%"
+          - "&8▸ &7Amis favoris: &6%friends_favorites%"
+          - "&8▸ &7Dernière connexion: %friends_last_seen%"
+          - "&r"
+          - "&b▶ Cliquez pour parcourir !"
+        actions:
+          - "[MENU] friends_all_menu"
+      friend_add:
+        slot: 28
+        material: PLAYER_HEAD
+        head: "hdb:7439"
+        name: "&d&lAjouter un Ami"
+        lore:
+          - "&7Envoyez une demande d'amitié"
+          - "&r"
+          - "&8▸ &7Tapez le nom dans le chat"
+          - "&8▸ &7Limites: %friend_limits%"
+          - "&8▸ &7Statut: %friend_request_status%"
+          - "&r"
+          - "&d▶ Cliquez pour ajouter !"
+        actions:
+          - "[COMMAND] friend add"
+      friend_settings:
+        slot: 30
+        material: PLAYER_HEAD
+        head: "hdb:8537"
+        name: "&6&lParamètres d'Amis"
+        lore:
+          - "&7Configurez vos préférences"
+          - "&r"
+          - "&8▸ &7Demandes automatiques: %friend_auto_accept%"
+          - "&8▸ &7Notifications: %friend_notifications%"
+          - "&8▸ &7Visibilité: %friend_visibility%"
+          - "&r"
+          - "&6▶ Cliquez pour configurer !"
+        actions:
+          - "[MENU] friend_settings_menu"
+      friends_favorites:
+        slot: 32
+        material: PLAYER_HEAD
+        head: "hdb:35472"
+        name: "&c&lAmis Favoris"
+        lore:
+          - "&7Vos amis les plus proches"
+          - "&r"
+          - "&8▸ &7Favoris marqués: &6%friends_favorites_count%"
+          - "&8▸ &7Notifications prioritaires activées"
+          - "&8▸ &7Accès rapide aux invitations"
+          - "&r"
+          - "&c▶ Cliquez pour voir !"
+        actions:
+          - "[MENU] friends_favorites_menu"
+      friends_back:
+        slot: 49
+        material: PLAYER_HEAD
+        head: "hdb:9334"
+        name: "&c&lRetour"
+        lore:
+          - "&7Retourner au menu profil"
+        actions:
+          - "[MENU] profil_menu"
+
+  groups_menu:
+    title: "&8» &e&lGestion de Groupes"
+    size: 54
+    items:
+      decor_0:
+        slot: 0
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_1:
+        slot: 1
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_2:
+        slot: 2
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_6:
+        slot: 6
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_7:
+        slot: 7
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_8:
+        slot: 8
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_9:
+        slot: 9
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_17:
+        slot: 17
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_45:
+        slot: 45
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      decor_53:
+        slot: 53
+        material: YELLOW_STAINED_GLASS_PANE
+        name: "&7"
+      group_current:
+        slot: 20
+        material: PLAYER_HEAD
+        head: "hdb:9723"
+        name: "&e&lMon Groupe Actuel"
+        lore:
+          - "&7Informations sur votre groupe"
+          - "&r"
+          - "&8▸ &7Groupe: %group_name%"
+          - "&8▸ &7Leader: &6%group_leader%"
+          - "&8▸ &7Membres: &a%group_members%/%group_max%"
+          - "&8▸ &7Mode de jeu: &b%group_gamemode%"
+          - "&8▸ &7Statut: %group_status%"
+          - "&r"
+          - "&e▶ Cliquez pour gérer !"
+        actions:
+          - "[MENU] group_manage_menu"
+      group_create:
+        slot: 22
+        material: PLAYER_HEAD
+        head: "hdb:38878"
+        name: "&a&lCréer un Groupe"
+        lore:
+          - "&7Créez un nouveau groupe de jeu"
+          - "&r"
+          - "&8▸ &7Taille max: &a8 joueurs"
+          - "&8▸ &7Modes supportés: Tous les jeux"
+          - "&8▸ &7Durée max: &e2 heures"
+          - "&8▸ &7Coût: &aGratuit"
+          - "&r"
+          - "&a▶ Cliquez pour créer !"
+        actions:
+          - "[COMMAND] group create"
+      group_join:
+        slot: 24
+        material: PLAYER_HEAD
+        head: "hdb:1218"
+        name: "&b&lRejoindre un Groupe"
+        lore:
+          - "&7Rejoignez un groupe existant"
+          - "&r"
+          - "&8▸ &7Groupes ouverts: &a%groups_open%"
+          - "&8▸ &7Groupes d'amis: &e%groups_friends%"
+          - "&8▸ &7Invitations reçues: &b%group_invitations%"
+          - "&r"
+          - "&b▶ Cliquez pour explorer !"
+        actions:
+          - "[MENU] group_browse_menu"
+      group_invite:
+        slot: 28
+        material: PLAYER_HEAD
+        head: "hdb:7439"
+        name: "&d&lInviter des Joueurs"
+        lore:
+          - "&7Invitez des amis dans votre groupe"
+          - "&r"
+          - "&8▸ &7Amis en ligne: &a%friends_online_count%"
+          - "&8▸ &7Places disponibles: &e%group_slots_free%"
+          - "&8▸ &7Invitations envoyées: &b%group_invites_sent%"
+          - "&r"
+          - "&d▶ Cliquez pour inviter !"
+        actions:
+          - "[MENU] group_invite_menu"
+      group_queue:
+        slot: 30
+        material: PLAYER_HEAD
+        head: "hdb:23022"
+        name: "&6&lFiles d'Attente"
+        lore:
+          - "&7Rejoignez une file d'attente"
+          - "&r"
+          - "&8▸ &7Files disponibles: %queue_available%"
+          - "&8▸ &7Temps d'attente moyen: &b%queue_wait_time%"
+          - "&8▸ &7Joueurs en file: &e%queue_players%"
+          - "&r"
+          - "&6▶ Cliquez pour rejoindre !"
+        actions:
+          - "[MENU] queue_menu"
+      group_settings:
+        slot: 32
+        material: PLAYER_HEAD
+        head: "hdb:8537"
+        name: "&c&lParamètres de Groupe"
+        lore:
+          - "&7Configurez vos préférences"
+          - "&r"
+          - "&8▸ &7Invitations automatiques: %group_auto_accept%"
+          - "&8▸ &7Mode préféré: %group_preferred_mode%"
+          - "&8▸ &7Visibilité: %group_visibility%"
+          - "&r"
+          - "&c▶ Cliquez pour configurer !"
+        actions:
+          - "[MENU] group_settings_menu"
+      group_back:
+        slot: 49
+        material: PLAYER_HEAD
+        head: "hdb:9334"
+        name: "&c&lRetour"
+        lore:
+          - "&7Retourner au menu profil"
+        actions:
+          - "[MENU] profil_menu"
+
+  clan_info_menu:
+    title: "&8» &c&lMon Clan"
+    size: 27
+    items:
+      details:
+        slot: 13
+        material: PLAYER_HEAD
+        head: "hdb:8971"
+        name: "&c&lDétails du Clan"
+        lore:
+          - "&7Nom: &c%clan_name%"
+          - "&7Tag: &f%clan_tag%"
+          - "&7Rang: &6%clan_rank%"
+          - "&7Niveau: &b%clan_level%"
+          - "&7Membres: &a%clan_members%/%clan_max%"
+          - "&7Points: &e%clan_points%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion du clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_members_menu:
+    title: "&8» &c&lMembres du Clan"
+    size: 27
+    items:
+      summary:
+        slot: 13
+        material: BOOK
+        name: "&eListe des membres"
+        lore:
+          - "&7Membres totaux: &a%clan_members%"
+          - "&7Connectés: &a%clan_online%"
+          - "&7Dernière activité: %clan_last_activity%"
+          - "&7Permissions: %clan_permissions%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_ranks_menu:
+    title: "&8» &d&lRangs de Clan"
+    size: 27
+    items:
+      overview:
+        slot: 13
+        material: PAPER
+        name: "&dAperçu des rangs"
+        lore:
+          - "&7Votre rang: &6%clan_player_level%"
+          - "&7Rangs configurés: &e%clan_ranks_count%"
+          - "&7Permissions restantes: %clan_available_perms%"
+          - "&7Accès coffre: %clan_vault_access%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_vault_menu:
+    title: "&8» &a&lTrésor du Clan"
+    size: 27
+    items:
+      vault_info:
+        slot: 13
+        material: CHEST
+        name: "&aInformations du coffre"
+        lore:
+          - "&7Solde: &e%clan_coins%"
+          - "&7Contributions: &6%clan_contributions%"
+          - "&7Accès: %clan_vault_access%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_wars_menu:
+    title: "&8» &b&lGuerres de Clans"
+    size: 27
+    items:
+      war_info:
+        slot: 13
+        material: IRON_SWORD
+        name: "&bStatistiques de guerre"
+        lore:
+          - "&7Statut: %clan_war_status%"
+          - "&7Victoires: &a%clan_war_wins%"
+          - "&7Défaites: &c%clan_war_losses%"
+          - "&7Ratio: &6%clan_war_ratio%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_browse_menu:
+    title: "&8» &e&lExplorer les Clans"
+    size: 27
+    items:
+      listing:
+        slot: 13
+        material: COMPASS
+        name: "&eClans disponibles"
+        lore:
+          - "&7Clans ouverts: &a%clans_open_count%"
+          - "&7Invitations reçues: &e%clans_invite_count%"
+          - "&7Popularité: Top clans actifs"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Revenir au menu clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  friends_online_menu:
+    title: "&8» &a&lAmis En Ligne"
+    size: 27
+    items:
+      overview:
+        slot: 13
+        material: PLAYER_HEAD
+        head: "%player_name%"
+        name: "&aVos amis connectés"
+        lore:
+          - "&7En ligne: &a%friends_online_count%/%friends_total%"
+          - "&7Serveurs: %friends_popular_servers%"
+          - "&7Dernière activité: %friends_recent_activity%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des amis"
+        actions:
+          - "[MENU] friends_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  friend_requests_menu:
+    title: "&8» &e&lDemandes d'Amis"
+    size: 27
+    items:
+      summary:
+        slot: 13
+        material: PAPER
+        name: "&eDemandes en attente"
+        lore:
+          - "&7Reçues: &e%friend_requests_received%"
+          - "&7Envoyées: &b%friend_requests_sent%"
+          - "&7Plus ancienne: %friend_requests_oldest%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des amis"
+        actions:
+          - "[MENU] friends_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  friends_all_menu:
+    title: "&8» &b&lTous mes Amis"
+    size: 27
+    items:
+      summary:
+        slot: 13
+        material: BOOK
+        name: "&bRésumé des amis"
+        lore:
+          - "&7Total: &a%friends_total%"
+          - "&7Favoris: &6%friends_favorites_count%"
+          - "&7Dernier connecté: %friends_last_seen%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des amis"
+        actions:
+          - "[MENU] friends_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  friend_settings_menu:
+    title: "&8» &6&lParamètres d'Amis"
+    size: 27
+    items:
+      settings_info:
+        slot: 13
+        material: REDSTONE_COMPARATOR
+        name: "&6Configuration actuelle"
+        lore:
+          - "&7Demandes automatiques: %friend_auto_accept%"
+          - "&7Notifications: %friend_notifications%"
+          - "&7Visibilité: %friend_visibility%"
+          - "&7Limite: %friend_limits%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des amis"
+        actions:
+          - "[MENU] friends_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  friends_favorites_menu:
+    title: "&8» &c&lAmis Favoris"
+    size: 27
+    items:
+      favorites_info:
+        slot: 13
+        material: PLAYER_HEAD
+        head: "%player_name%"
+        name: "&cFavoris"
+        lore:
+          - "&7Favoris marqués: &6%friends_favorites_count%"
+          - "&7Notifications prioritaires: %friend_notifications%"
+          - "&7Dernière activité: %friends_recent_activity%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des amis"
+        actions:
+          - "[MENU] friends_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  group_manage_menu:
+    title: "&8» &e&lMon Groupe"
+    size: 27
+    items:
+      group_info:
+        slot: 13
+        material: PLAYER_HEAD
+        head: "hdb:9723"
+        name: "&eDétails du groupe"
+        lore:
+          - "&7Nom: &f%group_name%"
+          - "&7Leader: &6%group_leader%"
+          - "&7Membres: &a%group_members%/%group_max%"
+          - "&7Statut: %group_status%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des groupes"
+        actions:
+          - "[MENU] groups_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  group_browse_menu:
+    title: "&8» &b&lExplorer les Groupes"
+    size: 27
+    items:
+      browse_info:
+        slot: 13
+        material: COMPASS
+        name: "&bGroupes disponibles"
+        lore:
+          - "&7Groupes ouverts: &a%groups_open%"
+          - "&7Groupes d'amis: &e%groups_friends%"
+          - "&7Invitations reçues: &b%group_invitations%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des groupes"
+        actions:
+          - "[MENU] groups_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  group_invite_menu:
+    title: "&8» &d&lInvitations de Groupe"
+    size: 27
+    items:
+      invite_info:
+        slot: 13
+        material: PAPER
+        name: "&dInvitations"
+        lore:
+          - "&7Amis en ligne: &a%friends_online_count%"
+          - "&7Invitations envoyées: &b%group_invites_sent%"
+          - "&7Invitations reçues: &e%group_invitations%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des groupes"
+        actions:
+          - "[MENU] groups_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  queue_menu:
+    title: "&8» &6&lFiles d'Attente"
+    size: 27
+    items:
+      queue_info:
+        slot: 13
+        material: CLOCK
+        name: "&6Statut des files"
+        lore:
+          - "&7Files disponibles: %queue_available%"
+          - "&7Temps d'attente: &b%queue_wait_time%"
+          - "&7Joueurs en file: &e%queue_players%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des groupes"
+        actions:
+          - "[MENU] groups_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  group_settings_menu:
+    title: "&8» &c&lParamètres de Groupe"
+    size: 27
+    items:
+      settings_info:
+        slot: 13
+        material: REDSTONE_COMPARATOR
+        name: "&cConfiguration"
+        lore:
+          - "&7Invitations automatiques: %group_auto_accept%"
+          - "&7Mode préféré: %group_preferred_mode%"
+          - "&7Visibilité: %group_visibility%"
+      back:
+        slot: 18
+        material: ARROW
+        name: "&aRetour"
+        lore:
+          - "&7Retour à la gestion des groupes"
+        actions:
+          - "[MENU] groups_menu"
+      close:
+        slot: 26
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
         actions:
           - "[CLOSE]"
