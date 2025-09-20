@@ -1563,7 +1563,7 @@ public class DatabaseManager {
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         clan_id INT NOT NULL,
                         name VARCHAR(30) NOT NULL,
-                        display_name VARCHAR(50) NOT NULL,
+                        display_name VARCHAR(50) NOT NULL DEFAULT 'Membre',
                         priority INT DEFAULT 0 NOT NULL,
                         permissions JSON NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1573,9 +1573,10 @@ public class DatabaseManager {
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             executeSQL(sql);
-            addColumnIfNotExists("clan_ranks", "display_name", "VARCHAR(50) NOT NULL DEFAULT ''");
+            addColumnIfNotExists("clan_ranks", "display_name", "VARCHAR(50) NOT NULL DEFAULT 'Membre'");
             addColumnIfNotExists("clan_ranks", "permissions", "JSON NULL");
             addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            ensureClanRankDisplayNames();
             return;
         }
 
@@ -1584,7 +1585,7 @@ public class DatabaseManager {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     clan_id INTEGER NOT NULL,
                     name TEXT NOT NULL,
-                    display_name TEXT NOT NULL,
+                    display_name TEXT NOT NULL DEFAULT 'Membre',
                     priority INTEGER DEFAULT 0,
                     permissions TEXT,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -1596,9 +1597,30 @@ public class DatabaseManager {
             executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_clan_id ON clan_ranks(clan_id)");
             executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_priority ON clan_ranks(priority)");
         }
-        addColumnIfNotExists("clan_ranks", "display_name", "TEXT NOT NULL DEFAULT ''");
+        addColumnIfNotExists("clan_ranks", "display_name", "TEXT NOT NULL DEFAULT 'Membre'");
         addColumnIfNotExists("clan_ranks", "permissions", "TEXT");
         addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        ensureClanRankDisplayNames();
+    }
+
+    private void ensureClanRankDisplayNames() {
+        try {
+            executeSQL("UPDATE clan_ranks SET display_name = name WHERE display_name IS NULL OR TRIM(display_name) = ''");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to backfill clan rank display names: " + exception.getMessage(), exception);
+        }
+
+        if (databaseType != DatabaseType.MYSQL) {
+            return;
+        }
+
+        final String alterSql = "ALTER TABLE clan_ranks MODIFY COLUMN display_name VARCHAR(50) NOT NULL DEFAULT 'Membre'";
+        try {
+            executeSQL(alterSql);
+        } catch (final SQLException exception) {
+            plugin.getLogger().fine("Skipping clan_ranks display_name default enforcement: " + exception.getMessage());
+        }
     }
 
     private void createClanInvitationsTable() throws SQLException {

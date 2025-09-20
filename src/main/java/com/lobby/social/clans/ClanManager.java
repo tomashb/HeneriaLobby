@@ -252,12 +252,13 @@ public class ClanManager {
     }
 
     private void saveRank(final int clanId, final ClanRank rank) {
-        final String query = "INSERT INTO clan_ranks (clan_id, name, permissions, priority) VALUES (?, ?, ?, ?)";
+        final String query = "INSERT INTO clan_ranks (clan_id, name, display_name, permissions, priority) VALUES (?, ?, ?, ?, ?)";
         try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, clanId);
             statement.setString(2, rank.getName());
-            statement.setString(3, serializePermissions(rank.getPermissions()));
-            statement.setInt(4, rank.getPriority());
+            statement.setString(3, rank.getDisplayName());
+            statement.setString(4, serializePermissions(rank.getPermissions()));
+            statement.setInt(5, rank.getPriority());
             statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save clan rank", exception);
@@ -574,16 +575,17 @@ public class ClanManager {
     }
 
     private void loadClanRanks(final Clan clan, final Connection connection) throws SQLException {
-        final String query = "SELECT name, permissions, priority FROM clan_ranks WHERE clan_id = ?";
+        final String query = "SELECT name, display_name, permissions, priority FROM clan_ranks WHERE clan_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, clan.getId());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     final String name = resultSet.getString("name");
+                    final String displayName = resultSet.getString("display_name");
                     final String permissionsString = resultSet.getString("permissions");
                     final int priority = resultSet.getInt("priority");
                     final Set<ClanPermission> permissions = deserializePermissions(permissionsString);
-                    clan.addRank(new ClanRank(name, priority, permissions));
+                    clan.addRank(new ClanRank(name, displayName, priority, permissions));
                 }
             }
         }
