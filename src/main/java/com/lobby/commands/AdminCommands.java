@@ -2,6 +2,7 @@ package com.lobby.commands;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.data.PlayerData;
+import com.lobby.core.DatabaseManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.npcs.NPCManager;
@@ -70,6 +71,11 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
             return true;
         }
 
+        if (subCommand.equals("database")) {
+            final String[] databaseArgs = Arrays.copyOfRange(args, 1, args.length);
+            return handleDatabaseCommand(sender, databaseArgs);
+        }
+
         if (subCommand.equals("setlobby")) {
             return handleSetLobby(sender);
         }
@@ -109,7 +115,7 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         if (args.length == 1) {
-            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc", "setlobby", "bypass", "shop");
+            final List<String> options = List.of("give", "take", "balance", "holo", "hologram", "npc", "setlobby", "bypass", "shop", "database");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             return options.stream().filter(option -> option.startsWith(prefix)).toList();
         }
@@ -120,6 +126,7 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
                 case "balance" -> completePlayerNames(args[1]);
                 case "npc" -> npcCommands.tabComplete(sender, Arrays.copyOfRange(args, 1, args.length));
                 case "shop" -> shopCommands != null ? shopCommands.tabCompleteAdmin(sender, Arrays.copyOfRange(args, 1, args.length)) : Collections.emptyList();
+                case "database" -> completeDatabaseSubcommands(args[1]);
                 default -> Collections.emptyList();
             };
         }
@@ -142,6 +149,59 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
         }
 
         return Collections.emptyList();
+    }
+
+    private boolean handleDatabaseCommand(final CommandSender sender, final String[] args) {
+        if (!sender.hasPermission("lobby.admin.database")) {
+            sender.sendMessage("§cVous n'avez pas la permission !");
+            return true;
+        }
+
+        final DatabaseManager databaseManager = plugin.getDatabaseManager();
+        if (databaseManager == null) {
+            sender.sendMessage("§cLe gestionnaire de base de données n'est pas disponible.");
+            return true;
+        }
+
+        if (args.length == 0) {
+            sender.sendMessage("§e/lobby admin database <diagnose|recreate|confirm-recreate|toggle-fk>");
+            return true;
+        }
+
+        final String action = args[0].toLowerCase(Locale.ROOT);
+        switch (action) {
+            case "diagnose" -> {
+                sender.sendMessage("§eAnalyse de la base de données en cours...");
+                databaseManager.diagnosePlayersTable();
+                sender.sendMessage("§aVoir les logs pour les détails");
+                return true;
+            }
+            case "recreate" -> {
+                sender.sendMessage("§cAttention: Ceci va recréer la table players !");
+                sender.sendMessage("§eUtilisez /lobby admin database confirm-recreate pour confirmer");
+                return true;
+            }
+            case "confirm-recreate" -> {
+                sender.sendMessage("§eRecrée la table players...");
+                try {
+                    databaseManager.recreatePlayersTable();
+                    sender.sendMessage("§aTable players recréée avec succès !");
+                } catch (final Exception exception) {
+                    sender.sendMessage("§cErreur: " + exception.getMessage());
+                }
+                return true;
+            }
+            case "toggle-fk" -> {
+                final boolean current = databaseManager.isForeignKeysEnabled();
+                databaseManager.setForeignKeysEnabled(!current);
+                sender.sendMessage("§aForeign keys " + (!current ? "activées" : "désactivées"));
+                return true;
+            }
+            default -> {
+                sender.sendMessage("§e/lobby admin database <diagnose|recreate|confirm-recreate|toggle-fk>");
+                return true;
+            }
+        }
     }
 
     private boolean handleSetLobby(final CommandSender sender) {
@@ -341,6 +401,12 @@ public class AdminCommands implements CommandExecutor, TabExecutor {
             MessageUtils.sendConfigMessage(sender, "economy.invalid_amount", Map.of("amount", input));
             return -1;
         }
+    }
+
+    private List<String> completeDatabaseSubcommands(final String prefix) {
+        final List<String> options = List.of("diagnose", "recreate", "confirm-recreate", "toggle-fk");
+        final String lower = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
+        return options.stream().filter(option -> option.startsWith(lower)).toList();
     }
 
     private List<String> completePlayerNames(final String prefix) {

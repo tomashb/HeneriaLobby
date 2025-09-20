@@ -13,8 +13,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -23,6 +26,10 @@ public class DatabaseManager {
     private final LobbyPlugin plugin;
     private HikariDataSource dataSource;
     private DatabaseType databaseType = DatabaseType.SQLITE;
+    private boolean enableForeignKeys = false;
+    private boolean createIndexes = true;
+    private boolean verifyStructure = true;
+    private boolean debugDatabase = false;
 
     public DatabaseManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -65,6 +72,24 @@ public class DatabaseManager {
 
     public DatabaseType getDatabaseType() {
         return databaseType;
+    }
+
+    public boolean isForeignKeysEnabled() {
+        return enableForeignKeys;
+    }
+
+    public void setForeignKeysEnabled(final boolean enabled) {
+        this.enableForeignKeys = enabled;
+        plugin.getLogger().info("Foreign keys " + (enableForeignKeys ? "enabled" : "disabled"));
+
+        if (enableForeignKeys && databaseType == DatabaseType.MYSQL) {
+            addAllForeignKeys();
+            return;
+        }
+
+        if (enableForeignKeys) {
+            plugin.getLogger().info("Foreign keys are only supported on MySQL databases. Current type: " + databaseType);
+        }
     }
 
     private boolean setupMySql(final FileConfiguration config) {
@@ -132,44 +157,48 @@ public class DatabaseManager {
     }
 
     private boolean createTables() {
+        plugin.getLogger().info("Starting database initialization...");
+
+        final FileConfiguration config = plugin.getConfig();
+        enableForeignKeys = config.getBoolean("database.foreign_keys_enabled", false);
+        createIndexes = config.getBoolean("database.create_indexes", true);
+        verifyStructure = config.getBoolean("database.verify_structure", true);
+        debugDatabase = config.getBoolean("database.debug", false);
+
+        plugin.getLogger().info("Foreign keys " + (enableForeignKeys ? "enabled" : "disabled") + " (configuration)");
+        plugin.getLogger().info("Index creation " + (createIndexes ? "enabled" : "disabled") + " (configuration)");
+        plugin.getLogger().info("Structure verification " + (verifyStructure ? "enabled" : "disabled") + " (configuration)");
+
+        if (debugDatabase) {
+            diagnosePlayersTable();
+        }
+
         try {
-            plugin.getLogger().info("Starting database initialization...");
-
             createCoreTablesWithoutFK();
-            plugin.getLogger().info("\u2713 Phase 1: Core tables created");
-
-            if (databaseType == DatabaseType.MYSQL) {
-                addAllForeignKeys();
-                plugin.getLogger().info("\u2713 Phase 2: Foreign keys processed");
-            } else {
-                plugin.getLogger().info("Foreign key processing skipped for SQLite database");
-            }
-
-            verifyTableIntegrity();
-            plugin.getLogger().info("\u2713 Phase 3: Database integrity verified");
-            plugin.getLogger().info("Database initialization completed successfully!");
-            return true;
+            plugin.getLogger().info("\u2713 Phase 1: Core tables created successfully");
         } catch (final SQLException exception) {
             plugin.getLogger().severe("Critical error during database initialization:");
             plugin.getLogger().severe("Error: " + exception.getMessage());
-            plugin.getLogger().severe("SQL State: " + exception.getSQLState());
-            plugin.getLogger().severe("Error Code: " + exception.getErrorCode());
             plugin.getLogger().log(Level.SEVERE, "Stack trace:", exception);
-
-            plugin.getLogger().warning("Attempting to continue without foreign key constraints...");
-            try {
-                createCoreTablesWithoutFK();
-                plugin.getLogger().info("Basic tables created successfully (without foreign keys)");
-                return true;
-            } catch (final SQLException fallbackError) {
-                plugin.getLogger().severe("Critical failure: Cannot create basic tables");
-                plugin.getLogger().log(Level.SEVERE, fallbackError.getMessage(), fallbackError);
-                throw new RuntimeException("Database initialization completely failed", fallbackError);
-            }
-        } catch (final Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Unexpected error during database initialization", exception);
-            return false;
+            throw new RuntimeException("Database initialization failed", exception);
         }
+
+        if (enableForeignKeys && databaseType == DatabaseType.MYSQL) {
+            addAllForeignKeys();
+        } else {
+            plugin.getLogger().info("\u2713 Phase 2: Foreign keys disabled (configured choice)");
+        }
+
+        try {
+            verifyTableIntegrity();
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Critical database error: " + exception.getMessage());
+            plugin.getLogger().log(Level.SEVERE, "Stack trace:", exception);
+            throw new RuntimeException("Database integrity verification failed", exception);
+        }
+
+        plugin.getLogger().info("Database initialization completed successfully!");
+        return true;
     }
 
     private void createCoreTablesWithoutFK() throws SQLException {
@@ -440,6 +469,11 @@ public class DatabaseManager {
     }
 
     private void createPlayerIndexes() {
+        if (!createIndexes) {
+            plugin.getLogger().fine("Player index creation skipped by configuration");
+            return;
+        }
+
         final String[] indexes = {
                 "CREATE INDEX IF NOT EXISTS idx_players_username ON players(username)",
                 "CREATE INDEX IF NOT EXISTS idx_players_coins_desc ON players(coins DESC)",
@@ -457,6 +491,11 @@ public class DatabaseManager {
     }
 
     private void createNPCIndexes() {
+        if (!createIndexes) {
+            plugin.getLogger().fine("NPC index creation skipped by configuration");
+            return;
+        }
+
         final String[] indexes = {
                 "CREATE INDEX IF NOT EXISTS idx_npc_world ON npcs(world)",
                 "CREATE INDEX IF NOT EXISTS idx_npc_visible ON npcs(visible)",
@@ -474,6 +513,11 @@ public class DatabaseManager {
     }
 
     private void createTransactionIndexes() {
+        if (!createIndexes) {
+            plugin.getLogger().fine("Transaction index creation skipped by configuration");
+            return;
+        }
+
         try {
             executeSQL("CREATE INDEX IF NOT EXISTS idx_transactions_player_time ON transactions(player_uuid, timestamp)");
         } catch (final SQLException exception) {
@@ -795,10 +839,12 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_player_uuid ON friends(player_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_friend_uuid ON friends(friend_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_player_uuid ON friends(player_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_friend_uuid ON friends(friend_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
+        }
         addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
     }
 
@@ -836,14 +882,22 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
+        }
         addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT 0");
         addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         addColumnIfNotExists("friend_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     }
 
     private void addAllForeignKeys() {
+        if (!enableForeignKeys) {
+            plugin.getLogger().info("Foreign keys are disabled - skipping constraint creation");
+            return;
+        }
+
         if (databaseType != DatabaseType.MYSQL) {
+            plugin.getLogger().info("Foreign keys are only supported on MySQL - skipping constraint creation");
             return;
         }
 
@@ -896,7 +950,178 @@ public class DatabaseManager {
         addForeignKeyIfNotExists("transactions", "fk_transactions_player",
                 "player_uuid", "players", "uuid", "CASCADE");
 
-        plugin.getLogger().info("\u2713 All foreign key constraints processed successfully");
+        plugin.getLogger().info("\u2713 Phase 2: Foreign key constraints added");
+    }
+
+    public void diagnosePlayersTable() {
+        plugin.getLogger().info("=== DIAGNOSTIC TABLE PLAYERS ===");
+
+        if (!tableExists("players")) {
+            plugin.getLogger().warning("Table players does not exist!");
+            plugin.getLogger().info("=== END DIAGNOSTIC ===");
+            return;
+        }
+
+        try (Connection connection = getConnection()) {
+            if (databaseType == DatabaseType.MYSQL) {
+                final String engineQuery = """
+                        SELECT ENGINE FROM information_schema.TABLES
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'players'
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(engineQuery);
+                     ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        final String engine = resultSet.getString("ENGINE");
+                        plugin.getLogger().info("Players table engine: " + engine);
+                        if (engine != null && !"InnoDB".equalsIgnoreCase(engine)) {
+                            plugin.getLogger().warning("Table players uses " + engine
+                                    + " instead of InnoDB - Foreign Keys not supported!");
+                        }
+                    }
+                }
+            }
+
+            final DatabaseMetaData metadata = connection.getMetaData();
+
+            plugin.getLogger().info("Players table columns:");
+            boolean hasColumns = false;
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null, "players", "%")) {
+                while (columns.next()) {
+                    hasColumns = true;
+                    final String columnName = columns.getString("COLUMN_NAME");
+                    final String dataType = columns.getString("TYPE_NAME");
+                    final String columnSize = columns.getString("COLUMN_SIZE");
+                    final String isNullable = columns.getString("IS_NULLABLE");
+                    plugin.getLogger().info(String.format(Locale.ROOT,
+                            "  - %s: %s(%s) nullable:%s",
+                            columnName, dataType, columnSize, isNullable));
+                }
+            }
+            if (!hasColumns) {
+                plugin.getLogger().info("  (no columns reported by metadata)");
+            }
+
+            plugin.getLogger().info("Players table indexes:");
+            boolean hasIndexes = false;
+            try (ResultSet indexes = metadata.getIndexInfo(connection.getCatalog(), null, "players", false, false)) {
+                while (indexes.next()) {
+                    final String indexName = indexes.getString("INDEX_NAME");
+                    final String columnName = indexes.getString("COLUMN_NAME");
+                    final boolean unique = !indexes.getBoolean("NON_UNIQUE");
+                    if (indexName != null && columnName != null) {
+                        hasIndexes = true;
+                        plugin.getLogger().info(String.format(Locale.ROOT,
+                                "  - %s on %s (unique: %s)", indexName, columnName, unique));
+                    }
+                }
+            }
+            if (!hasIndexes) {
+                plugin.getLogger().info("  (no indexes found)");
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Diagnostic failed: " + exception.getMessage());
+            plugin.getLogger().log(Level.SEVERE, "Diagnostic stack trace:", exception);
+        }
+
+        plugin.getLogger().info("=== END DIAGNOSTIC ===");
+    }
+
+    public void recreatePlayersTable() throws SQLException {
+        plugin.getLogger().warning("Recreating players table with proper structure...");
+
+        final Map<String, PlayerBackupEntry> backup = backupPlayersData();
+
+        executeSQL("DROP TABLE IF EXISTS players");
+        createOrUpdatePlayersTable();
+        restorePlayersData(backup);
+
+        plugin.getLogger().info("\u2713 Players table recreated successfully");
+    }
+
+    private Map<String, PlayerBackupEntry> backupPlayersData() {
+        final Map<String, PlayerBackupEntry> backup = new HashMap<>();
+
+        if (!tableExists("players")) {
+            plugin.getLogger().warning("Table players does not exist - skipping backup");
+            return backup;
+        }
+
+        final String query = """
+                SELECT uuid, username, coins, tokens, first_join, last_join, total_playtime, discord_id
+                FROM players
+                """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                final PlayerBackupEntry data = new PlayerBackupEntry();
+                data.uuid = resultSet.getString("uuid");
+                data.username = resultSet.getString("username");
+                data.coins = resultSet.getLong("coins");
+                data.tokens = resultSet.getLong("tokens");
+                data.firstJoin = resultSet.getTimestamp("first_join");
+                data.lastJoin = resultSet.getTimestamp("last_join");
+                data.totalPlaytime = resultSet.getLong("total_playtime");
+                data.discordId = resultSet.getString("discord_id");
+
+                if (data.uuid != null) {
+                    backup.put(data.uuid, data);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().warning("Could not backup player data: " + exception.getMessage());
+            plugin.getLogger().log(Level.FINE, "Player backup failure", exception);
+            return backup;
+        }
+
+        plugin.getLogger().info("Backed up " + backup.size() + " player records");
+        return backup;
+    }
+
+    private void restorePlayersData(final Map<String, PlayerBackupEntry> backup) {
+        if (backup.isEmpty()) {
+            plugin.getLogger().info("No player data to restore");
+            return;
+        }
+
+        final String insertQuery = """
+                INSERT INTO players (uuid, username, coins, tokens, first_join, last_join, total_playtime, discord_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """;
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(insertQuery)) {
+            for (final PlayerBackupEntry data : backup.values()) {
+                statement.setString(1, data.uuid);
+                statement.setString(2, data.username);
+                statement.setLong(3, data.coins);
+                statement.setLong(4, data.tokens);
+                statement.setTimestamp(5, data.firstJoin);
+                statement.setTimestamp(6, data.lastJoin);
+                statement.setLong(7, data.totalPlaytime);
+                statement.setString(8, data.discordId);
+                statement.addBatch();
+            }
+
+            final int[] results = statement.executeBatch();
+            plugin.getLogger().info("Restored " + results.length + " player records");
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Failed to restore player data: " + exception.getMessage());
+            plugin.getLogger().log(Level.SEVERE, "Player data restore failure", exception);
+        }
+    }
+
+    private static class PlayerBackupEntry {
+        private String uuid;
+        private String username;
+        private long coins;
+        private long tokens;
+        private Timestamp firstJoin;
+        private Timestamp lastJoin;
+        private long totalPlaytime;
+        private String discordId;
     }
 
     private void addForeignKeyIfNotExists(final String table,
@@ -980,6 +1205,11 @@ public class DatabaseManager {
     }
 
     private void verifyTableIntegrity() throws SQLException {
+        if (!verifyStructure) {
+            plugin.getLogger().info("\u2713 Phase 3: Database integrity verification skipped (configuration)");
+            return;
+        }
+
         plugin.getLogger().info("Verifying database integrity...");
 
         final String[] requiredTables = {
@@ -1000,7 +1230,7 @@ public class DatabaseManager {
         verifyTableStructure("groups_table", "leader_uuid");
         verifyTableStructure("clans", "name", "tag");
 
-        plugin.getLogger().info("\u2713 Database integrity verified");
+        plugin.getLogger().info("\u2713 Phase 3: Database integrity verified");
     }
 
     private void verifyTableStructure(final String tableName, final String... requiredColumns) throws SQLException {
@@ -1114,9 +1344,11 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_leader_uuid ON groups_table(leader_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups_table(created_at)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_is_public ON groups_table(is_public)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_leader_uuid ON groups_table(leader_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups_table(created_at)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_is_public ON groups_table(is_public)");
+        }
         addColumnIfNotExists("groups_table", "description", "TEXT");
         addColumnIfNotExists("groups_table", "is_public", "BOOLEAN DEFAULT 0");
         addColumnIfNotExists("groups_table", "disbanded_at", "TIMESTAMP NULL");
@@ -1157,9 +1389,11 @@ public class DatabaseManager {
                 )
                 """, roleDefinition);
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_player_uuid ON group_members(player_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_role ON group_members(role)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_player_uuid ON group_members(player_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_role ON group_members(role)");
+        }
         addColumnIfNotExists("group_members", "joined_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     }
 
@@ -1205,11 +1439,13 @@ public class DatabaseManager {
                 )
                 """, statusDefinition);
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_group_id ON group_invitations(group_id)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_inviter_uuid ON group_invitations(inviter_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_invited_uuid ON group_invitations(invited_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_status ON group_invitations(status)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_expires_at ON group_invitations(expires_at)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_group_id ON group_invitations(group_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_inviter_uuid ON group_invitations(inviter_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_invited_uuid ON group_invitations(invited_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_status ON group_invitations(status)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_expires_at ON group_invitations(expires_at)");
+        }
         addColumnIfNotExists("group_invitations", "message", "TEXT");
         addColumnIfNotExists("group_invitations", "expires_at", "TIMESTAMP NOT NULL");
     }
@@ -1262,10 +1498,12 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_leader_uuid ON clans(leader_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_points ON clans(points)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_level ON clans(level)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_is_public ON clans(is_public)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_leader_uuid ON clans(leader_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_points ON clans(points)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_level ON clans(level)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_is_public ON clans(is_public)");
+        }
         addColumnIfNotExists("clans", "bank_tokens", "BIGINT DEFAULT 0");
         addColumnIfNotExists("clans", "is_public", "BOOLEAN DEFAULT 1");
         addColumnIfNotExists("clans", "disbanded_at", "TIMESTAMP NULL");
@@ -1308,10 +1546,12 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_clan_id ON clan_members(clan_id)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_player_uuid ON clan_members(player_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_rank_name ON clan_members(rank_name)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_total_contributions ON clan_members(total_contributions)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_clan_id ON clan_members(clan_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_player_uuid ON clan_members(player_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_rank_name ON clan_members(rank_name)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_total_contributions ON clan_members(total_contributions)");
+        }
         addColumnIfNotExists("clan_members", "last_contribution", "TIMESTAMP NULL");
         addColumnIfNotExists("clan_members", "total_contributions", "BIGINT DEFAULT 0");
     }
@@ -1352,8 +1592,10 @@ public class DatabaseManager {
                 )
                 """;
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_clan_id ON clan_ranks(clan_id)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_priority ON clan_ranks(priority)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_clan_id ON clan_ranks(clan_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_priority ON clan_ranks(priority)");
+        }
         addColumnIfNotExists("clan_ranks", "display_name", "TEXT NOT NULL DEFAULT ''");
         addColumnIfNotExists("clan_ranks", "permissions", "TEXT");
         addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
@@ -1401,11 +1643,13 @@ public class DatabaseManager {
                 )
                 """, statusDefinition);
         executeSQL(sql);
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_clan_id ON clan_invitations(clan_id)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_inviter_uuid ON clan_invitations(inviter_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_invited_uuid ON clan_invitations(invited_uuid)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_status ON clan_invitations(status)");
-        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_expires_at ON clan_invitations(expires_at)");
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_clan_id ON clan_invitations(clan_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_inviter_uuid ON clan_invitations(inviter_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_invited_uuid ON clan_invitations(invited_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_status ON clan_invitations(status)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_expires_at ON clan_invitations(expires_at)");
+        }
         addColumnIfNotExists("clan_invitations", "message", "TEXT");
         addColumnIfNotExists("clan_invitations", "expires_at", "TIMESTAMP NOT NULL");
     }
