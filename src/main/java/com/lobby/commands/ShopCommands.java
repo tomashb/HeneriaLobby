@@ -339,7 +339,7 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
             return "";
         }
         final String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
-                .replaceAll("\p{InCombiningDiacriticalMarks}+", "");
+                .replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
         final String sanitized = NON_ALPHANUMERIC.matcher(normalized.toLowerCase(Locale.ROOT)).replaceAll("-");
         final String compact = sanitized.replaceAll("-+", "-").replaceAll("(^-|-$)", "");
         return compact;
