@@ -18,10 +18,10 @@ shop:
   category_not_found: "&cCatégorie introuvable !"
   confirmation_required: "&eCliquez à nouveau pour confirmer l'achat de &6{item}&e."
   admin:
-    usage: "&cUtilisation: /ladmin shop <addcategory|additem|reload>"
+    usage: "&cUtilisation: /ladmin shop <addcategory|additem|list|reload>"
     reloaded: "&aBoutique rechargée !"
     addcategory_usage: "&cUtilisation: /ladmin shop addcategory <id> <nom> [description] [icon] [ordre] [visible]"
-    additem_usage: "&cUtilisation: /ladmin shop additem <id> <categorie> <nom> <prixCoins> <prixTokens> <commande...>"
+    additem_usage: "&cUtilisation: /ladmin shop additem <nom> <categorie> <description> <prixCoins> <prixTokens> <commande...>"
     invalid_item_id: "&cIdentifiant d'item invalide."
     invalid_item_name: "&cNom d'affichage invalide."
     invalid_category_id: "&cIdentifiant de catégorie invalide."

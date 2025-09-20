@@ -15,6 +15,7 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,9 +23,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.StringJoiner;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class ShopCommands implements CommandExecutor, TabExecutor {
+
+    private static final Pattern NON_ALPHANUMERIC = Pattern.compile("[^a-z0-9]+");
 
     private final LobbyPlugin plugin;
     private final ShopManager shopManager;
@@ -65,8 +69,13 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
         final String subCommand = args[0].toLowerCase(Locale.ROOT);
         return switch (subCommand) {
             case "addcategory" -> handleAddCategory(sender, args);
-            case "additem" -> handleAddItem(sender, args);
+            case "additem", "add" -> handleAddItem(sender, args);
+            case "list", "ls" -> handleListItems(sender);
             case "reload" -> handleReload(sender);
+            case "remove", "delete", "rm", "enable", "disable" -> {
+                sender.sendMessage("§cFonctionnalité pas encore implémentée.");
+                yield true;
+            }
             default -> {
                 MessageUtils.sendConfigMessage(sender, "shop.admin.usage");
                 yield true;
@@ -80,7 +89,7 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
         }
         if (args.length <= 1) {
             final String prefix = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
-            return Arrays.asList("addcategory", "additem", "reload").stream()
+            return Arrays.asList("addcategory", "additem", "list", "reload", "remove", "enable", "disable").stream()
                     .filter(option -> option.startsWith(prefix))
                     .collect(Collectors.toList());
         }
@@ -107,17 +116,6 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
             MessageUtils.sendConfigMessage(sender, "shop.admin.addcategory_usage");
             return true;
         }
-        final String id = parameters.get(0);
-        final String displayName = parameters.get(1);
-        final String description = parameters.size() >= 3 ? parameters.get(2) : "";
-        final String iconMaterial = parameters.size() >= 4 ? parameters.get(3) : "CHEST";
-        final int sortOrder = parameters.size() >= 5 ? parseInteger(parameters.get(4)) : 0;
-        final boolean visible = parameters.size() < 6 || parseBoolean(parameters.get(5), true);
-
-        if (id.isBlank()) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_category_id");
-            return true;
-        }
         if (shopManager.categoryExists(id)) {
             MessageUtils.sendConfigMessage(sender, "shop.admin.category_exists", Map.of("id", id));
             return true;
@@ -142,101 +140,357 @@ public class ShopCommands implements CommandExecutor, TabExecutor {
         }
         return true;
     }
-
     private boolean handleAddItem(final CommandSender sender, final String[] args) {
         final List<String> parameters = parseArguments(args, 1);
         if (parameters.size() < 6) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.additem_usage");
+            sendAddItemUsage(sender);
             return true;
         }
-        final String id = parameters.get(0);
+
+        final String name = parameters.get(0);
         final String categoryId = parameters.get(1);
-        final String displayName = parameters.get(2);
-        if (id == null || id.isBlank()) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_item_id");
+        final String description = parameters.get(2);
+
+        final long priceCoins;
+        final long priceTokens;
+        try {
+            priceCoins = Long.parseLong(parameters.get(3));
+            priceTokens = Long.parseLong(parameters.get(4));
+        } catch (final NumberFormatException exception) {
+            sender.sendMessage("§cPrix invalide ! Les prix doivent être des nombres entiers positifs.");
+            sender.sendMessage("§cExemple: price_coins=1000 price_tokens=5");
             return true;
         }
-        if (displayName == null || displayName.isBlank()) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_item_name");
+
+        final List<String> commandParts = new ArrayList<>(parameters.subList(5, parameters.size()));
+        if (name == null || name.trim().isEmpty()) {
+            sender.sendMessage("§cLe nom de l'item ne peut pas être vide !");
             return true;
         }
-        final long priceCoins = parseLong(parameters.get(3));
-        final long priceTokens = parseLong(parameters.get(4));
-        if (priceCoins < 0 || priceTokens < 0) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.invalid_price");
+        if (categoryId == null || categoryId.trim().isEmpty()) {
+            sender.sendMessage("§cLa catégorie ne peut pas être vide !");
             return true;
         }
         if (!shopManager.categoryExists(categoryId)) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.unknown_category", Map.of("category", categoryId));
+            sender.sendMessage("§cCatégorie inconnue: §6" + categoryId + "§c.");
+            return true;
+        }
+        if (priceCoins < 0 || priceTokens < 0) {
+            sender.sendMessage("§cLes prix ne peuvent pas être négatifs !");
+            return true;
+        }
+        if (priceCoins == 0 && priceTokens == 0) {
+            sender.sendMessage("§cL'item doit coûter au moins 1 coin ou 1 token !");
+            return true;
+        }
+        final String commandPayload = joinCommands(commandParts);
+        if (commandPayload.isBlank()) {
+            sender.sendMessage("§cVous devez spécifier au moins une commande à exécuter !");
             return true;
         }
 
-        String description = "";
-        String iconMaterial = "PLAYER_HEAD";
-        String iconHead = "hdb:35472";
-        boolean confirmRequired = false;
-        boolean enabled = true;
-        final List<String> commands = new ArrayList<>();
-
-        for (int index = 5; index < parameters.size(); index++) {
-            final String parameter = parameters.get(index);
-            final int equalsIndex = parameter.indexOf('=');
-            if (equalsIndex > 0) {
-                final String key = parameter.substring(0, equalsIndex).toLowerCase(Locale.ROOT);
-                final String value = parameter.substring(equalsIndex + 1);
-                switch (key) {
-                    case "description" -> description = value;
-                    case "icon" -> iconMaterial = value;
-                    case "head" -> iconHead = value;
-                    case "confirm" -> confirmRequired = parseBoolean(value, false);
-                    case "enabled" -> enabled = parseBoolean(value, true);
-                    default -> commands.add(parameter);
-                }
-            } else {
-                commands.add(parameter);
-            }
-        }
-
-        if (commands.isEmpty()) {
-            MessageUtils.sendConfigMessage(sender, "shop.admin.no_commands");
+        final String itemId = generateItemId(name);
+        if (itemId.isEmpty()) {
+            sender.sendMessage("§cImpossible de générer un identifiant valide pour cet item. Utilisez un nom différent.");
             return true;
         }
 
-        final String commandPayload = joinCommands(commands);
         try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            if (itemExists(connection, itemId, name)) {
+                sender.sendMessage("§cUn item avec le nom '§6" + name + "§c' existe déjà !");
+                return true;
+            }
+
+            final boolean hasCategoryId = tableHasColumn(connection, "shop_items", "category_id");
+            final boolean hasDisplayName = tableHasColumn(connection, "shop_items", "display_name");
+            final boolean hasDescription = tableHasColumn(connection, "shop_items", "description");
+            final boolean hasIconMaterial = tableHasColumn(connection, "shop_items", "icon_material");
+            final boolean hasIconHead = tableHasColumn(connection, "shop_items", "icon_head_texture");
+            final boolean hasConfirm = tableHasColumn(connection, "shop_items", "confirm_required");
+            final boolean hasEnabled = tableHasColumn(connection, "shop_items", "enabled");
             final boolean hasNameColumn = tableHasColumn(connection, "shop_items", "name");
-            final String sql = hasNameColumn
-                    ? "INSERT INTO shop_items (id, name, category_id, display_name, description, icon_material, icon_head_texture, "
-                    + "price_coins, price_tokens, commands, confirm_required, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-                    : "INSERT INTO shop_items (id, category_id, display_name, description, icon_material, icon_head_texture, "
-                    + "price_coins, price_tokens, commands, confirm_required, enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement statement = connection.prepareStatement(sql)) {
-                int parameterIndex = 1;
-                statement.setString(parameterIndex++, id);
-                if (hasNameColumn) {
-                    statement.setString(parameterIndex++, displayName);
+
+            final String sql;
+            if (hasCategoryId && hasDisplayName) {
+                final StringBuilder builder = new StringBuilder("INSERT INTO shop_items (id, category_id, display_name");
+                if (hasDescription) {
+                    builder.append(", description");
                 }
-                statement.setString(parameterIndex++, categoryId);
-                statement.setString(parameterIndex++, displayName);
-                statement.setString(parameterIndex++, description);
-                statement.setString(parameterIndex++, iconMaterial);
-                statement.setString(parameterIndex++, iconHead);
-                statement.setLong(parameterIndex++, priceCoins);
-                statement.setLong(parameterIndex++, priceTokens);
-                statement.setString(parameterIndex++, commandPayload);
-                statement.setBoolean(parameterIndex++, confirmRequired);
-                statement.setBoolean(parameterIndex, enabled);
-                statement.executeUpdate();
-                MessageUtils.sendConfigMessage(sender, "shop.admin.item_created", Map.of("id", id));
-                shopManager.initialize();
+                if (hasIconMaterial) {
+                    builder.append(", icon_material");
+                }
+                if (hasIconHead) {
+                    builder.append(", icon_head_texture");
+                }
+                builder.append(", price_coins, price_tokens, commands");
+                if (hasConfirm) {
+                    builder.append(", confirm_required");
+                }
+                if (hasEnabled) {
+                    builder.append(", enabled");
+                }
+                builder.append(") VALUES (?, ?, ?");
+                if (hasDescription) {
+                    builder.append(", ?");
+                }
+                if (hasIconMaterial) {
+                    builder.append(", ?");
+                }
+                if (hasIconHead) {
+                    builder.append(", ?");
+                }
+                builder.append(", ?, ?, ?");
+                if (hasConfirm) {
+                    builder.append(", ?");
+                }
+                if (hasEnabled) {
+                    builder.append(", ?");
+                }
+                builder.append(')');
+                sql = builder.toString();
+            } else {
+                sql = "INSERT INTO shop_items (name, category, description, price_coins, price_tokens, commands, enabled) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+            }
+
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                int index = 1;
+                if (hasCategoryId && hasDisplayName) {
+                    statement.setString(index++, itemId);
+                    statement.setString(index++, categoryId);
+                    statement.setString(index++, name);
+                    if (hasDescription) {
+                        statement.setString(index++, description);
+                    }
+                    if (hasIconMaterial) {
+                        statement.setString(index++, "PLAYER_HEAD");
+                    }
+                    if (hasIconHead) {
+                        statement.setString(index++, "hdb:35472");
+                    }
+                    statement.setLong(index++, priceCoins);
+                    statement.setLong(index++, priceTokens);
+                    statement.setString(index++, commandPayload);
+                    if (hasConfirm) {
+                        statement.setBoolean(index++, false);
+                    }
+                    if (hasEnabled) {
+                        statement.setBoolean(index, true);
+                    }
+                } else {
+                    if (hasNameColumn) {
+                        statement.setString(index++, name);
+                    } else {
+                        statement.setString(index++, itemId);
+                    }
+                    statement.setString(index++, categoryId);
+                    statement.setString(index++, description);
+                    statement.setLong(index++, priceCoins);
+                    statement.setLong(index++, priceTokens);
+                    statement.setString(index++, commandPayload);
+                    statement.setBoolean(index, true);
+                }
+
+                final int affected = statement.executeUpdate();
+                if (affected > 0) {
+                    sender.sendMessage("§a§l✓ Item créé avec succès !");
+                    sender.sendMessage("§7┌─ §6" + name);
+                    sender.sendMessage("§7├─ Catégorie: §e" + categoryId);
+                    sender.sendMessage("§7├─ Description: §f" + description);
+                    final String priceDisplay = buildPriceDisplay(priceCoins, priceTokens);
+                    sender.sendMessage("§7├─ Prix: " + priceDisplay);
+                    sender.sendMessage("§7└─ Commandes: §f" + commandPayload.replace('
+', ' '));
+                    plugin.getLogger().info("Shop item created: '" + name + "' by " + sender.getName()
+                            + " (Coins: " + priceCoins + ", Tokens: " + priceTokens + ")");
+                    shopManager.initialize();
+                } else {
+                    sender.sendMessage("§cErreur: Aucune ligne affectée lors de l'insertion !");
+                }
             }
         } catch (final SQLException exception) {
+            plugin.getLogger().severe("Failed to create shop item '" + name + "': " + exception.getMessage());
             LogUtils.severe(plugin, "Failed to create shop item", exception);
-            MessageUtils.sendConfigMessage(sender, "shop.admin.item_error");
+            sender.sendMessage("§cErreur SQL lors de la création de l'item !");
+            sender.sendMessage("§cDétails: " + exception.getMessage());
         }
         return true;
     }
 
+    private void sendAddItemUsage(final CommandSender sender) {
+        sender.sendMessage("§c§lUsage incorrect !");
+        sender.sendMessage("§c/ladmin shop additem <name> <category> <description> <price_coins> <price_tokens> <commands...>");
+        sender.sendMessage("§7Exemples:");
+        sender.sendMessage("§e/ladmin shop additem \"Grade VIP\" \"grades\" \"Devenez VIP !\" 0 10 \"lp user %player% parent add vip\"");
+        sender.sendMessage("§e/ladmin shop additem \"Épée Diamond\" \"armes\" \"Épée puissante\" 1000 0 \"give %player% diamond_sword 1\"");
+    }
+
+    private String buildPriceDisplay(final long priceCoins, final long priceTokens) {
+        if (priceCoins > 0 && priceTokens > 0) {
+            return "§e" + priceCoins + " coins §7+ §b" + priceTokens + " tokens";
+        }
+        if (priceCoins > 0) {
+            return "§e" + priceCoins + " coins";
+        }
+        return "§b" + priceTokens + " tokens";
+    }
+
+    private String generateItemId(final String name) {
+        if (name == null) {
+            return "";
+        }
+        final String normalized = Normalizer.normalize(name, Normalizer.Form.NFD)
+                .replaceAll("\p{InCombiningDiacriticalMarks}+", "");
+        final String sanitized = NON_ALPHANUMERIC.matcher(normalized.toLowerCase(Locale.ROOT)).replaceAll("-");
+        final String compact = sanitized.replaceAll("-+", "-").replaceAll("(^-|-$)", "");
+        return compact;
+    }
+
+    private boolean itemExists(final Connection connection, final String itemId, final String name) throws SQLException {
+        final boolean hasDisplayName = tableHasColumn(connection, "shop_items", "display_name");
+        final boolean hasNameColumn = tableHasColumn(connection, "shop_items", "name");
+        final boolean hasId = tableHasColumn(connection, "shop_items", "id");
+
+        if (hasDisplayName) {
+            final String sql = "SELECT COUNT(*) FROM shop_items WHERE LOWER(display_name) = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, name.toLowerCase(Locale.ROOT));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next() && resultSet.getInt(1) > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if (hasNameColumn) {
+            final String sql = "SELECT COUNT(*) FROM shop_items WHERE LOWER(name) = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, name.toLowerCase(Locale.ROOT));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next() && resultSet.getInt(1) > 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        if (hasId) {
+            final String sql = "SELECT COUNT(*) FROM shop_items WHERE LOWER(id) = ?";
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, itemId.toLowerCase(Locale.ROOT));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return resultSet.getInt(1) > 0;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private boolean handleListItems(final CommandSender sender) {
+        try (Connection connection = plugin.getDatabaseManager().getConnection()) {
+            final boolean hasCategoryId = tableHasColumn(connection, "shop_items", "category_id");
+            final boolean hasCategory = tableHasColumn(connection, "shop_items", "category");
+            final boolean hasDisplayName = tableHasColumn(connection, "shop_items", "display_name");
+            final boolean hasName = tableHasColumn(connection, "shop_items", "name");
+            final boolean hasDescription = tableHasColumn(connection, "shop_items", "description");
+            final boolean hasPriceCoins = tableHasColumn(connection, "shop_items", "price_coins");
+            final boolean hasPriceTokens = tableHasColumn(connection, "shop_items", "price_tokens");
+            final boolean hasEnabled = tableHasColumn(connection, "shop_items", "enabled");
+
+            final String categoryColumn = hasCategoryId ? "category_id" : hasCategory ? "category" : "";
+            final String nameColumn = hasDisplayName ? "display_name" : hasName ? "name" : "id";
+
+            final StringBuilder query = new StringBuilder("SELECT id");
+            if (!categoryColumn.isEmpty()) {
+                query.append(", ").append(categoryColumn).append(" AS category");
+            } else {
+                query.append(", '' AS category");
+            }
+            query.append(", ").append(nameColumn).append(" AS item_name");
+            if (hasDescription) {
+                query.append(", description");
+            }
+            if (hasPriceCoins) {
+                query.append(", price_coins");
+            }
+            if (hasPriceTokens) {
+                query.append(", price_tokens");
+            }
+            if (hasEnabled) {
+                query.append(", enabled");
+            }
+            query.append(" FROM shop_items ORDER BY ");
+            if (!categoryColumn.isEmpty()) {
+                query.append(categoryColumn).append(", ");
+            }
+            query.append(nameColumn);
+
+            try (PreparedStatement statement = connection.prepareStatement(query.toString());
+                 ResultSet resultSet = statement.executeQuery()) {
+                sender.sendMessage("§6§l╔══════════════════════════════════════╗");
+                sender.sendMessage("§6§l║            ITEMS BOUTIQUE            ║");
+                sender.sendMessage("§6§l╚══════════════════════════════════════╝");
+
+                String currentCategory = null;
+                int count = 0;
+
+                while (resultSet.next()) {
+                    final String category = !categoryColumn.isEmpty() ? resultSet.getString("category") : "";
+                    final String itemName = resultSet.getString("item_name");
+                    final String description = hasDescription ? resultSet.getString("description") : "";
+                    final long priceCoins = hasPriceCoins ? resultSet.getLong("price_coins") : 0L;
+                    final long priceTokens = hasPriceTokens ? resultSet.getLong("price_tokens") : 0L;
+                    final boolean enabled = !hasEnabled || resultSet.getBoolean("enabled");
+
+                    if (currentCategory == null || !currentCategory.equalsIgnoreCase(category)) {
+                        if (count > 0) {
+                            sender.sendMessage("");
+                        }
+                        final String categoryLabel = (category == null || category.isBlank()) ? "Divers" : category;
+                        sender.sendMessage("§e§l▶ " + categoryLabel.toUpperCase(Locale.ROOT) + ":");
+                        currentCategory = category;
+                    }
+
+                    final String status = enabled ? "§a✓" : "§c✗";
+                    final StringBuilder priceText = new StringBuilder();
+                    if (priceCoins > 0) {
+                        priceText.append("§e").append(priceCoins).append("c");
+                    }
+                    if (priceTokens > 0) {
+                        if (priceText.length() > 0) {
+                            priceText.append(" §7+ ");
+                        }
+                        priceText.append("§b").append(priceTokens).append("t");
+                    }
+                    if (priceText.length() == 0) {
+                        priceText.append("§aGratuit");
+                    }
+
+                    sender.sendMessage("  " + status + " §f" + itemName + " §7(" + priceText + "§7)");
+                    if (description != null && !description.isBlank()) {
+                        sender.sendMessage("    §8└─ " + description);
+                    }
+                    count++;
+                }
+
+                sender.sendMessage("");
+                if (count == 0) {
+                    sender.sendMessage("§7Aucun item trouvé dans la boutique.");
+                    sender.sendMessage("§7Utilisez §e/ladmin shop additem§7 pour en ajouter.");
+                } else {
+                    sender.sendMessage("§7Total: §e" + count + " item" + (count > 1 ? "s" : ""));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Failed to list shop items: " + exception.getMessage());
+            sender.sendMessage("§cErreur lors de la récupération des items !");
+        }
+        return true;
+    }
     private boolean tableHasColumn(final Connection connection, final String tableName, final String columnName) throws SQLException {
         final DatabaseMetaData metaData = connection.getMetaData();
         final String[] tableCandidates = {
