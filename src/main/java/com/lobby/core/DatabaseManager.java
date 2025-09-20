@@ -824,6 +824,7 @@ public class DatabaseManager {
                     """;
             executeSQL(sql);
             addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
+            addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
             return;
         }
 
