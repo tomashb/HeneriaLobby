@@ -1,6 +1,7 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Optional;
 
 public class ConfiguredMenu implements Menu {
@@ -105,7 +107,16 @@ public class ConfiguredMenu implements Menu {
         }
 
         final int amount = Math.max(1, itemSection.getInt("amount", 1));
-        final ItemStack itemStack = new ItemStack(material, amount);
+        final String rawHead = itemSection.getString("head");
+        final String resolvedHead = resolveHeadValue(rawHead, player);
+
+        final ItemStack itemStack;
+        if (material == Material.PLAYER_HEAD && resolvedHead != null
+                && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+            itemStack = createHeadItem(amount, resolvedHead, itemSection);
+        } else {
+            itemStack = new ItemStack(material, amount);
+        }
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
             if (itemSection.isString("name")) {
@@ -132,7 +143,7 @@ public class ConfiguredMenu implements Menu {
             }
 
             if (meta instanceof SkullMeta skullMeta) {
-                applyHead(itemSection, player, skullMeta);
+                applyHead(rawHead, resolvedHead, player, skullMeta);
             }
 
             itemStack.setItemMeta(meta);
@@ -146,22 +157,64 @@ public class ConfiguredMenu implements Menu {
         return Optional.of(targetSlot);
     }
 
-    private void applyHead(final ConfigurationSection itemSection, final Player player, final SkullMeta skullMeta) {
-        final String head = itemSection.getString("head");
-        if (head == null || head.isEmpty()) {
+    private void applyHead(final String rawHead, final String resolvedHead, final Player player, final SkullMeta skullMeta) {
+        if (rawHead == null || rawHead.isBlank()) {
             return;
         }
-        if (player != null && head.equalsIgnoreCase("%player_name%")) {
+        if (resolvedHead != null && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+            return;
+        }
+        if (player != null && rawHead.equalsIgnoreCase("%player_name%")) {
             skullMeta.setOwningPlayer(player);
             return;
         }
-        final String processed = PlaceholderUtils.applyPlaceholders(plugin, head, player);
+        final String processed = resolvedHead != null ? resolvedHead : PlaceholderUtils.applyPlaceholders(plugin, rawHead, player);
+        if (processed == null || processed.isBlank()) {
+            return;
+        }
         if (player != null && processed.equalsIgnoreCase(player.getName())) {
             skullMeta.setOwningPlayer(player);
             return;
         }
         final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(processed);
         skullMeta.setOwningPlayer(offlinePlayer);
+    }
+
+    private ItemStack createHeadItem(final int amount, final String headId, final ConfigurationSection itemSection) {
+        final Material fallbackMaterial = resolveHeadFallbackMaterial(itemSection.getString("head_fallback_material"));
+        final HeadDatabaseManager manager = plugin.getHeadDatabaseManager();
+        ItemStack headItem = null;
+        if (manager != null) {
+            headItem = manager.getHead(headId, fallbackMaterial);
+        }
+        if (headItem == null) {
+            headItem = new ItemStack(fallbackMaterial != null ? fallbackMaterial : Material.PLAYER_HEAD);
+        }
+        headItem.setAmount(amount);
+        return headItem;
+    }
+
+    private Material resolveHeadFallbackMaterial(final String fallbackName) {
+        if (fallbackName == null || fallbackName.isBlank()) {
+            return Material.PLAYER_HEAD;
+        }
+        final Material material = Material.matchMaterial(fallbackName.trim());
+        if (material == null) {
+            LogUtils.warning(plugin, "Invalid head fallback material '" + fallbackName + "' in menu '" + menuId + "'.");
+            return Material.PLAYER_HEAD;
+        }
+        return material;
+    }
+
+    private String resolveHeadValue(final String head, final Player player) {
+        if (head == null || head.isBlank()) {
+            return null;
+        }
+        final String processed = PlaceholderUtils.applyPlaceholders(plugin, head, player);
+        if (processed == null || processed.isBlank()) {
+            return null;
+        }
+        return processed;
     }
 
     private void storeActions(final int slot, final List<String> actions) {

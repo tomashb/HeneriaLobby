@@ -1,54 +1,194 @@
 menu:
   id: "jeux_menu"
   title: "&8» &aMenu des Jeux"
-  size: 36
-  fill_material: "BLACK_STAINED_GLASS_PANE"
+  size: 54
 
   items:
-    factions:
-      slot: 11
-      material: "DIAMOND_SWORD"
-      name: "&cMode de Jeu 1"
-      lore:
-        - "&7Rejoignez le serveur Faction," 
-        - "&7pillez, combattez et dominez !"
-        - "     "
-        - "&eJoueurs: &f%server_online_factions%"
-        - "&a► Cliquez pour jouer !"
+    decor_top_left_1:
+      slot: 0
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
       actions:
-        - "[SERVER_SEND] factions"
+        - "[NONE]"
+
+    decor_top_left_2:
+      slot: 1
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_left_3:
+      slot: 2
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_1:
+      slot: 6
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_2:
+      slot: 7
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_3:
+      slot: 8
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_left:
+      slot: 9
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_right:
+      slot: 17
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_bottom_left:
+      slot: 45
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_bottom_right:
+      slot: 53
+      material: "ORANGE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
 
     bedwars:
-      slot: 13
-      material: "RED_BED"
-      name: "&aMode de Jeu 2"
+      slot: 20
+      material: "PLAYER_HEAD"
+      head: "hdb:67957"
+      name: "&c&lBedWars &8- &ePopulaire"
       lore:
-        - "&7Défendez votre lit et"
-        - "&7détruisez celui des autres."
-        - "     "
-        - "&eJoueurs: &f%server_online_bedwars%"
-        - "&a► Cliquez pour jouer !"
+        - "&7Le mode de jeu le plus apprécié !"
+        - "&7Défendez votre lit et détruisez"
+        - "&7celui de vos adversaires."
+        - "&r"
+        - "&8▸ &7Joueurs: &a%server_online_bedwars%"
+        - "&8▸ &7Parties en cours: &e%bedwars_games_active%"
+        - "&8▸ &7Temps d'attente: &b~30 secondes"
+        - "&r"
+        - "&a▶ Cliquez pour jouer !"
       actions:
         - "[SERVER_SEND] bedwars"
 
-    skyblock:
-      slot: 15
-      material: "GRASS_BLOCK"
-      name: "&bMode de Jeu 3"
+    nexus:
+      slot: 22
+      material: "PLAYER_HEAD"
+      head: "hdb:38878"
+      name: "&b&lNexus &8- &dNouveauté"
       lore:
-        - "&7Développez votre île volante"
-        - "&7et devenez le plus riche."
-        - "     "
-        - "&eJoueurs: &f%server_online_skyblock%"
-        - "&a► Cliquez pour jouer !"
+        - "&7Le tout nouveau mode de jeu !"
+        - "&7Conquérez les nexus ennemis et"
+        - "&7dominez le champ de bataille."
+        - "&r"
+        - "&8▸ &7Joueurs: &a%server_online_nexus%"
+        - "&8▸ &7Parties en cours: &e%nexus_games_active%"
+        - "&8▸ &7Statut: &d✨ BETA"
+        - "&r"
+        - "&a▶ Cliquez pour découvrir !"
       actions:
-        - "[SERVER_SEND] skyblock"
+        - "[SERVER_SEND] nexus"
 
-    close:
-      slot: 31
-      material: "BARRIER"
-      name: "&cQuitter"
+    zombie:
+      slot: 24
+      material: "PLAYER_HEAD"
+      head: "hdb:23022"
+      name: "&2&lZombie &8- &cSurvie"
       lore:
-        - "&7Fermer ce menu"
+        - "&7Survivez aux hordes de zombies !"
+        - "&7Travaillez en équipe pour tenir"
+        - "&7le plus longtemps possible."
+        - "&r"
+        - "&8▸ &7Joueurs: &a%server_online_zombie%"
+        - "&8▸ &7Parties en cours: &e%zombie_games_active%"
+        - "&8▸ &7Record: &6%player_zombie_record% vagues"
+        - "&r"
+        - "&a▶ Cliquez pour survivre !"
+      actions:
+        - "[SERVER_SEND] zombie"
+
+    custom_games:
+      slot: 26
+      material: "PLAYER_HEAD"
+      head: "hdb:60776"
+      name: "&6&lJeux Inédits &8- &5Exclusif"
+      lore:
+        - "&7Des modes de jeu uniques et"
+        - "&7créatifs que vous ne trouverez"
+        - "&7nulle part ailleurs !"
+        - "&r"
+        - "&8▸ &7Joueurs: &a%server_online_custom%"
+        - "&8▸ &7Modes disponibles: &e%custom_games_count%"
+        - "&8▸ &7Nouveauté: &5Build Battle"
+        - "&r"
+        - "&a▶ Cliquez pour explorer !"
+      actions:
+        - "[SERVER_SEND] custom"
+
+    shop:
+      slot: 46
+      material: "PLAYER_HEAD"
+      head: "hdb:35472"
+      name: "&e&lBoutique"
+      lore:
+        - "&7Achetez des grades, des cosmétiques"
+        - "&7et bien plus encore !"
+        - "&r"
+        - "&8▸ &7Votre solde:"
+        - "&8  ▸ &eCoins: &f%player_coins%"
+        - "&8  ▸ &bTokens: &f%player_tokens%"
+        - "&r"
+        - "&a▶ Cliquez pour acheter !"
+      actions:
+        - "[MENU] shop_menu"
+
+    profile:
+      slot: 49
+      material: "PLAYER_HEAD"
+      head: "%player_name%"
+      name: "&6&lMon Profil"
+      lore:
+        - "&7Consultez vos statistiques,"
+        - "&7gérez vos paramètres et plus !"
+        - "&r"
+        - "&8▸ &7Grade: %luckperms_prefix%"
+        - "&8▸ &7Temps de jeu: &f%player_playtime_total%"
+        - "&8▸ &7Première connexion: &f%player_first_join%"
+        - "&r"
+        - "&a▶ Cliquez pour voir !"
+      actions:
+        - "[MENU] profil_menu"
+
+    back:
+      slot: 52
+      material: "PLAYER_HEAD"
+      head: "hdb:9334"
+      name: "&c&lRetour"
+      lore:
+        - "&7Fermer ce menu et retourner"
+        - "&7au lobby principal."
+        - "&r"
+        - "&a▶ Cliquez pour fermer !"
       actions:
         - "[CLOSE_MENU]"
