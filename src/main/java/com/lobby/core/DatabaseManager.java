@@ -8,11 +8,14 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 import java.util.logging.Level;
 
 public class DatabaseManager {
@@ -130,33 +133,65 @@ public class DatabaseManager {
 
     private boolean createTables() {
         try {
-            plugin.getLogger().info("Creating/updating database tables...");
+            plugin.getLogger().info("Starting database initialization...");
 
-            createOrUpdatePlayersTable();
-            createOrUpdateNPCsTable();
+            createCoreTablesWithoutFK();
+            plugin.getLogger().info("\u2713 Phase 1: Core tables created");
 
-            executeSQL(getCreateStatsTableSQL());
-            executeSQL(getCreateHologramsTableSQL());
-            final String animationDefinition = databaseType == DatabaseType.MYSQL
-                    ? "VARCHAR(32) DEFAULT 'NONE'"
-                    : "TEXT DEFAULT 'NONE'";
-            addColumnIfMissing("holograms", "animation", animationDefinition);
-            executeSQL(getCreateShopCategoriesTableSQL());
-            executeSQL(getCreateShopItemsTableSQL());
-            ensureShopTables();
-            executeSQL(getCreateTransactionsTableSQL());
+            if (databaseType == DatabaseType.MYSQL) {
+                addAllForeignKeys();
+                plugin.getLogger().info("\u2713 Phase 2: Foreign keys processed");
+            } else {
+                plugin.getLogger().info("Foreign key processing skipped for SQLite database");
+            }
 
-            createTransactionIndexes();
-
-            createSocialTables();
-            addForeignKeyConstraints();
-
-            plugin.getLogger().info("All database tables created/updated successfully");
+            verifyTableIntegrity();
+            plugin.getLogger().info("\u2713 Phase 3: Database integrity verified");
+            plugin.getLogger().info("Database initialization completed successfully!");
             return true;
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Critical error during database initialization:");
+            plugin.getLogger().severe("Error: " + exception.getMessage());
+            plugin.getLogger().severe("SQL State: " + exception.getSQLState());
+            plugin.getLogger().severe("Error Code: " + exception.getErrorCode());
+            plugin.getLogger().log(Level.SEVERE, "Stack trace:", exception);
+
+            plugin.getLogger().warning("Attempting to continue without foreign key constraints...");
+            try {
+                createCoreTablesWithoutFK();
+                plugin.getLogger().info("Basic tables created successfully (without foreign keys)");
+                return true;
+            } catch (final SQLException fallbackError) {
+                plugin.getLogger().severe("Critical failure: Cannot create basic tables");
+                plugin.getLogger().log(Level.SEVERE, fallbackError.getMessage(), fallbackError);
+                throw new RuntimeException("Database initialization completely failed", fallbackError);
+            }
         } catch (final Exception exception) {
-            plugin.getLogger().log(Level.SEVERE, "Error creating database tables: " + exception.getMessage(), exception);
+            plugin.getLogger().log(Level.SEVERE, "Unexpected error during database initialization", exception);
             return false;
         }
+    }
+
+    private void createCoreTablesWithoutFK() throws SQLException {
+        plugin.getLogger().info("Creating/updating core tables (without foreign keys)...");
+
+        createOrUpdatePlayersTable();
+        createOrUpdateNPCsTable();
+
+        executeSQL(getCreateStatsTableSQL());
+        executeSQL(getCreateHologramsTableSQL());
+        final String animationDefinition = databaseType == DatabaseType.MYSQL
+                ? "VARCHAR(32) DEFAULT 'NONE'"
+                : "TEXT DEFAULT 'NONE'";
+        addColumnIfMissing("holograms", "animation", animationDefinition);
+        executeSQL(getCreateShopCategoriesTableSQL());
+        executeSQL(getCreateShopItemsTableSQL());
+        ensureShopTables();
+        executeSQL(getCreateTransactionsTableSQL());
+
+        createTransactionIndexes();
+
+        createSocialTablesWithoutFK();
     }
 
     private void closeDataSource() {
@@ -587,14 +622,13 @@ public class DatabaseManager {
                         description TEXT,
                         icon_material VARCHAR(50) DEFAULT 'PLAYER_HEAD',
                         icon_head_texture VARCHAR(200) DEFAULT 'hdb:35472',
-                        price_coins BIGINT DEFAULT 0,
-                        price_tokens BIGINT DEFAULT 0,
-                        commands TEXT,
-                        confirm_required BOOLEAN DEFAULT FALSE,
-                        enabled BOOLEAN DEFAULT TRUE,
-                        FOREIGN KEY (category_id) REFERENCES shop_categories(id)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-                    """;
+                    price_coins BIGINT DEFAULT 0,
+                    price_tokens BIGINT DEFAULT 0,
+                    commands TEXT,
+                    confirm_required BOOLEAN DEFAULT FALSE,
+                    enabled BOOLEAN DEFAULT TRUE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                """;
         }
 
         return """
@@ -609,8 +643,7 @@ public class DatabaseManager {
                     price_tokens BIGINT DEFAULT 0,
                     commands TEXT,
                     confirm_required INTEGER DEFAULT 0,
-                    enabled INTEGER DEFAULT 1,
-                    FOREIGN KEY (category_id) REFERENCES shop_categories(id)
+                    enabled INTEGER DEFAULT 1
                 )
                 """;
     }
@@ -693,13 +726,12 @@ public class DatabaseManager {
                         id BIGINT AUTO_INCREMENT PRIMARY KEY,
                         player_uuid VARCHAR(36) NOT NULL,
                         transaction_type VARCHAR(32) NOT NULL,
-                        amount BIGINT NOT NULL,
-                        balance_after BIGINT NOT NULL,
-                        reason VARCHAR(255),
-                        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
-                    )
-                    """;
+                    amount BIGINT NOT NULL,
+                    balance_after BIGINT NOT NULL,
+                    reason VARCHAR(255),
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """;
         }
 
         return """
@@ -710,13 +742,12 @@ public class DatabaseManager {
                     amount BIGINT NOT NULL,
                     balance_after BIGINT NOT NULL,
                     reason TEXT,
-                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """;
     }
 
-    private void createSocialTables() throws SQLException {
+    private void createSocialTablesWithoutFK() throws SQLException {
         createFriendSettingsTable();
         createFriendsTable();
         createGroupsTable();
@@ -738,6 +769,7 @@ public class DatabaseManager {
                         status ENUM('PENDING','ACCEPTED','BLOCKED') DEFAULT 'PENDING' NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
                         accepted_at TIMESTAMP NULL,
+                        blocked_at TIMESTAMP NULL,
                         UNIQUE KEY unique_friendship (player_uuid, friend_uuid),
                         KEY idx_friends_player_uuid (player_uuid),
                         KEY idx_friends_friend_uuid (friend_uuid),
@@ -746,6 +778,7 @@ public class DatabaseManager {
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             executeSQL(sql);
+            addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
             return;
         }
 
@@ -757,6 +790,7 @@ public class DatabaseManager {
                     status TEXT DEFAULT 'PENDING',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     accepted_at TIMESTAMP NULL,
+                    blocked_at TIMESTAMP NULL,
                     UNIQUE (player_uuid, friend_uuid)
                 )
                 """;
@@ -765,6 +799,7 @@ public class DatabaseManager {
         executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_friend_uuid ON friends(friend_uuid)");
         executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)");
         executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
+        addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
     }
 
     private void createFriendSettingsTable() throws SQLException {
@@ -775,10 +810,17 @@ public class DatabaseManager {
                         accept_requests ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL' NOT NULL,
                         show_online_status BOOLEAN DEFAULT TRUE NOT NULL,
                         receive_notifications BOOLEAN DEFAULT TRUE NOT NULL,
+                        auto_accept_friends BOOLEAN DEFAULT FALSE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         INDEX idx_friend_settings_accept_requests (accept_requests)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """;
             executeSQL(sql);
+            addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfNotExists("friend_settings", "updated_at",
+                    "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
             return;
         }
 
@@ -787,47 +829,82 @@ public class DatabaseManager {
                     player_uuid VARCHAR(36) PRIMARY KEY,
                     accept_requests TEXT DEFAULT 'ALL',
                     show_online_status BOOLEAN DEFAULT 1,
-                    receive_notifications BOOLEAN DEFAULT 1
+                    receive_notifications BOOLEAN DEFAULT 1,
+                    auto_accept_friends BOOLEAN DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """;
         executeSQL(sql);
         executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
+        addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        addColumnIfNotExists("friend_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     }
 
-    private void addForeignKeyConstraints() {
+    private void addAllForeignKeys() {
         if (databaseType != DatabaseType.MYSQL) {
             return;
         }
 
-        try (Connection connection = getConnection()) {
-            if (!tableExists(connection, "players")) {
-                plugin.getLogger().warning("Cannot add foreign keys: players table does not exist");
-                return;
-            }
+        plugin.getLogger().info("Adding foreign key constraints...");
 
-            if (tableExists(connection, "friends")) {
-                addForeignKeyIfNotExists(connection, "friends", "fk_friends_player", "player_uuid", "players", "uuid");
-                addForeignKeyIfNotExists(connection, "friends", "fk_friends_friend", "friend_uuid", "players", "uuid");
-            } else {
-                plugin.getLogger().warning("Cannot add foreign keys: friends table does not exist");
-            }
+        addForeignKeyIfNotExists("friend_settings", "fk_friend_settings_player",
+                "player_uuid", "players", "uuid", "CASCADE");
 
-            if (tableExists(connection, "friend_settings")) {
-                addForeignKeyIfNotExists(connection, "friend_settings", "fk_friend_settings_player",
-                        "player_uuid", "players", "uuid");
-            }
-        } catch (final SQLException exception) {
-            plugin.getLogger().log(Level.WARNING,
-                    "Could not add foreign key constraints: " + exception.getMessage(), exception);
-        }
+        addForeignKeyIfNotExists("friends", "fk_friends_player",
+                "player_uuid", "players", "uuid", "CASCADE");
+        addForeignKeyIfNotExists("friends", "fk_friends_friend",
+                "friend_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("groups_table", "fk_groups_leader",
+                "leader_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("group_members", "fk_group_members_group",
+                "group_id", "groups_table", "id", "CASCADE");
+        addForeignKeyIfNotExists("group_members", "fk_group_members_player",
+                "player_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("group_invitations", "fk_group_invitations_group",
+                "group_id", "groups_table", "id", "CASCADE");
+        addForeignKeyIfNotExists("group_invitations", "fk_group_invitations_inviter",
+                "inviter_uuid", "players", "uuid", "CASCADE");
+        addForeignKeyIfNotExists("group_invitations", "fk_group_invitations_invited",
+                "invited_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("clans", "fk_clans_leader",
+                "leader_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("clan_members", "fk_clan_members_clan",
+                "clan_id", "clans", "id", "CASCADE");
+        addForeignKeyIfNotExists("clan_members", "fk_clan_members_player",
+                "player_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("clan_ranks", "fk_clan_ranks_clan",
+                "clan_id", "clans", "id", "CASCADE");
+
+        addForeignKeyIfNotExists("clan_invitations", "fk_clan_invitations_clan",
+                "clan_id", "clans", "id", "CASCADE");
+        addForeignKeyIfNotExists("clan_invitations", "fk_clan_invitations_inviter",
+                "inviter_uuid", "players", "uuid", "CASCADE");
+        addForeignKeyIfNotExists("clan_invitations", "fk_clan_invitations_invited",
+                "invited_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("shop_items", "fk_shop_items_category",
+                "category_id", "shop_categories", "id", "CASCADE");
+
+        addForeignKeyIfNotExists("transactions", "fk_transactions_player",
+                "player_uuid", "players", "uuid", "CASCADE");
+
+        plugin.getLogger().info("\u2713 All foreign key constraints processed successfully");
     }
 
-    private void addForeignKeyIfNotExists(final Connection connection,
-                                          final String table,
+    private void addForeignKeyIfNotExists(final String table,
                                           final String constraintName,
                                           final String column,
                                           final String referencedTable,
-                                          final String referencedColumn) throws SQLException {
+                                          final String referencedColumn,
+                                          final String onDelete) {
         final String checkSql = """
                 SELECT CONSTRAINT_NAME
                 FROM information_schema.TABLE_CONSTRAINTS
@@ -837,227 +914,500 @@ public class DatabaseManager {
                   AND CONSTRAINT_TYPE = 'FOREIGN KEY'
                 """;
 
-        try (PreparedStatement statement = connection.prepareStatement(checkSql)) {
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(checkSql)) {
             statement.setString(1, table);
             statement.setString(2, constraintName);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
+                    plugin.getLogger().fine("Foreign key " + constraintName + " already exists");
                     return;
                 }
             }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not verify foreign key '" + constraintName + "': " + exception.getMessage(), exception);
+            return;
+        }
+
+        if (!tableExists(table) || !tableExists(referencedTable)) {
+            plugin.getLogger().warning("Cannot create FK " + constraintName + ": missing table(s)");
+            return;
         }
 
         final String alterSql = String.format(
-                "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s) ON DELETE CASCADE",
-                table, constraintName, column, referencedTable, referencedColumn);
+                "ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s (%s) ON DELETE %s ON UPDATE CASCADE",
+                table, constraintName, column, referencedTable, referencedColumn, onDelete);
 
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(alterSql);
-            plugin.getLogger().info("Added foreign key constraint '" + constraintName + "' on table '" + table + "'");
+        try {
+            executeSQL(alterSql);
+            plugin.getLogger().info("\u2713 Added foreign key: " + constraintName);
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to add FK " + constraintName + ": " + exception.getMessage(), exception);
         }
     }
 
-    private boolean tableExists(final Connection connection, final String tableName) throws SQLException {
-        if (databaseType == DatabaseType.MYSQL) {
-            final String sql = """
-                    SELECT COUNT(*)
-                    FROM information_schema.tables
-                    WHERE table_schema = DATABASE()
-                      AND table_name = ?
-                    """;
+    private boolean tableExists(final String tableName) {
+        try (Connection connection = getConnection()) {
+            if (databaseType == DatabaseType.MYSQL) {
+                final String sql = """
+                        SELECT COUNT(*)
+                        FROM information_schema.tables
+                        WHERE table_schema = DATABASE()
+                          AND table_name = ?
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setString(1, tableName);
+                    try (ResultSet resultSet = statement.executeQuery()) {
+                        return resultSet.next() && resultSet.getInt(1) > 0;
+                    }
+                }
+            }
+
+            final String sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?";
             try (PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, tableName);
                 try (ResultSet resultSet = statement.executeQuery()) {
-                    return resultSet.next() && resultSet.getInt(1) > 0;
+                    return resultSet.next();
                 }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.FINE,
+                    "Table existence check failed for '" + tableName + "': " + exception.getMessage(), exception);
+        }
+        return false;
+    }
+
+    private void verifyTableIntegrity() throws SQLException {
+        plugin.getLogger().info("Verifying database integrity...");
+
+        final String[] requiredTables = {
+                "players", "friend_settings", "friends",
+                "groups_table", "group_members", "group_invitations",
+                "clans", "clan_members", "clan_ranks", "clan_invitations",
+                "shop_categories", "shop_items", "transactions"
+        };
+
+        for (final String tableName : requiredTables) {
+            if (!tableExists(tableName)) {
+                throw new SQLException("Critical table missing: " + tableName);
             }
         }
 
-        final String sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, tableName);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                return resultSet.next();
+        verifyTableStructure("players", "uuid", "username");
+        verifyTableStructure("friends", "player_uuid", "friend_uuid");
+        verifyTableStructure("groups_table", "leader_uuid");
+        verifyTableStructure("clans", "name", "tag");
+
+        plugin.getLogger().info("\u2713 Database integrity verified");
+    }
+
+    private void verifyTableStructure(final String tableName, final String... requiredColumns) throws SQLException {
+        try (Connection connection = getConnection()) {
+            final DatabaseMetaData metadata = connection.getMetaData();
+            final Set<String> existingColumns = new HashSet<>();
+
+            try (ResultSet columns = metadata.getColumns(connection.getCatalog(), null, tableName, "%")) {
+                while (columns.next()) {
+                    final String columnName = columns.getString("COLUMN_NAME");
+                    if (columnName != null) {
+                        existingColumns.add(columnName.toLowerCase(Locale.ROOT));
+                    }
+                }
+            }
+
+            if (existingColumns.isEmpty()) {
+                final String pragma = "PRAGMA table_info(" + tableName + ")";
+                try (Statement statement = connection.createStatement();
+                     ResultSet pragmaResult = statement.executeQuery(pragma)) {
+                    while (pragmaResult.next()) {
+                        final String columnName = pragmaResult.getString("name");
+                        if (columnName != null) {
+                            existingColumns.add(columnName.toLowerCase(Locale.ROOT));
+                        }
+                    }
+                }
+            }
+
+            for (final String requiredColumn : requiredColumns) {
+                if (!existingColumns.contains(requiredColumn.toLowerCase(Locale.ROOT))) {
+                    throw new SQLException("Missing column '" + requiredColumn + "' in table '" + tableName + "'");
+                }
+            }
+        }
+    }
+
+    public void dropAllTables() {
+        plugin.getLogger().warning("Dropping all tables for clean reinstall...");
+
+        final String[] tables = {
+                "clan_invitations", "clan_ranks", "clan_members", "clans",
+                "group_invitations", "group_members", "groups_table",
+                "friends", "friend_settings", "transactions",
+                "shop_items", "shop_categories", "players"
+        };
+
+        if (databaseType == DatabaseType.MYSQL) {
+            try {
+                executeSQL("SET FOREIGN_KEY_CHECKS = 0");
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.WARNING,
+                        "Could not disable foreign key checks: " + exception.getMessage(), exception);
+            }
+        }
+
+        for (final String table : tables) {
+            try {
+                executeSQL("DROP TABLE IF EXISTS " + table);
+                plugin.getLogger().info("Dropped table: " + table);
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.WARNING,
+                        "Could not drop table '" + table + "': " + exception.getMessage(), exception);
+            }
+        }
+
+        if (databaseType == DatabaseType.MYSQL) {
+            try {
+                executeSQL("SET FOREIGN_KEY_CHECKS = 1");
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.WARNING,
+                        "Could not enable foreign key checks: " + exception.getMessage(), exception);
             }
         }
     }
 
     private void createGroupsTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS groups_table (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        leader_uuid VARCHAR(36) NOT NULL,
+                        name VARCHAR(50) NULL,
+                        description TEXT NULL,
+                        max_members INT DEFAULT 8 NOT NULL,
+                        is_public BOOLEAN DEFAULT FALSE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        disbanded_at TIMESTAMP NULL,
+                        INDEX idx_groups_leader_uuid (leader_uuid),
+                        INDEX idx_groups_created_at (created_at),
+                        INDEX idx_groups_is_public (is_public)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            addColumnIfNotExists("groups_table", "description", "TEXT NULL");
+            addColumnIfNotExists("groups_table", "is_public", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("groups_table", "disbanded_at", "TIMESTAMP NULL");
+            return;
+        }
+
+        final String sql = """
                 CREATE TABLE IF NOT EXISTS groups_table (
-                    id %s,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     leader_uuid VARCHAR(36) NOT NULL,
-                    name VARCHAR(50),
-                    max_members INT DEFAULT 8,
+                    name TEXT,
+                    description TEXT,
+                    max_members INTEGER DEFAULT 8,
+                    is_public BOOLEAN DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    disbanded_at TIMESTAMP NULL,
-                    FOREIGN KEY (leader_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, suffix);
+                    disbanded_at TIMESTAMP NULL
+                )
+                """;
         executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_leader_uuid ON groups_table(leader_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups_table(created_at)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_groups_is_public ON groups_table(is_public)");
+        addColumnIfNotExists("groups_table", "description", "TEXT");
+        addColumnIfNotExists("groups_table", "is_public", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("groups_table", "disbanded_at", "TIMESTAMP NULL");
     }
 
     private void createGroupMembersTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
         final String roleDefinition = databaseType == DatabaseType.MYSQL
-                ? "ENUM('LEADER','MODERATOR','MEMBER') DEFAULT 'MEMBER'"
+                ? "ENUM('LEADER','MODERATOR','MEMBER') DEFAULT 'MEMBER' NOT NULL"
                 : "TEXT DEFAULT 'MEMBER'";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
+
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = String.format("""
+                    CREATE TABLE IF NOT EXISTS group_members (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        group_id INT NOT NULL,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        role %s,
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        UNIQUE KEY unique_group_member (group_id, player_uuid),
+                        INDEX idx_group_members_group_id (group_id),
+                        INDEX idx_group_members_player_uuid (player_uuid),
+                        INDEX idx_group_members_role (role)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """, roleDefinition);
+            executeSQL(sql);
+            addColumnIfNotExists("group_members", "joined_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL");
+            return;
+        }
+
         final String sql = String.format("""
                 CREATE TABLE IF NOT EXISTS group_members (
-                    id %s,
-                    group_id INT NOT NULL,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    group_id INTEGER NOT NULL,
                     player_uuid VARCHAR(36) NOT NULL,
                     role %s,
                     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE (group_id, player_uuid),
-                    FOREIGN KEY (group_id) REFERENCES groups_table(id),
-                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, roleDefinition, suffix);
+                    UNIQUE (group_id, player_uuid)
+                )
+                """, roleDefinition);
         executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_group_id ON group_members(group_id)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_player_uuid ON group_members(player_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_members_role ON group_members(role)");
+        addColumnIfNotExists("group_members", "joined_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
     }
 
     private void createGroupInvitationsTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
         final String statusDefinition = databaseType == DatabaseType.MYSQL
-                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING'"
+                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING' NOT NULL"
                 : "TEXT DEFAULT 'PENDING'";
-        final String expiresDefault = databaseType == DatabaseType.MYSQL
-                ? "TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 5 MINUTE)"
-                : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
+
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = String.format("""
+                    CREATE TABLE IF NOT EXISTS group_invitations (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        group_id INT NOT NULL,
+                        inviter_uuid VARCHAR(36) NOT NULL,
+                        invited_uuid VARCHAR(36) NOT NULL,
+                        message TEXT NULL,
+                        status %s,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        INDEX idx_group_invitations_group_id (group_id),
+                        INDEX idx_group_invitations_inviter_uuid (inviter_uuid),
+                        INDEX idx_group_invitations_invited_uuid (invited_uuid),
+                        INDEX idx_group_invitations_status (status),
+                        INDEX idx_group_invitations_expires_at (expires_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """, statusDefinition);
+            executeSQL(sql);
+            addColumnIfNotExists("group_invitations", "message", "TEXT NULL");
+            addColumnIfNotExists("group_invitations", "expires_at", "TIMESTAMP NOT NULL");
+            return;
+        }
+
         final String sql = String.format("""
                 CREATE TABLE IF NOT EXISTS group_invitations (
-                    id %s,
-                    group_id INT NOT NULL,
-                    inviter_uuid VARCHAR(36) NOT NULL,
-                    invited_uuid VARCHAR(36) NOT NULL,
-                    status %s,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at %s,
-                    FOREIGN KEY (group_id) REFERENCES groups_table(id),
-                    FOREIGN KEY (inviter_uuid) REFERENCES players(uuid),
-                    FOREIGN KEY (invited_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, statusDefinition, expiresDefault, suffix);
-        executeSQL(sql);
-    }
-
-    private void createClansTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
-                CREATE TABLE IF NOT EXISTS clans (
-                    id %s,
-                    name VARCHAR(50) UNIQUE NOT NULL,
-                    tag VARCHAR(6) UNIQUE NOT NULL,
-                    description TEXT,
-                    leader_uuid VARCHAR(36) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    max_members INT DEFAULT 50,
-                    points INT DEFAULT 0,
-                    level INT DEFAULT 1,
-                    bank_coins BIGINT DEFAULT 0,
-                    FOREIGN KEY (leader_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, suffix);
-        executeSQL(sql);
-    }
-
-    private void createClanMembersTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
-                CREATE TABLE IF NOT EXISTS clan_members (
-                    id %s,
-                    clan_id INT NOT NULL,
-                    player_uuid VARCHAR(36) NOT NULL,
-                    rank_name VARCHAR(30) DEFAULT 'Membre',
-                    permissions TEXT,
-                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    last_contribution TIMESTAMP NULL,
-                    total_contributions BIGINT DEFAULT 0,
-                    UNIQUE (clan_id, player_uuid),
-                    FOREIGN KEY (clan_id) REFERENCES clans(id),
-                    FOREIGN KEY (player_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, suffix);
-        executeSQL(sql);
-    }
-
-    private void createClanRanksTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
-                CREATE TABLE IF NOT EXISTS clan_ranks (
-                    id %s,
-                    clan_id INT NOT NULL,
-                    name VARCHAR(30) NOT NULL,
-                    permissions TEXT,
-                    priority INT DEFAULT 0,
-                    UNIQUE (clan_id, name),
-                    FOREIGN KEY (clan_id) REFERENCES clans(id)
-                )%s
-                """, autoIncrement, suffix);
-        executeSQL(sql);
-    }
-
-    private void createClanInvitationsTable() throws SQLException {
-        final String autoIncrement = databaseType == DatabaseType.MYSQL
-                ? "INT AUTO_INCREMENT PRIMARY KEY"
-                : "INTEGER PRIMARY KEY AUTOINCREMENT";
-        final String statusDefinition = databaseType == DatabaseType.MYSQL
-                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING'"
-                : "TEXT DEFAULT 'PENDING'";
-        final String expiresDefault = databaseType == DatabaseType.MYSQL
-                ? "TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL 7 DAY)"
-                : "TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-        final String suffix = databaseType == DatabaseType.MYSQL
-                ? " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-                : "";
-        final String sql = String.format("""
-                CREATE TABLE IF NOT EXISTS clan_invitations (
-                    id %s,
-                    clan_id INT NOT NULL,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    group_id INTEGER NOT NULL,
                     inviter_uuid VARCHAR(36) NOT NULL,
                     invited_uuid VARCHAR(36) NOT NULL,
                     message TEXT,
                     status %s,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at %s,
-                    FOREIGN KEY (clan_id) REFERENCES clans(id),
-                    FOREIGN KEY (inviter_uuid) REFERENCES players(uuid),
-                    FOREIGN KEY (invited_uuid) REFERENCES players(uuid)
-                )%s
-                """, autoIncrement, statusDefinition, expiresDefault, suffix);
+                    expires_at TIMESTAMP NOT NULL
+                )
+                """, statusDefinition);
         executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_group_id ON group_invitations(group_id)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_inviter_uuid ON group_invitations(inviter_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_invited_uuid ON group_invitations(invited_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_status ON group_invitations(status)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_group_invitations_expires_at ON group_invitations(expires_at)");
+        addColumnIfNotExists("group_invitations", "message", "TEXT");
+        addColumnIfNotExists("group_invitations", "expires_at", "TIMESTAMP NOT NULL");
+    }
+
+    private void createClansTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS clans (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        name VARCHAR(50) UNIQUE NOT NULL,
+                        tag VARCHAR(6) UNIQUE NOT NULL,
+                        description TEXT NULL,
+                        leader_uuid VARCHAR(36) NOT NULL,
+                        max_members INT DEFAULT 50 NOT NULL,
+                        points INT DEFAULT 0 NOT NULL,
+                        level INT DEFAULT 1 NOT NULL,
+                        bank_coins BIGINT DEFAULT 0 NOT NULL,
+                        bank_tokens BIGINT DEFAULT 0 NOT NULL,
+                        is_public BOOLEAN DEFAULT TRUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        disbanded_at TIMESTAMP NULL,
+                        INDEX idx_clans_leader_uuid (leader_uuid),
+                        INDEX idx_clans_points (points),
+                        INDEX idx_clans_level (level),
+                        INDEX idx_clans_is_public (is_public)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            addColumnIfNotExists("clans", "bank_tokens", "BIGINT DEFAULT 0 NOT NULL");
+            addColumnIfNotExists("clans", "is_public", "BOOLEAN DEFAULT TRUE NOT NULL");
+            addColumnIfNotExists("clans", "disbanded_at", "TIMESTAMP NULL");
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS clans (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    tag TEXT UNIQUE NOT NULL,
+                    description TEXT,
+                    leader_uuid VARCHAR(36) NOT NULL,
+                    max_members INTEGER DEFAULT 50,
+                    points INTEGER DEFAULT 0,
+                    level INTEGER DEFAULT 1,
+                    bank_coins BIGINT DEFAULT 0,
+                    bank_tokens BIGINT DEFAULT 0,
+                    is_public BOOLEAN DEFAULT 1,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    disbanded_at TIMESTAMP NULL
+                )
+                """;
+        executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_leader_uuid ON clans(leader_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_points ON clans(points)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_level ON clans(level)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clans_is_public ON clans(is_public)");
+        addColumnIfNotExists("clans", "bank_tokens", "BIGINT DEFAULT 0");
+        addColumnIfNotExists("clans", "is_public", "BOOLEAN DEFAULT 1");
+        addColumnIfNotExists("clans", "disbanded_at", "TIMESTAMP NULL");
+    }
+
+    private void createClanMembersTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS clan_members (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        clan_id INT NOT NULL,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        rank_name VARCHAR(30) DEFAULT 'Membre' NOT NULL,
+                        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        last_contribution TIMESTAMP NULL,
+                        total_contributions BIGINT DEFAULT 0 NOT NULL,
+                        UNIQUE KEY unique_clan_member (clan_id, player_uuid),
+                        INDEX idx_clan_members_clan_id (clan_id),
+                        INDEX idx_clan_members_player_uuid (player_uuid),
+                        INDEX idx_clan_members_rank_name (rank_name),
+                        INDEX idx_clan_members_total_contributions (total_contributions)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            addColumnIfNotExists("clan_members", "last_contribution", "TIMESTAMP NULL");
+            addColumnIfNotExists("clan_members", "total_contributions", "BIGINT DEFAULT 0 NOT NULL");
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS clan_members (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    clan_id INTEGER NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    rank_name TEXT DEFAULT 'Membre',
+                    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_contribution TIMESTAMP NULL,
+                    total_contributions BIGINT DEFAULT 0,
+                    UNIQUE (clan_id, player_uuid)
+                )
+                """;
+        executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_clan_id ON clan_members(clan_id)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_player_uuid ON clan_members(player_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_rank_name ON clan_members(rank_name)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_members_total_contributions ON clan_members(total_contributions)");
+        addColumnIfNotExists("clan_members", "last_contribution", "TIMESTAMP NULL");
+        addColumnIfNotExists("clan_members", "total_contributions", "BIGINT DEFAULT 0");
+    }
+
+    private void createClanRanksTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS clan_ranks (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        clan_id INT NOT NULL,
+                        name VARCHAR(30) NOT NULL,
+                        display_name VARCHAR(50) NOT NULL,
+                        priority INT DEFAULT 0 NOT NULL,
+                        permissions JSON NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE KEY unique_clan_rank (clan_id, name),
+                        INDEX idx_clan_ranks_clan_id (clan_id),
+                        INDEX idx_clan_ranks_priority (priority)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            addColumnIfNotExists("clan_ranks", "display_name", "VARCHAR(50) NOT NULL DEFAULT ''");
+            addColumnIfNotExists("clan_ranks", "permissions", "JSON NULL");
+            addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS clan_ranks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    clan_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    display_name TEXT NOT NULL,
+                    priority INTEGER DEFAULT 0,
+                    permissions TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (clan_id, name)
+                )
+                """;
+        executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_clan_id ON clan_ranks(clan_id)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_ranks_priority ON clan_ranks(priority)");
+        addColumnIfNotExists("clan_ranks", "display_name", "TEXT NOT NULL DEFAULT ''");
+        addColumnIfNotExists("clan_ranks", "permissions", "TEXT");
+        addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+    }
+
+    private void createClanInvitationsTable() throws SQLException {
+        final String statusDefinition = databaseType == DatabaseType.MYSQL
+                ? "ENUM('PENDING','ACCEPTED','DECLINED','EXPIRED') DEFAULT 'PENDING' NOT NULL"
+                : "TEXT DEFAULT 'PENDING'";
+
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = String.format("""
+                    CREATE TABLE IF NOT EXISTS clan_invitations (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        clan_id INT NOT NULL,
+                        inviter_uuid VARCHAR(36) NOT NULL,
+                        invited_uuid VARCHAR(36) NOT NULL,
+                        message TEXT NULL,
+                        status %s,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        expires_at TIMESTAMP NOT NULL,
+                        INDEX idx_clan_invitations_clan_id (clan_id),
+                        INDEX idx_clan_invitations_inviter_uuid (inviter_uuid),
+                        INDEX idx_clan_invitations_invited_uuid (invited_uuid),
+                        INDEX idx_clan_invitations_status (status),
+                        INDEX idx_clan_invitations_expires_at (expires_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """, statusDefinition);
+            executeSQL(sql);
+            addColumnIfNotExists("clan_invitations", "message", "TEXT NULL");
+            addColumnIfNotExists("clan_invitations", "expires_at", "TIMESTAMP NOT NULL");
+            return;
+        }
+
+        final String sql = String.format("""
+                CREATE TABLE IF NOT EXISTS clan_invitations (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    clan_id INTEGER NOT NULL,
+                    inviter_uuid VARCHAR(36) NOT NULL,
+                    invited_uuid VARCHAR(36) NOT NULL,
+                    message TEXT,
+                    status %s,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    expires_at TIMESTAMP NOT NULL
+                )
+                """, statusDefinition);
+        executeSQL(sql);
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_clan_id ON clan_invitations(clan_id)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_inviter_uuid ON clan_invitations(inviter_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_invited_uuid ON clan_invitations(invited_uuid)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_status ON clan_invitations(status)");
+        executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_invitations_expires_at ON clan_invitations(expires_at)");
+        addColumnIfNotExists("clan_invitations", "message", "TEXT");
+        addColumnIfNotExists("clan_invitations", "expires_at", "TIMESTAMP NOT NULL");
     }
 
     public enum DatabaseType {
