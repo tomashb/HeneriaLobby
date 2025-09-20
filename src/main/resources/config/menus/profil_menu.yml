@@ -183,7 +183,7 @@ menu:
         - "[MENU] settings_menu"
 
     rewards:
-      slot: 26
+      slot: 30
       material: "PLAYER_HEAD"
       head: "hdb:12654"
       name: "&6&lRécompense Journalière"
