@@ -1,0 +1,113 @@
+menu:
+  id: "settings_menu"
+  title: "&8» &dParamètres"
+  size: 45
+  fill_material: "PURPLE_STAINED_GLASS_PANE"
+
+  items:
+    private_messages:
+      slot: 11
+      material: "PLAYER_HEAD"
+      head: "hdb:3581"
+      name: "&a&lMessages Privés"
+      lore:
+        - "&7Autorisez ou bloquez la réception"
+        - "&7de messages privés d'autres joueurs."
+        - "&r"
+        - "&8▸ &7Statut actuel: %setting_private_messages_status%"
+        - "&r"
+        - "&a▶ Cliquez pour basculer !"
+      actions:
+        - "[COMMAND] settings toggle private_messages"
+
+    friend_requests:
+      slot: 13
+      material: "PLAYER_HEAD"
+      head: "hdb:13389"
+      name: "&e&lDemandes d'Amis"
+      lore:
+        - "&7Gérez qui peut vous envoyer"
+        - "&7des demandes d'ajout en ami."
+        - "&r"
+        - "&8▸ &7Statut actuel: %setting_friend_requests_status%"
+        - "&8▸ &7Options: Tous / Amis d'amis / Personne"
+        - "&r"
+        - "&a▶ Cliquez pour modifier !"
+      actions:
+        - "[MENU] friend_requests_settings"
+
+    group_requests:
+      slot: 15
+      material: "PLAYER_HEAD"
+      head: "hdb:8537"
+      name: "&b&lDemandes de Groupe"
+      lore:
+        - "&7Contrôlez qui peut vous inviter"
+        - "&7dans des groupes de jeu."
+        - "&r"
+        - "&8▸ &7Statut actuel: %setting_group_requests_status%"
+        - "&8▸ &7Options: Tous / Amis seulement / Personne"
+        - "&r"
+        - "&a▶ Cliquez pour ajuster !"
+      actions:
+        - "[MENU] group_requests_settings"
+
+    visibility:
+      slot: 20
+      material: "PLAYER_HEAD"
+      head: "hdb:32010"
+      name: "&f&lVisibilité des Joueurs"
+      lore:
+        - "&7Choisissez quels joueurs vous"
+        - "&7voulez voir dans le lobby."
+        - "&r"
+        - "&8▸ &7Mode actuel: %setting_visibility_status%"
+        - "&8▸ &7Options: Tous / Amis / Personne"
+        - "&r"
+        - "&a▶ Cliquez pour changer !"
+      actions:
+        - "[MENU] visibility_settings"
+
+    notifications:
+      slot: 22
+      material: "PLAYER_HEAD"
+      head: "hdb:1455"
+      name: "&c&lNotifications"
+      lore:
+        - "&7Gérez les types de notifications"
+        - "&7que vous souhaitez recevoir."
+        - "&r"
+        - "&8▸ &7Notifications d'amis: %notif_friends%"
+        - "&8▸ &7Notifications de clan: %notif_clan%"
+        - "&8▸ &7Notifications système: %notif_system%"
+        - "&r"
+        - "&a▶ Cliquez pour personnaliser !"
+      actions:
+        - "[MENU] notifications_settings"
+
+    audio:
+      slot: 24
+      material: "PLAYER_HEAD"
+      head: "hdb:7439"
+      name: "&6&lSons et Effets"
+      lore:
+        - "&7Activez ou désactivez les sons"
+        - "&7et effets visuels du lobby."
+        - "&r"
+        - "&8▸ &7Sons d'interface: %setting_ui_sounds%"
+        - "&8▸ &7Effets de particules: %setting_particles%"
+        - "&8▸ &7Musique d'ambiance: %setting_music%"
+        - "&r"
+        - "&a▶ Cliquez pour ajuster !"
+      actions:
+        - "[MENU] audio_settings"
+
+    back:
+      slot: 40
+      material: "PLAYER_HEAD"
+      head: "hdb:9334"
+      name: "&c&lRetour"
+      lore:
+        - "&7Revenir au menu profil."
+      actions:
+        - "[MENU] profil_menu"
