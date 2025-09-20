@@ -80,17 +80,15 @@ menu:
       head: "hdb:9945"
       name: "&a&lAmis"
       lore:
-        - "&7Gérez votre liste d'amis,"
-        - "&7envoyez des invitations et"
-        - "&7voyez qui est en ligne."
+        - "&7Retrouvez toutes vos interactions sociales"
         - "&r"
         - "&8▸ &7Amis en ligne: &a%friends_online%/%friends_total%"
-        - "&8▸ &7Demandes en attente: &e%friend_requests%"
-        - "&8▸ &7Statut: %friend_status%"
+        - "&8▸ &7Demandes reçues: &e%friend_requests_received%"
+        - "&8▸ &7Dernière activité: &b%friends_recent_activity%"
         - "&r"
-        - "&c⚠ Fonctionnalité en développement"
+        - "&a▶ Cliquez pour gérer vos amis !"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] friends_menu"
 
     groups:
       slot: 4
@@ -98,16 +96,15 @@ menu:
       head: "hdb:9723"
       name: "&e&lGroupe"
       lore:
-        - "&7Créez ou rejoignez un groupe"
-        - "&7pour jouer avec vos amis !"
+        - "&7Gérez votre groupe de jeu en un clic"
         - "&r"
-        - "&8▸ &7Groupe actuel: %group_name%"
-        - "&8▸ &7Membres: &a%group_members%/%group_max%"
+        - "&8▸ &7Groupe: &e%group_name%"
         - "&8▸ &7Leader: &6%group_leader%"
+        - "&8▸ &7Membres: &a%group_members%/%group_max%"
         - "&r"
-        - "&c⚠ Fonctionnalité en développement"
+        - "&a▶ Cliquez pour gérer votre groupe !"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] groups_menu"
 
     clans:
       slot: 5
@@ -115,18 +112,15 @@ menu:
       head: "hdb:8971"
       name: "&c&lClan"
       lore:
-        - "&7Rejoignez un clan pour participer"
-        - "&7à des événements exclusifs et"
-        - "&7des guerres de clans !"
+        - "&7Accédez à toutes les fonctionnalités de clan"
         - "&r"
-        - "&8▸ &7Clan: %clan_name%"
+        - "&8▸ &7Clan: &c%clan_name%"
         - "&8▸ &7Rang: &6%clan_rank%"
-        - "&8▸ &7Membres: &a%clan_members%/%clan_max%"
         - "&8▸ &7Points: &e%clan_points%"
         - "&r"
-        - "&c⚠ Fonctionnalité en développement"
+        - "&a▶ Cliquez pour gérer votre clan !"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] clan_menu"
 
     stats:
       slot: 20

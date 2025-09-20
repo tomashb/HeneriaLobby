@@ -1,0 +1,201 @@
+menu:
+  id: "clan_menu"
+  title: "&8» &c&lGestion de Clan"
+  size: 54
+
+  items:
+    decor_top_left_1:
+      slot: 0
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_left_2:
+      slot: 1
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_left_3:
+      slot: 2
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_1:
+      slot: 6
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_2:
+      slot: 7
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_top_right_3:
+      slot: 8
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_left:
+      slot: 9
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_right:
+      slot: 17
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_bottom_left:
+      slot: 45
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    decor_bottom_right:
+      slot: 53
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    my_clan:
+      slot: 19
+      material: "PLAYER_HEAD"
+      head: "hdb:8971"
+      name: "&c&lMon Clan"
+      lore:
+        - "&7Informations sur votre clan actuel"
+        - "&r"
+        - "&8▸ &7Clan: &c%clan_name%"
+        - "&8▸ &7Rang: &6%clan_rank%"
+        - "&8▸ &7Membres: &a%clan_members%/%clan_max%"
+        - "&8▸ &7Points: &e%clan_points%"
+        - "&r"
+        - "&a▶ Cliquez pour voir les détails !"
+      actions:
+        - "[MESSAGE] &cInformations du clan affichées !"
+
+    clan_members:
+      slot: 21
+      material: "PLAYER_HEAD"
+      head: "hdb:9969"
+      name: "&e&lMembres du Clan"
+      lore:
+        - "&7Gérez les membres de votre clan"
+        - "&r"
+        - "&8▸ &7Membres connectés: &a%clan_online%/%clan_members%"
+        - "&8▸ &7Dernière activité: &f%clan_last_activity%"
+        - "&8▸ &7Permissions: &6%clan_permissions%"
+        - "&r"
+        - "&a▶ Cliquez pour gérer !"
+      actions:
+        - "[MESSAGE] &eGestion des membres bientôt disponible !"
+
+    clan_ranks:
+      slot: 23
+      material: "PLAYER_HEAD"
+      head: "hdb:1218"
+      name: "&d&lRangs et Permissions"
+      lore:
+        - "&7Configurez les rangs de votre clan"
+        - "&r"
+        - "&8▸ &7Votre niveau: &6%clan_player_level%"
+        - "&8▸ &7Permissions disponibles: &d%clan_available_perms%"
+        - "&8▸ &7Rangs configurés: &e%clan_ranks_count%"
+        - "&r"
+        - "&6⚠ Nécessite rang Officier+"
+      actions:
+        - "[MESSAGE] &dGestion des rangs bientôt disponible !"
+
+    clan_treasury:
+      slot: 25
+      material: "PLAYER_HEAD"
+      head: "hdb:35472"
+      name: "&a&lTrésor du Clan"
+      lore:
+        - "&7Gérez les ressources du clan"
+        - "&r"
+        - "&8▸ &7Coins du clan: &e%clan_coins%"
+        - "&8▸ &7Contributions mensuelles: &6%clan_contributions%"
+        - "&8▸ &7Accès coffre: &b%clan_vault_access%"
+        - "&r"
+        - "&a▶ Cliquez pour accéder !"
+      actions:
+        - "[MESSAGE] &aTrésor du clan bientôt disponible !"
+
+    clan_wars:
+      slot: 31
+      material: "PLAYER_HEAD"
+      head: "hdb:38878"
+      name: "&b&lGuerres de Clans"
+      lore:
+        - "&7Participez aux guerres épiques !"
+        - "&r"
+        - "&8▸ &7Guerre actuelle: &f%clan_war_status%"
+        - "&8▸ &7Victoires: &a%clan_war_wins%"
+        - "&8▸ &7Défaites: &c%clan_war_losses%"
+        - "&8▸ &7Ratio: &6%clan_war_ratio%"
+        - "&r"
+        - "&c⚔ Cliquez pour les guerres !"
+      actions:
+        - "[MESSAGE] &bGuerres de clans bientôt disponibles !"
+
+    clan_create:
+      slot: 37
+      material: "PLAYER_HEAD"
+      head: "hdb:12654"
+      name: "&6&lCréer un Clan"
+      lore:
+        - "&7Créez votre propre clan !"
+        - "&r"
+        - "&8▸ &7Coût: &e10,000 coins"
+        - "&8▸ &7Membres max: &a20 joueurs"
+        - "&8▸ &7Avantages: &fCoffre, Guerres, Chat privé"
+        - "&r"
+        - "&a▶ Cliquez pour créer !"
+      actions:
+        - "[COMMAND] clan create"
+
+    clan_join:
+      slot: 43
+      material: "PLAYER_HEAD"
+      head: "hdb:23022"
+      name: "&e&lRejoindre un Clan"
+      lore:
+        - "&7Explorez les clans disponibles"
+        - "&r"
+        - "&8▸ &7Clans ouverts: &a%clans_open_count%"
+        - "&8▸ &7Clans avec invitations: &e%clans_invite_count%"
+        - "&8▸ &7Popularité: &fTop clans actifs"
+        - "&r"
+        - "&a▶ Cliquez pour explorer !"
+      actions:
+        - "[MESSAGE] &eListe des clans bientôt disponible !"
+
+    back:
+      slot: 49
+      material: "PLAYER_HEAD"
+      head: "hdb:9334"
+      name: "&c&lRetour"
+      lore:
+        - "&7Revenir au menu précédent"
+        - "&r"
+        - "&a▶ Cliquez pour revenir !"
+      actions:
+        - "[MENU] profil_menu"
