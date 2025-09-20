@@ -10,14 +10,22 @@ public class FriendInfo {
     private final String server;
     private final long friendsSince;
     private final long lastSeen;
+    private final boolean favorite;
 
-    public FriendInfo(final UUID uuid, final String name, final boolean online, final String server, final long friendsSince, final long lastSeen) {
+    public FriendInfo(final UUID uuid,
+                      final String name,
+                      final boolean online,
+                      final String server,
+                      final long friendsSince,
+                      final long lastSeen,
+                      final boolean favorite) {
         this.uuid = uuid;
         this.name = name;
         this.online = online;
         this.server = server;
         this.friendsSince = friendsSince;
         this.lastSeen = lastSeen;
+        this.favorite = favorite;
     }
 
     public UUID getUuid() {
@@ -42,5 +50,9 @@ public class FriendInfo {
 
     public long getLastSeen() {
         return lastSeen;
+    }
+
+    public boolean isFavorite() {
+        return favorite;
     }
 }

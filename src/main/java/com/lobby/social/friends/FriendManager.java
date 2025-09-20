@@ -14,6 +14,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.sql.ResultSetMetaData;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -29,6 +30,7 @@ public class FriendManager {
     private final LobbyPlugin plugin;
     private final DatabaseManager databaseManager;
     private final Map<UUID, Set<UUID>> friendsCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<UUID>> favoritesCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> pendingRequests = new ConcurrentHashMap<>();
     private final Map<UUID, FriendSettings> settingsCache = new ConcurrentHashMap<>();
 
@@ -39,6 +41,7 @@ public class FriendManager {
 
     public void reload() {
         friendsCache.clear();
+        favoritesCache.clear();
         pendingRequests.clear();
         settingsCache.clear();
     }
@@ -57,6 +60,12 @@ public class FriendManager {
 
         if (areFriends(sender.getUniqueId(), target.getUniqueId())) {
             sender.sendMessage("§cVous êtes déjà amis avec " + target.getName() + " !");
+            return;
+        }
+
+        if (isBlocked(sender.getUniqueId(), target.getUniqueId())
+                || isBlocked(target.getUniqueId(), sender.getUniqueId())) {
+            sender.sendMessage("§cImpossible d'envoyer une demande : relation bloquée.");
             return;
         }
 
@@ -83,6 +92,14 @@ public class FriendManager {
         target.sendMessage("§7Tapez §a/friend accept " + sender.getName() + " §7pour accepter");
         target.sendMessage("§7ou §c/friend deny " + sender.getName() + " §7pour refuser");
         target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+    }
+
+    public void onPlayerJoin(final UUID player) {
+        getFriendSettings(player);
+    }
+
+    public void onPlayerQuit(final UUID player) {
+        // Reserved for future cleanup hooks
     }
 
     public void acceptFriendRequest(final Player player, final String senderName) {
@@ -152,14 +169,8 @@ public class FriendManager {
             return;
         }
         removeFriendship(player.getUniqueId(), targetUUID);
-        friendsCache.computeIfPresent(player.getUniqueId(), (uuid, uuids) -> {
-            uuids.remove(targetUUID);
-            return uuids;
-        });
-        friendsCache.computeIfPresent(targetUUID, (uuid, uuids) -> {
-            uuids.remove(player.getUniqueId());
-            return uuids;
-        });
+        removeFromCaches(player.getUniqueId(), targetUUID);
+        removeFromCaches(targetUUID, player.getUniqueId());
         player.sendMessage("§cVous n'êtes plus ami avec §6" + targetName + "§c.");
         final Player targetPlayer = Bukkit.getPlayer(targetUUID);
         if (targetPlayer != null) {
@@ -174,15 +185,13 @@ public class FriendManager {
 
     public List<FriendInfo> getFriendsList(final UUID playerUUID) {
         final List<FriendInfo> friends = new ArrayList<>();
+        final String query = "SELECT friend_uuid, accepted_at, is_favorite FROM friends WHERE player_uuid = ? AND status = 'ACCEPTED'";
         try (Connection connection = databaseManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement("SELECT player_uuid, friend_uuid, status, created_at, accepted_at FROM friends WHERE (player_uuid = ? OR friend_uuid = ?) AND status = 'ACCEPTED'")) {
+             PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, playerUUID.toString());
-            statement.setString(2, playerUUID.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    final UUID playerOne = UUID.fromString(resultSet.getString("player_uuid"));
-                    final UUID playerTwo = UUID.fromString(resultSet.getString("friend_uuid"));
-                    final UUID friendUUID = playerOne.equals(playerUUID) ? playerTwo : playerOne;
+                    final UUID friendUUID = UUID.fromString(resultSet.getString("friend_uuid"));
                     final String name = getNameByUuid(friendUUID);
                     final Player friendPlayer = Bukkit.getPlayer(friendUUID);
                     final boolean online = friendPlayer != null && friendPlayer.isOnline();
@@ -197,7 +206,8 @@ public class FriendManager {
                     final Timestamp acceptedTimestamp = resultSet.getTimestamp("accepted_at");
                     final long acceptedAt = acceptedTimestamp != null ? acceptedTimestamp.getTime() : System.currentTimeMillis();
                     final long lastSeen = getLastSeen(friendUUID);
-                    friends.add(new FriendInfo(friendUUID, name, online, serverName, acceptedAt, lastSeen));
+                    final boolean favorite = resultSet.getBoolean("is_favorite");
+                    friends.add(new FriendInfo(friendUUID, name, online, serverName, acceptedAt, lastSeen, favorite));
                 }
             }
         } catch (final SQLException exception) {
@@ -266,27 +276,17 @@ public class FriendManager {
     }
 
     private void saveFriendRequest(final UUID senderUUID, final UUID targetUUID) {
-        final String selectQuery = "SELECT status FROM friends WHERE player_uuid = ? AND friend_uuid = ?";
-        final String insertQuery = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at) VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP)";
-        final String updateQuery = "UPDATE friends SET status = 'PENDING', created_at = CURRENT_TIMESTAMP WHERE player_uuid = ? AND friend_uuid = ?";
-        try (Connection connection = databaseManager.getConnection(); PreparedStatement selectStatement = connection.prepareStatement(selectQuery)) {
-            selectStatement.setString(1, senderUUID.toString());
-            selectStatement.setString(2, targetUUID.toString());
-            try (ResultSet resultSet = selectStatement.executeQuery()) {
-                if (resultSet.next()) {
-                    try (PreparedStatement updateStatement = connection.prepareStatement(updateQuery)) {
-                        updateStatement.setString(1, senderUUID.toString());
-                        updateStatement.setString(2, targetUUID.toString());
-                        updateStatement.executeUpdate();
-                    }
-                } else {
-                    try (PreparedStatement insertStatement = connection.prepareStatement(insertQuery)) {
-                        insertStatement.setString(1, senderUUID.toString());
-                        insertStatement.setString(2, targetUUID.toString());
-                        insertStatement.executeUpdate();
-                    }
-                }
-            }
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, NULL, NULL, FALSE) ON DUPLICATE KEY UPDATE status = 'PENDING', created_at = CURRENT_TIMESTAMP, accepted_at = NULL, blocked_at = NULL, is_favorite = FALSE";
+        } else {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, NULL, NULL, 0) ON CONFLICT(player_uuid, friend_uuid) DO UPDATE SET status = 'PENDING', created_at = CURRENT_TIMESTAMP, accepted_at = NULL, blocked_at = NULL, is_favorite = 0";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, senderUUID.toString());
+            statement.setString(2, targetUUID.toString());
+            statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save friend request", exception);
         }
@@ -294,13 +294,31 @@ public class FriendManager {
     }
 
     private void acceptFriendship(final UUID senderUUID, final UUID targetUUID) {
-        final String updateQuery = "UPDATE friends SET status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP WHERE player_uuid = ? AND friend_uuid = ?";
-        try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(updateQuery)) {
+        final String updateQuery = "UPDATE friends SET status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP, blocked_at = NULL WHERE player_uuid = ? AND friend_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(updateQuery)) {
             statement.setString(1, senderUUID.toString());
             statement.setString(2, targetUUID.toString());
             statement.executeUpdate();
+            ensureReciprocalFriendship(connection, targetUUID, senderUUID);
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to accept friendship", exception);
+        }
+    }
+
+    private void ensureReciprocalFriendship(final Connection connection,
+                                            final UUID ownerUUID,
+                                            final UUID friendUUID) throws SQLException {
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'ACCEPTED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, FALSE) ON DUPLICATE KEY UPDATE status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP, blocked_at = NULL";
+        } else {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'ACCEPTED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, 0) ON CONFLICT(player_uuid, friend_uuid) DO UPDATE SET status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP, blocked_at = NULL";
+        }
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, ownerUUID.toString());
+            statement.setString(2, friendUUID.toString());
+            statement.executeUpdate();
         }
     }
 
@@ -319,22 +337,42 @@ public class FriendManager {
 
     private Set<UUID> loadFriendsFromDatabase(final UUID playerUUID) {
         final Set<UUID> friends = new HashSet<>();
-        final String query = "SELECT player_uuid, friend_uuid FROM friends WHERE (player_uuid = ? OR friend_uuid = ?) AND status = 'ACCEPTED'";
-        try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
+        final Set<UUID> favorites = new HashSet<>();
+        final String query = "SELECT friend_uuid, is_favorite FROM friends WHERE player_uuid = ? AND status = 'ACCEPTED'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, playerUUID.toString());
-            statement.setString(2, playerUUID.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    final UUID playerOne = UUID.fromString(resultSet.getString("player_uuid"));
-                    final UUID playerTwo = UUID.fromString(resultSet.getString("friend_uuid"));
-                    final UUID friendUUID = playerOne.equals(playerUUID) ? playerTwo : playerOne;
+                    final UUID friendUUID = UUID.fromString(resultSet.getString("friend_uuid"));
                     friends.add(friendUUID);
+                    if (resultSet.getBoolean("is_favorite")) {
+                        favorites.add(friendUUID);
+                    }
                 }
             }
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to load friends for " + playerUUID, exception);
         }
+        favoritesCache.put(playerUUID, favorites);
         return friends;
+    }
+
+    private Set<UUID> loadFavoritesFromDatabase(final UUID playerUUID) {
+        final Set<UUID> favorites = new HashSet<>();
+        final String query = "SELECT friend_uuid FROM friends WHERE player_uuid = ? AND status = 'ACCEPTED' AND is_favorite = TRUE";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    favorites.add(UUID.fromString(resultSet.getString("friend_uuid")));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load favorite friends for " + playerUUID, exception);
+        }
+        return favorites;
     }
 
     private Set<UUID> loadPendingRequests(final UUID targetUUID) {
@@ -368,27 +406,57 @@ public class FriendManager {
         return settingsCache.computeIfAbsent(uuid, this::loadSettings);
     }
 
+    public void updateSettings(final UUID uuid, final FriendSettings settings) {
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE accept_requests = VALUES(accept_requests), show_online_status = VALUES(show_online_status), allow_notifications = VALUES(allow_notifications), receive_notifications = VALUES(receive_notifications), auto_accept_favorites = VALUES(auto_accept_favorites), auto_accept_friends = VALUES(auto_accept_friends), max_friends = VALUES(max_friends)";
+        } else {
+            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(player_uuid) DO UPDATE SET accept_requests = excluded.accept_requests, show_online_status = excluded.show_online_status, allow_notifications = excluded.allow_notifications, receive_notifications = excluded.receive_notifications, auto_accept_favorites = excluded.auto_accept_favorites, auto_accept_friends = excluded.auto_accept_friends, max_friends = excluded.max_friends";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            statement.setString(2, settings.getAcceptRequests().toDatabase());
+            statement.setBoolean(3, settings.isShowOnlineStatus());
+            statement.setBoolean(4, settings.isAllowNotifications());
+            statement.setBoolean(5, settings.isAllowNotifications());
+            statement.setBoolean(6, settings.isAutoAcceptFavorites());
+            statement.setBoolean(7, settings.isAutoAcceptFavorites());
+            statement.setInt(8, settings.getMaxFriends());
+            statement.executeUpdate();
+            settingsCache.put(uuid, settings);
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to update friend settings for " + uuid, exception);
+        }
+    }
+
     private FriendSettings loadSettings(final UUID uuid) {
-        final String query = "SELECT accept_requests, show_online_status, receive_notifications FROM friend_settings WHERE player_uuid = ?";
-        try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
+        final String query = "SELECT * FROM friend_settings WHERE player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, uuid.toString());
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
+                    final ResultSetMetaData metaData = resultSet.getMetaData();
                     final AcceptMode acceptMode = AcceptMode.fromDatabase(resultSet.getString("accept_requests"));
-                    final boolean showOnline = resultSet.getBoolean("show_online_status");
-                    final boolean receiveNotifications = resultSet.getBoolean("receive_notifications");
-                    return new FriendSettings(acceptMode, showOnline, receiveNotifications);
+                    final boolean showOnline = getBoolean(resultSet, metaData, "show_online_status", true);
+                    final boolean allowNotifications = getBooleanWithFallback(resultSet, metaData,
+                            "allow_notifications", "receive_notifications", true);
+                    final boolean autoAcceptFavorites = getBooleanWithFallback(resultSet, metaData,
+                            "auto_accept_favorites", "auto_accept_friends", false);
+                    final int maxFriends = getIntWithDefault(resultSet, metaData, "max_friends", 100);
+                    return new FriendSettings(acceptMode, showOnline, allowNotifications, autoAcceptFavorites, maxFriends);
                 }
             }
             insertDefaultSettings(uuid, connection);
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to load friend settings for " + uuid, exception);
         }
-        return new FriendSettings(AcceptMode.ALL, true, true);
+        return new FriendSettings(AcceptMode.ALL, true, true, false, 100);
     }
 
     private void insertDefaultSettings(final UUID uuid, final Connection connection) throws SQLException {
-        final String insertQuery = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, receive_notifications) VALUES (?, 'ALL', 1, 1)";
+        final String insertQuery = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, 'ALL', 1, 1, 1, 0, 0, 100)";
         try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
             statement.setString(1, uuid.toString());
             statement.executeUpdate();
@@ -398,6 +466,189 @@ public class FriendManager {
     private void addToFriendsCache(final UUID source, final UUID friend) {
         friendsCache.computeIfAbsent(source, this::loadFriendsFromDatabase).add(friend);
     }
+
+    public List<UUID> getAllFriends(final UUID uuid) {
+        return new ArrayList<>(friendsCache.computeIfAbsent(uuid, this::loadFriendsFromDatabase));
+    }
+
+    public List<UUID> getOnlineFriends(final UUID uuid) {
+        final List<UUID> online = new ArrayList<>();
+        for (final UUID friendUUID : friendsCache.computeIfAbsent(uuid, this::loadFriendsFromDatabase)) {
+            final Player player = Bukkit.getPlayer(friendUUID);
+            if (player != null && player.isOnline()) {
+                online.add(friendUUID);
+            }
+        }
+        return online;
+    }
+
+    public List<UUID> getFavoriteFriends(final UUID uuid) {
+        return new ArrayList<>(favoritesCache.computeIfAbsent(uuid, this::loadFavoritesFromDatabase));
+    }
+
+    public boolean addToFavorites(final UUID playerUUID, final UUID friendUUID) {
+        if (!areFriends(playerUUID, friendUUID)) {
+            return false;
+        }
+        final String query = "UPDATE friends SET is_favorite = TRUE WHERE player_uuid = ? AND friend_uuid = ? AND status = 'ACCEPTED'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, friendUUID.toString());
+            if (statement.executeUpdate() > 0) {
+                favoritesCache.computeIfAbsent(playerUUID, this::loadFavoritesFromDatabase).add(friendUUID);
+                return true;
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to add favorite friend for " + playerUUID, exception);
+        }
+        return false;
+    }
+
+    public boolean removeFromFavorites(final UUID playerUUID, final UUID friendUUID) {
+        final String query = "UPDATE friends SET is_favorite = FALSE WHERE player_uuid = ? AND friend_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, friendUUID.toString());
+            if (statement.executeUpdate() > 0) {
+                favoritesCache.computeIfPresent(playerUUID, (uuid, set) -> {
+                    set.remove(friendUUID);
+                    return set;
+                });
+                return true;
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to remove favorite friend for " + playerUUID, exception);
+        }
+        return false;
+    }
+
+    public boolean blockPlayer(final UUID playerUUID, final UUID targetUUID) {
+        if (playerUUID.equals(targetUUID)) {
+            return false;
+        }
+        removeFriendship(playerUUID, targetUUID);
+        removeFromCaches(playerUUID, targetUUID);
+        removeFromCaches(targetUUID, playerUUID);
+        removePendingRequest(playerUUID, targetUUID);
+        removePendingRequest(targetUUID, playerUUID);
+
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, blocked_at, accepted_at, is_favorite) VALUES (?, ?, 'BLOCKED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, FALSE) ON DUPLICATE KEY UPDATE status = 'BLOCKED', blocked_at = CURRENT_TIMESTAMP, accepted_at = NULL, is_favorite = FALSE";
+        } else {
+            query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, blocked_at, accepted_at, is_favorite) VALUES (?, ?, 'BLOCKED', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, NULL, 0) ON CONFLICT(player_uuid, friend_uuid) DO UPDATE SET status = 'BLOCKED', blocked_at = CURRENT_TIMESTAMP, accepted_at = NULL, is_favorite = 0";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, targetUUID.toString());
+            statement.executeUpdate();
+            return true;
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to block player " + targetUUID + " for " + playerUUID, exception);
+        }
+        return false;
+    }
+
+    public boolean unblockPlayer(final UUID playerUUID, final UUID targetUUID) {
+        final String query = "DELETE FROM friends WHERE player_uuid = ? AND friend_uuid = ? AND status = 'BLOCKED'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, targetUUID.toString());
+            return statement.executeUpdate() > 0;
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to unblock player " + targetUUID + " for " + playerUUID, exception);
+        }
+        return false;
+    }
+
+    public boolean isBlocked(final UUID playerUUID, final UUID targetUUID) {
+        final String query = "SELECT 1 FROM friends WHERE player_uuid = ? AND friend_uuid = ? AND status = 'BLOCKED'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, targetUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to check block status between " + playerUUID + " and " + targetUUID, exception);
+        }
+        return false;
+    }
+
+    public List<FriendRequest> getPendingRequestsDetailed(final UUID playerUUID) {
+        final List<FriendRequest> requests = new ArrayList<>();
+        final String query = "SELECT player_uuid, friend_uuid, status, created_at FROM friends WHERE friend_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    final UUID sender = UUID.fromString(resultSet.getString("player_uuid"));
+                    final UUID target = UUID.fromString(resultSet.getString("friend_uuid"));
+                    final Timestamp timestamp = resultSet.getTimestamp("created_at");
+                    final FriendRequestStatus status = FriendRequestStatus.fromDatabase(resultSet.getString("status"));
+                    requests.add(new FriendRequest(sender, target,
+                            timestamp != null ? timestamp.getTime() : System.currentTimeMillis(), status));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to load detailed pending requests for " + playerUUID, exception);
+        }
+        return requests;
+    }
+
+    public List<FriendRequest> getSentRequestsDetailed(final UUID playerUUID) {
+        final List<FriendRequest> requests = new ArrayList<>();
+        final String query = "SELECT player_uuid, friend_uuid, status, created_at FROM friends WHERE player_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    final UUID sender = UUID.fromString(resultSet.getString("player_uuid"));
+                    final UUID target = UUID.fromString(resultSet.getString("friend_uuid"));
+                    final Timestamp timestamp = resultSet.getTimestamp("created_at");
+                    final FriendRequestStatus status = FriendRequestStatus.fromDatabase(resultSet.getString("status"));
+                    requests.add(new FriendRequest(sender, target,
+                            timestamp != null ? timestamp.getTime() : System.currentTimeMillis(), status));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to load detailed sent requests for " + playerUUID, exception);
+        }
+        return requests;
+    }
+
+    public List<UUID> getSentRequests(final UUID playerUUID) {
+        final List<UUID> requests = new ArrayList<>();
+        final String query = "SELECT friend_uuid FROM friends WHERE player_uuid = ? AND status = 'PENDING'";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    requests.add(UUID.fromString(resultSet.getString("friend_uuid")));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to load sent requests for " + playerUUID, exception);
+        }
+        return requests;
+    }
+
 
     private UUID getUuidByName(final String name) {
         if (name == null || name.isEmpty()) {
@@ -419,6 +670,57 @@ public class FriendManager {
             plugin.getLogger().log(Level.SEVERE, "Failed to fetch UUID for name " + name, exception);
         }
         return null;
+    }
+
+    private boolean getBoolean(final ResultSet resultSet, final ResultSetMetaData metaData,
+                               final String column, final boolean defaultValue) throws SQLException {
+        if (!hasColumn(metaData, column)) {
+            return defaultValue;
+        }
+        final boolean value = resultSet.getBoolean(column);
+        return resultSet.wasNull() ? defaultValue : value;
+    }
+
+    private boolean getBooleanWithFallback(final ResultSet resultSet, final ResultSetMetaData metaData,
+                                           final String primaryColumn, final String fallbackColumn,
+                                           final boolean defaultValue) throws SQLException {
+        if (primaryColumn != null && hasColumn(metaData, primaryColumn)) {
+            return getBoolean(resultSet, metaData, primaryColumn, defaultValue);
+        }
+        if (fallbackColumn != null && hasColumn(metaData, fallbackColumn)) {
+            return getBoolean(resultSet, metaData, fallbackColumn, defaultValue);
+        }
+        return defaultValue;
+    }
+
+    private int getIntWithDefault(final ResultSet resultSet, final ResultSetMetaData metaData,
+                                  final String column, final int defaultValue) throws SQLException {
+        if (!hasColumn(metaData, column)) {
+            return defaultValue;
+        }
+        final int value = resultSet.getInt(column);
+        return resultSet.wasNull() ? defaultValue : value;
+    }
+
+    private boolean hasColumn(final ResultSetMetaData metaData, final String column) throws SQLException {
+        final int count = metaData.getColumnCount();
+        for (int index = 1; index <= count; index++) {
+            if (column.equalsIgnoreCase(metaData.getColumnName(index))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void removeFromCaches(final UUID owner, final UUID target) {
+        friendsCache.computeIfPresent(owner, (uuid, set) -> {
+            set.remove(target);
+            return set;
+        });
+        favoritesCache.computeIfPresent(owner, (uuid, set) -> {
+            set.remove(target);
+            return set;
+        });
     }
 
     private String getNameByUuid(final UUID uuid) {
