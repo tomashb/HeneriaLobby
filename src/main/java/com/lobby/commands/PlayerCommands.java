@@ -26,6 +26,12 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             "profil", "profile_menu"
     );
 
+    private static final Map<String, String> LOBBY_MENU_SUBCOMMANDS = Map.of(
+            "clan", "clan_menu",
+            "friends", "friends_menu",
+            "groups", "groups_menu"
+    );
+
     private final LobbyManager lobbyManager;
     private final MenuManager menuManager;
 
@@ -44,7 +50,7 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
         final String commandName = command.getName().toLowerCase(Locale.ROOT);
         final Player player = (Player) sender;
         if (commandName.equals("lobby")) {
-            handleLobbyCommand(player);
+            handleLobbyCommand(player, args);
             return true;
         }
         if (MENU_COMMANDS.containsKey(commandName)) {
@@ -66,7 +72,18 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
         return Collections.emptyList();
     }
 
-    private void handleLobbyCommand(final Player player) {
+    private void handleLobbyCommand(final Player player, final String[] args) {
+        if (args != null && args.length > 0) {
+            final String argument = args[0].toLowerCase(Locale.ROOT);
+            final String menuId = LOBBY_MENU_SUBCOMMANDS.get(argument);
+            if (menuId != null) {
+                final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
+                if (!opened) {
+                    MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", argument));
+                }
+                return;
+            }
+        }
         if (lobbyManager == null) {
             MessageUtils.sendConfigMessage(player, "lobby.teleport_failed");
             return;
