@@ -24,9 +24,11 @@ import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.servers.ServerManager;
 import com.lobby.shop.ShopManager;
+import com.lobby.social.SocialPlaceholderManager;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
+import com.lobby.velocity.VelocityManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -51,6 +53,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private FriendManager friendManager;
     private GroupManager groupManager;
     private ClanManager clanManager;
+    private VelocityManager velocityManager;
+    private SocialPlaceholderManager socialPlaceholderManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -68,8 +72,6 @@ public final class LobbyPlugin extends JavaPlugin {
 
         headDatabaseManager = new HeadDatabaseManager(this);
 
-        serverManager = new ServerManager(this);
-
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.initialize()) {
             LogUtils.severe(this, "Database initialization failed. Disabling plugin.");
@@ -77,11 +79,15 @@ public final class LobbyPlugin extends JavaPlugin {
             return;
         }
 
+        serverManager = new ServerManager(this);
+
         playerDataManager = new PlayerDataManager(this, databaseManager);
         economyManager = new EconomyManager(this);
+        velocityManager = new VelocityManager(this);
         friendManager = new FriendManager(this);
         groupManager = new GroupManager(this);
         clanManager = new ClanManager(this);
+        socialPlaceholderManager = new SocialPlaceholderManager(this);
         hologramManager = new HologramManager(this);
         hologramManager.initialize();
         npcManager = new NPCManager(this);
@@ -121,6 +127,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (headDatabaseManager != null) {
             headDatabaseManager.clearCache();
+        }
+        if (velocityManager != null) {
+            velocityManager.shutdown();
         }
         if (databaseManager != null) {
             databaseManager.shutdown();
@@ -184,6 +193,14 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public ClanManager getClanManager() {
         return clanManager;
+    }
+
+    public VelocityManager getVelocityManager() {
+        return velocityManager;
+    }
+
+    public SocialPlaceholderManager getSocialPlaceholderManager() {
+        return socialPlaceholderManager;
     }
 
     public LobbyManager getLobbyManager() {
