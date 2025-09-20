@@ -111,6 +111,10 @@ public class Clan {
         members.put(member.getUuid(), member);
     }
 
+    public ClanMember getMember(final UUID uuid) {
+        return members.get(uuid);
+    }
+
     public void removeMember(final UUID uuid) {
         members.remove(uuid);
     }
