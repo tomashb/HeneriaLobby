@@ -1,0 +1,54 @@
+menu:
+  id: "jeux_menu"
+  title: "&8» &aMenu des Jeux"
+  size: 36
+  fill_material: "BLACK_STAINED_GLASS_PANE"
+
+  items:
+    factions:
+      slot: 11
+      material: "DIAMOND_SWORD"
+      name: "&cMode de Jeu 1"
+      lore:
+        - "&7Rejoignez le serveur Faction," 
+        - "&7pillez, combattez et dominez !"
+        - "     "
+        - "&eJoueurs: &f%server_online_factions%"
+        - "&a► Cliquez pour jouer !"
+      actions:
+        - "[SERVER_SEND] factions"
+
+    bedwars:
+      slot: 13
+      material: "RED_BED"
+      name: "&aMode de Jeu 2"
+      lore:
+        - "&7Défendez votre lit et"
+        - "&7détruisez celui des autres."
+        - "     "
+        - "&eJoueurs: &f%server_online_bedwars%"
+        - "&a► Cliquez pour jouer !"
+      actions:
+        - "[SERVER_SEND] bedwars"
+
+    skyblock:
+      slot: 15
+      material: "GRASS_BLOCK"
+      name: "&bMode de Jeu 3"
+      lore:
+        - "&7Développez votre île volante"
+        - "&7et devenez le plus riche."
+        - "     "
+        - "&eJoueurs: &f%server_online_skyblock%"
+        - "&a► Cliquez pour jouer !"
+      actions:
+        - "[SERVER_SEND] skyblock"
+
+    close:
+      slot: 31
+      material: "BARRIER"
+      name: "&cQuitter"
+      lore:
+        - "&7Fermer ce menu"
+      actions:
+        - "[CLOSE_MENU]"

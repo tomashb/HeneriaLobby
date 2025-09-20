@@ -45,6 +45,13 @@ public class ConfiguredMenu implements Menu {
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
 
+        final ItemStack filler = createFillerItem(menuSection.getString("fill_material"));
+        if (filler != null) {
+            for (int slot = 0; slot < inventory.getSize(); slot++) {
+                inventory.setItem(slot, filler.clone());
+            }
+        }
+
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
             for (String key : itemsSection.getKeys(false)) {
@@ -193,6 +200,25 @@ public class ConfiguredMenu implements Menu {
         final int clamped = Math.max(9, Math.min(54, requested));
         final int remainder = clamped % 9;
         return remainder == 0 ? clamped : clamped + (9 - remainder);
+    }
+
+    private ItemStack createFillerItem(final String materialName) {
+        if (materialName == null || materialName.isBlank()) {
+            return null;
+        }
+        final Material material = Material.matchMaterial(materialName);
+        if (material == null) {
+            LogUtils.warning(plugin, "Invalid filler material '" + materialName + "' in menu '" + menuId + "'.");
+            return null;
+        }
+        final ItemStack itemStack = new ItemStack(material);
+        final ItemMeta meta = itemStack.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            meta.addItemFlags(ItemFlag.values());
+            itemStack.setItemMeta(meta);
+        }
+        return itemStack;
     }
 
     private ActionProcessor resolveActionProcessor() {

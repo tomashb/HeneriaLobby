@@ -1,18 +1,14 @@
 package com.lobby.lobby;
 
 import com.lobby.LobbyPlugin;
-import com.lobby.utils.MessageUtils;
+import com.lobby.lobby.items.LobbyItemManager;
 import org.bukkit.Bukkit;
 import org.bukkit.GameRule;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 
 import java.util.Collections;
@@ -25,16 +21,19 @@ public class LobbyManager {
 
     private final LobbyPlugin plugin;
     private final Set<UUID> bypassPlayers = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final LobbyItemManager itemManager;
     private Location lobbySpawn;
 
     public LobbyManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
+        itemManager = new LobbyItemManager(plugin);
         loadSpawn();
     }
 
     public void reload() {
         loadSpawn();
         applyWorldSettings();
+        itemManager.reload();
     }
 
     public void loadSpawn() {
@@ -162,13 +161,13 @@ public class LobbyManager {
     }
 
     public void preparePlayer(final Player player) {
+        preparePlayer(player, PreparationCause.JOIN);
+    }
+
+    public void preparePlayer(final Player player, final PreparationCause cause) {
         if (player == null) {
             return;
         }
-        player.getInventory().clear();
-        player.getInventory().setArmorContents(null);
-        player.getInventory().setExtraContents(new ItemStack[0]);
-        player.getInventory().setItemInOffHand(null);
         player.setFireTicks(0);
         player.setFallDistance(0);
         player.setHealth(player.getMaxHealth());
@@ -177,59 +176,7 @@ public class LobbyManager {
         player.getActivePotionEffects().stream()
                 .map(PotionEffect::getType)
                 .forEach(player::removePotionEffect);
-        giveLobbyItems(player);
-    }
-
-    public void giveLobbyItems(final Player player) {
-        if (player == null) {
-            return;
-        }
-        final FileConfiguration config = plugin.getConfig();
-        if (!config.getBoolean("lobby.inventory.enabled", true)) {
-            return;
-        }
-        final ConfigurationSection itemsSection = config.getConfigurationSection("lobby.inventory.items");
-        if (itemsSection == null) {
-            return;
-        }
-        final PlayerInventory inventory = player.getInventory();
-        for (String key : itemsSection.getKeys(false)) {
-            final ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
-            if (itemSection == null) {
-                continue;
-            }
-            final String materialName = itemSection.getString("material", "STONE");
-            final Material material = Material.matchMaterial(materialName);
-            if (material == null) {
-                plugin.getLogger().warning("Matériau invalide pour l'item de lobby '" + key + "': " + materialName);
-                continue;
-            }
-            final int amount = Math.max(1, itemSection.getInt("amount", 1));
-            final ItemStack itemStack = new ItemStack(material, amount);
-            final ItemMeta meta = itemStack.getItemMeta();
-            if (meta != null) {
-                if (itemSection.isString("name")) {
-                    meta.setDisplayName(MessageUtils.colorize(itemSection.getString("name")));
-                }
-                if (itemSection.isList("lore")) {
-                    meta.setLore(itemSection.getStringList("lore").stream()
-                            .map(MessageUtils::colorize)
-                            .toList());
-                }
-                itemStack.setItemMeta(meta);
-            }
-            final int slot = itemSection.getInt("slot", -1);
-            if (slot >= 0 && slot < inventory.getSize()) {
-                inventory.setItem(slot, itemStack);
-            } else {
-                inventory.addItem(itemStack);
-            }
-        }
-        final int heldSlot = config.getInt("lobby.inventory.held_slot", inventory.getHeldItemSlot());
-        if (heldSlot >= 0 && heldSlot < 9) {
-            inventory.setHeldItemSlot(heldSlot);
-        }
-        player.updateInventory();
+        itemManager.apply(player, cause);
     }
 
     public boolean teleportToLobby(final Player player) {
@@ -259,5 +206,16 @@ public class LobbyManager {
 
     public void shutdown() {
         bypassPlayers.clear();
+        itemManager.shutdown();
+    }
+
+    public LobbyItemManager getItemManager() {
+        return itemManager;
+    }
+
+    public enum PreparationCause {
+        JOIN,
+        RESPAWN,
+        COMMAND
     }
 }

@@ -29,7 +29,7 @@ public class LobbyPlayerListener implements Listener {
         final Player player = event.getPlayer();
         final boolean hasSpawn = lobbyManager.hasLobbySpawn();
         final boolean teleported = lobbyManager.teleportToLobby(player);
-        lobbyManager.preparePlayer(player);
+        lobbyManager.preparePlayer(player, LobbyManager.PreparationCause.JOIN);
         if (!hasSpawn && player.hasPermission("lobby.admin")) {
             MessageUtils.sendConfigMessage(player, "lobby.spawn_not_set");
         } else if (!teleported) {
@@ -63,7 +63,7 @@ public class LobbyPlayerListener implements Listener {
         }
         final Player player = event.getPlayer();
         if (!lobbyManager.isBypassing(player)) {
-            lobbyManager.preparePlayer(player);
+            lobbyManager.preparePlayer(player, LobbyManager.PreparationCause.RESPAWN);
         }
     }
 

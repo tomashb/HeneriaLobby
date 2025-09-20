@@ -15,6 +15,7 @@ import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
 import com.lobby.lobby.LobbyManager;
+import com.lobby.lobby.listeners.LobbyItemListener;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.shop.ShopManager;
@@ -46,6 +47,9 @@ public final class LobbyPlugin extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+        getServer().getMessenger().registerOutgoingPluginChannel(this, "bungeecord:main");
+
         configManager = new ConfigManager(this);
         configManager.loadConfigs();
 
@@ -73,6 +77,7 @@ public final class LobbyPlugin extends JavaPlugin {
 
         getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
         getServer().getPluginManager().registerEvents(new LobbyPlayerListener(lobbyManager), this);
+        getServer().getPluginManager().registerEvents(new LobbyItemListener(lobbyManager, lobbyManager.getItemManager()), this);
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
 
@@ -81,6 +86,7 @@ public final class LobbyPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         if (hologramManager != null) {
             hologramManager.shutdown();
         }
@@ -162,6 +168,7 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (menuManager != null) {
             menuManager.closeAll();
+            menuManager.reloadMenus();
         }
     }
 

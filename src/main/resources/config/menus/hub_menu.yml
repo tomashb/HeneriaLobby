@@ -1,0 +1,45 @@
+menu:
+  id: "hub_menu"
+  title: "&8» &bSélecteur de Hub"
+  size: 27
+  fill_material: "CYAN_STAINED_GLASS_PANE"
+
+  items:
+    hub1:
+      slot: 11
+      material: "ENDER_PEARL"
+      name: "&bHub #1"
+      lore:
+        - "&7Serveur principal"
+        - "&7Joueurs: &f%server_online_hub1%"
+      actions:
+        - "[SERVER_SEND] hub1"
+
+    hub2:
+      slot: 13
+      material: "ENDER_EYE"
+      name: "&bHub #2"
+      lore:
+        - "&7Serveur alternatif"
+        - "&7Joueurs: &f%server_online_hub2%"
+      actions:
+        - "[SERVER_SEND] hub2"
+
+    hub3:
+      slot: 15
+      material: "HEART_OF_THE_SEA"
+      name: "&bHub #3"
+      lore:
+        - "&7Serveur événementiel"
+        - "&7Joueurs: &f%server_online_hub3%"
+      actions:
+        - "[SERVER_SEND] hub3"
+
+    close:
+      slot: 22
+      material: "BARRIER"
+      name: "&cFermer"
+      lore:
+        - "&7Retour"
+      actions:
+        - "[CLOSE_MENU]"

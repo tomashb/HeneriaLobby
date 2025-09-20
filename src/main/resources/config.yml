@@ -62,25 +62,4 @@ lobby:
       random_tick_speed: 0
   protection:
     void_teleport_y: 0.0
-  inventory:
-    enabled: true
-    held_slot: 4
-    items:
-      navigator:
-        material: COMPASS
-        slot: 0
-        name: "&aSélecteur de serveurs"
-        lore:
-          - "&7Clique pour choisir un serveur"
-      profile:
-        material: CLOCK
-        slot: 4
-        name: "&bProfil joueur"
-        lore:
-          - "&7Consulte tes informations"
-      cosmetics:
-        material: NETHER_STAR
-        slot: 8
-        name: "&dCosmétiques"
-        lore:
-          - "&7Découvre des gadgets uniques"
+  items_config: "config/lobby-items.yml"
