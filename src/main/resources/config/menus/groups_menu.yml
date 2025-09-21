@@ -2,10 +2,7 @@ menu:
   id: "groups_menu"
   title: "&8» &e&lGestion de Groupes"
   size: 54
-  borders:
-    - slots: [0,1,2,6,7,8,9,17,45,53]
-      material: "YELLOW_STAINED_GLASS_PANE"
-      name: "&7"
+  design_template: "social"
 
   items:
     current_group:

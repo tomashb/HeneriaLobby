@@ -1,0 +1,8 @@
+design:
+  decorative_glass: "BLUE_STAINED_GLASS_PANE"
+  confirm_glass: "GREEN_STAINED_GLASS_PANE"
+  cancel_glass: "RED_STAINED_GLASS_PANE"
+  info_glass: "LIGHT_BLUE_STAINED_GLASS_PANE"
+
+  decoration_slots: [0, 1, 2, 6, 7, 8, 45, 53]
+  border_slots: [9, 17, 18, 26, 27, 35, 36, 44]

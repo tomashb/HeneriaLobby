@@ -1,0 +1,81 @@
+menu:
+  id: "clan_member_management_menu"
+  title: "&8» &cGestion des Membres"
+  size: 54
+  items:
+    member_promote:
+      slot: 20
+      head: "hdb:5390"
+      name: "&a&lPromouvoir"
+      lore:
+        - "&7Promouvoir ce membre au rang"
+        - "&7supérieur s'il existe."
+        - "&r"
+        - "&8▸ &7Rang actuel: %clan_target_rank_display%"
+        - "&8▸ &7Prochain rang: %clan_target_next_rank%"
+        - "&r"
+        - "&a▶ Cliquez pour promouvoir !"
+      actions:
+        - "[COMMAND] clan promote %clan_target_name%"
+        - "[CLOSE_MENU]"
+
+    member_demote:
+      slot: 22
+      head: "hdb:5393"
+      name: "&c&lRétrograder"
+      lore:
+        - "&7Rétrograder ce membre au rang"
+        - "&7inférieur s'il existe."
+        - "&r"
+        - "&8▸ &7Rang actuel: %clan_target_rank_display%"
+        - "&8▸ &7Rang précédent: %clan_target_previous_rank%"
+        - "&r"
+        - "&c▶ Cliquez pour rétrograder !"
+      actions:
+        - "[COMMAND] clan demote %clan_target_name%"
+        - "[CLOSE_MENU]"
+
+    member_kick:
+      slot: 24
+      head: "hdb:9334"
+      name: "&4&lExpulser"
+      lore:
+        - "&7Expulser ce membre du clan."
+        - "&7Cette action est immédiate."
+        - "&r"
+        - "&c⚠ Cette action est irréversible !"
+        - "&r"
+        - "&4▶ Cliquez pour expulser !"
+      actions:
+        - "[MENU] clan_kick_confirm"
+
+    member_ban:
+      slot: 31
+      head: "hdb:46237"
+      name: "&8&lBannir"
+      lore:
+        - "&7Bannir ce membre du clan."
+        - "&7Il ne pourra plus rejoindre."
+        - "&r"
+        - "&c⚠ Cette action est irréversible !"
+        - "&r"
+        - "&8▶ Cliquez pour bannir !"
+      actions:
+        - "[MENU] clan_ban_confirm"
+
+    transfer_leadership:
+      slot: 40
+      head: "hdb:50218"
+      name: "&6&lTransférer le Leadership"
+      lore:
+        - "&7Transférer le leadership de"
+        - "&7votre clan à ce membre."
+        - "&r"
+        - "&c⚠ Vous deviendrez Co-Leader !"
+        - "&c⚠ Cette action est irréversible !"
+        - "&r"
+        - "&6▶ Cliquez pour transférer !"
+      actions:
+        - "[MENU] clan_transfer_confirm"
+      conditions:
+        - "is_leader: true"

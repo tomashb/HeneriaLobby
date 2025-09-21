@@ -28,9 +28,11 @@ public class MenuManager implements Listener {
     private final LobbyPlugin plugin;
     private final Map<UUID, Menu> openMenus = new ConcurrentHashMap<>();
     private final Map<String, ConfigurationSection> menuDefinitions = new ConcurrentHashMap<>();
+    private final MenuDesignProvider menuDesignProvider;
 
     public MenuManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
+        this.menuDesignProvider = new MenuDesignProvider(plugin);
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         reloadMenus();
     }
@@ -50,7 +52,7 @@ public class MenuManager implements Listener {
             }
         }
 
-        final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection);
+        final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         openMenus.put(player.getUniqueId(), menu);
         menu.open(player);
         if (menu.getInventory() == null) {
@@ -80,10 +82,6 @@ public class MenuManager implements Listener {
 
     public void reloadMenus() {
         menuDefinitions.clear();
-        final var templateManager = plugin.getUiTemplateManager();
-        if (templateManager != null) {
-            templateManager.reload();
-        }
         loadMenusFromMainConfig();
         loadMenusFromDirectory();
     }
@@ -184,10 +182,10 @@ public class MenuManager implements Listener {
                 "settings_menu.yml",
                 "language_menu.yml",
                 "friends_menu.yml",
+                "friend_management.yml",
                 "groups_menu.yml",
                 "clan_menu.yml",
-                "profile_main_redesigned.yml",
-                "confirmation_template.yml"
+
         );
         for (String fileName : defaults) {
             final File target = new File(directory, fileName);

@@ -36,7 +36,7 @@ public class ClanManager {
     private final Map<String, Clan> clanCache = new HashMap<>();
     private final Map<Integer, Clan> clanCacheById = new HashMap<>();
     private final Map<UUID, String> playerClanCache = new HashMap<>();
-    private final Map<Integer, Set<UUID>> clanBanCache = new ConcurrentHashMap<>();
+    private final Map<Integer, Map<UUID, ClanBanEntry>> clanBanCache = new ConcurrentHashMap<>();
 
     public ClanManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -98,7 +98,7 @@ public class ClanManager {
             inviter.sendMessage("§cVous n'êtes dans aucun clan !");
             return false;
         }
-        if (!clan.hasPermission(inviter.getUniqueId(), ClanPermission.INVITE)) {
+        if (!clan.hasPermission(inviter.getUniqueId(), ClanPermission.INVITE_MEMBERS)) {
             inviter.sendMessage("§cVous n'avez pas la permission d'inviter des joueurs !");
             return false;
         }
@@ -158,8 +158,9 @@ public class ClanManager {
             player.sendMessage("§cVous êtes banni de ce clan.");
             return;
         }
-        saveMember(clan.getId(), player.getUniqueId(), "Membre");
-        clan.addMember(new ClanMember(player.getUniqueId(), "Membre", System.currentTimeMillis(), 0L));
+        final String memberRankName = resolveRankName(clan, ClanRole.MEMBER);
+        saveMember(clan.getId(), player.getUniqueId(), memberRankName);
+        clan.addMember(new ClanMember(player.getUniqueId(), memberRankName, System.currentTimeMillis(), 0L));
         playerClanCache.put(player.getUniqueId(), clan.getName().toLowerCase(Locale.ROOT));
         updateInvitationStatus(invitation.getId(), "ACCEPTED");
         broadcastClanMessage(clan, "§a" + player.getName() + " a rejoint le clan !");
@@ -256,7 +257,7 @@ public class ClanManager {
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_RANKS)) {
+        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_PERMISSIONS)) {
             return false;
         }
         if (clan.isLeader(memberUuid)) {
@@ -294,7 +295,7 @@ public class ClanManager {
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_RANKS)) {
+        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_PERMISSIONS)) {
             return false;
         }
         if (clan.isLeader(memberUuid)) {
@@ -385,8 +386,8 @@ public class ClanManager {
         return getPreviousRank(clan, currentPriority);
     }
 
-    public boolean promotePlayer(final UUID promoter, final UUID target) {
-        if (promoter == null || target == null) {
+    public boolean promoteMember(final UUID promoter, final UUID target) {
+        if (promoter == null || target == null || promoter.equals(target)) {
             return false;
         }
         final Clan clan = getPlayerClan(promoter);
@@ -394,9 +395,13 @@ public class ClanManager {
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (!hasPermission(clan.getId(), promoter, "clan.promote")) {
+        if (!clan.hasPermission(promoter, ClanPermission.PROMOTE_MEMBERS)) {
             return false;
         }
+        if (clan.isLeader(target)) {
+            return false;
+        }
+
         final ClanRank currentRank = getPlayerRank(clan, target);
         if (currentRank == null) {
             return false;
@@ -405,11 +410,27 @@ public class ClanManager {
         if (nextRank == null) {
             return false;
         }
+
         final ClanRank promoterRank = getPlayerRank(clan, promoter);
-        if (!clan.isLeader(promoter) && promoterRank != null
+        final ClanRole promoterRole = getMemberRole(clan, promoter);
+        final ClanRole targetRole = getMemberRole(clan, target);
+        ClanRole nextRole = ClanRole.fromName(nextRank.getName());
+        if (nextRole == null) {
+            nextRole = ClanRole.fromName(nextRank.getDisplayName());
+        }
+
+        if (promoterRole != null && promoterRole != ClanRole.LEADER) {
+            if (targetRole != null && targetRole.getLevel() >= promoterRole.getLevel()) {
+                return false;
+            }
+            if (nextRole != null && nextRole.getLevel() >= promoterRole.getLevel()) {
+                return false;
+            }
+        } else if (!clan.isLeader(promoter) && promoterRank != null
                 && nextRank.getPriority() >= promoterRank.getPriority()) {
             return false;
         }
+
         if (setPlayerRank(clan, target, nextRank)) {
             final String targetName = getNameByUuid(target);
             broadcastRankChangeMessage(clan, targetName != null ? targetName : target.toString(),
@@ -419,8 +440,8 @@ public class ClanManager {
         return false;
     }
 
-    public boolean demotePlayer(final UUID demoter, final UUID target) {
-        if (demoter == null || target == null) {
+    public boolean demoteMember(final UUID demoter, final UUID target) {
+        if (demoter == null || target == null || demoter.equals(target)) {
             return false;
         }
         final Clan clan = getPlayerClan(demoter);
@@ -428,12 +449,13 @@ public class ClanManager {
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (!hasPermission(clan.getId(), demoter, "clan.demote")) {
+        if (!clan.hasPermission(demoter, ClanPermission.DEMOTE_MEMBERS)) {
             return false;
         }
         if (clan.isLeader(target)) {
             return false;
         }
+
         final ClanRank currentRank = getPlayerRank(clan, target);
         if (currentRank == null) {
             return false;
@@ -442,11 +464,27 @@ public class ClanManager {
         if (previousRank == null) {
             return false;
         }
+
         final ClanRank demoterRank = getPlayerRank(clan, demoter);
-        if (!clan.isLeader(demoter) && demoterRank != null
+        final ClanRole demoterRole = getMemberRole(clan, demoter);
+        final ClanRole targetRole = getMemberRole(clan, target);
+        ClanRole previousRole = ClanRole.fromName(previousRank.getName());
+        if (previousRole == null) {
+            previousRole = ClanRole.fromName(previousRank.getDisplayName());
+        }
+
+        if (demoterRole != null && demoterRole != ClanRole.LEADER) {
+            if (targetRole != null && targetRole.getLevel() >= demoterRole.getLevel()) {
+                return false;
+            }
+            if (previousRole != null && previousRole.getLevel() >= demoterRole.getLevel()) {
+                return false;
+            }
+        } else if (!clan.isLeader(demoter) && demoterRank != null
                 && previousRank.getPriority() >= demoterRank.getPriority()) {
             return false;
         }
+
         if (setPlayerRank(clan, target, previousRank)) {
             final String targetName = getNameByUuid(target);
             broadcastRankChangeMessage(clan, targetName != null ? targetName : target.toString(),
@@ -456,69 +494,138 @@ public class ClanManager {
         return false;
     }
 
-    public boolean kickMember(final UUID executorUuid, final UUID targetUuid) {
-        if (executorUuid == null || targetUuid == null) {
+    public boolean kickMember(final UUID kicker, final UUID target, final String reason) {
+        if (kicker == null || target == null || kicker.equals(target)) {
             return false;
         }
-        final Clan clan = getPlayerClan(executorUuid);
-        final Clan targetClan = getPlayerClan(targetUuid);
+        final Clan clan = getPlayerClan(kicker);
+        final Clan targetClan = getPlayerClan(target);
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (executorUuid.equals(targetUuid) || clan.isLeader(targetUuid)) {
+        if (!clan.hasPermission(kicker, ClanPermission.KICK_MEMBERS)) {
             return false;
         }
-        if (!hasPermission(clan.getId(), executorUuid, "clan.kick")) {
+        if (clan.isLeader(target)) {
             return false;
         }
-        final String targetName = getNameByUuid(targetUuid);
-        if (!removeMemberFromClan(clan, targetUuid)) {
+
+        final ClanRole kickerRole = getMemberRole(clan, kicker);
+        final ClanRole targetRole = getMemberRole(clan, target);
+        final ClanRank kickerRank = getPlayerRank(clan, kicker);
+        final ClanRank targetRank = getPlayerRank(clan, target);
+
+        if (kickerRole != null && targetRole != null && kickerRole != ClanRole.LEADER
+                && targetRole.getLevel() >= kickerRole.getLevel()) {
             return false;
         }
-        broadcastLeaveMessage(clan, targetName != null ? targetName : targetUuid.toString(), "Expulsé");
-        final Player executor = Bukkit.getPlayer(executorUuid);
+        if ((kickerRole == null || targetRole == null) && kickerRank != null && targetRank != null
+                && !clan.isLeader(kicker) && targetRank.getPriority() >= kickerRank.getPriority()) {
+            return false;
+        }
+
+        if (!removeMemberFromClan(clan, target)) {
+            return false;
+        }
+
+        final String targetName = getNameByUuid(target);
+        final String finalReason = (reason != null && !reason.isBlank()) ? reason : "Expulsé";
+        broadcastLeaveMessage(clan, targetName != null ? targetName : target.toString(), finalReason);
+
+        final Player executor = Bukkit.getPlayer(kicker);
         if (executor != null) {
-            executor.sendMessage("§aVous avez expulsé §6" + (targetName != null ? targetName : targetUuid));
+            executor.sendMessage("§aVous avez expulsé §6" + (targetName != null ? targetName : target)
+                    + " §adu clan." + (reason != null && !reason.isBlank() ? " §7Raison: §f" + reason : ""));
         }
-        final Player kicked = Bukkit.getPlayer(targetUuid);
+        final Player kicked = Bukkit.getPlayer(target);
         if (kicked != null) {
-            kicked.sendMessage("§cVous avez été expulsé du clan §6" + clan.getName() + "§c.");
+            kicked.sendMessage("§cVous avez été expulsé du clan §6" + clan.getName() + "§c." +
+                    (reason != null && !reason.isBlank() ? " §7Raison: §f" + reason : ""));
             kicked.closeInventory();
         }
         return true;
     }
 
-    public boolean banMember(final UUID executorUuid, final UUID targetUuid) {
-        if (executorUuid == null || targetUuid == null) {
+    public boolean banMember(final UUID banner, final UUID target, final String reason, final long durationMs) {
+        if (banner == null || target == null || banner.equals(target)) {
             return false;
         }
-        final Clan clan = getPlayerClan(executorUuid);
-        final Clan targetClan = getPlayerClan(targetUuid);
+        final Clan clan = getPlayerClan(banner);
+        final Clan targetClan = getPlayerClan(target);
         if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
             return false;
         }
-        if (executorUuid.equals(targetUuid) || clan.isLeader(targetUuid)) {
+        if (!clan.hasPermission(banner, ClanPermission.BAN_MEMBERS)) {
             return false;
         }
-        if (!clan.isLeader(executorUuid) && !clan.hasPermission(executorUuid, ClanPermission.DISBAND)) {
+        if (clan.isLeader(target)) {
             return false;
         }
-        final String targetName = getNameByUuid(targetUuid);
-        if (!removeMemberFromClan(clan, targetUuid)) {
+
+        final ClanRole bannerRole = getMemberRole(clan, banner);
+        final ClanRole targetRole = getMemberRole(clan, target);
+        final ClanRank bannerRank = getPlayerRank(clan, banner);
+        final ClanRank targetRank = getPlayerRank(clan, target);
+
+        if (bannerRole != null && targetRole != null && bannerRole != ClanRole.LEADER
+                && targetRole.getLevel() >= bannerRole.getLevel()) {
             return false;
         }
-        addClanBan(clan.getId(), targetUuid);
-        broadcastLeaveMessage(clan, targetName != null ? targetName : targetUuid.toString(), "Banni");
-        final Player executor = Bukkit.getPlayer(executorUuid);
+        if ((bannerRole == null || targetRole == null) && bannerRank != null && targetRank != null
+                && !clan.isLeader(banner) && targetRank.getPriority() >= bannerRank.getPriority()) {
+            return false;
+        }
+
+        if (!removeMemberFromClan(clan, target)) {
+            return false;
+        }
+
+        addClanBan(clan.getId(), target, reason, durationMs);
+        final String targetName = getNameByUuid(target);
+        final String finalReason = (reason != null && !reason.isBlank()) ? reason : "Banni";
+        broadcastLeaveMessage(clan, targetName != null ? targetName : target.toString(), finalReason);
+
+        final Player executor = Bukkit.getPlayer(banner);
         if (executor != null) {
-            executor.sendMessage("§cVous avez banni §6" + (targetName != null ? targetName : targetUuid) + " §cdu clan.");
+            executor.sendMessage("§cVous avez banni §6" + (targetName != null ? targetName : target)
+                    + " §cdu clan." + (reason != null && !reason.isBlank() ? " §7Raison: §f" + reason : ""));
         }
-        final Player banned = Bukkit.getPlayer(targetUuid);
-        if (banned != null) {
-            banned.sendMessage("§cVous avez été banni définitivement du clan §6" + clan.getName() + "§c.");
-            banned.closeInventory();
+        final Player bannedPlayer = Bukkit.getPlayer(target);
+        if (bannedPlayer != null) {
+            final StringBuilder message = new StringBuilder("§cVous avez été banni du clan §6")
+                    .append(clan.getName()).append("§c.");
+            if (reason != null && !reason.isBlank()) {
+                message.append(" §7Raison: §f").append(reason).append('.');
+            }
+            if (durationMs > 0L) {
+                message.append(" §7Durée: §f").append(formatDuration(durationMs)).append('.');
+            } else {
+                message.append(" §7Durée: §fDéfinitive.");
+            }
+            bannedPlayer.sendMessage(message.toString());
+            bannedPlayer.closeInventory();
         }
         return true;
+    }
+
+    @Deprecated
+    public boolean promotePlayer(final UUID promoter, final UUID target) {
+        return promoteMember(promoter, target);
+    }
+
+    @Deprecated
+    public boolean demotePlayer(final UUID demoter, final UUID target) {
+        return demoteMember(demoter, target);
+    }
+
+    @Deprecated
+    public boolean kickMember(final UUID executorUuid, final UUID targetUuid) {
+        return kickMember(executorUuid, targetUuid, null);
+    }
+
+    @Deprecated
+    public boolean banMember(final UUID executorUuid, final UUID targetUuid) {
+        return banMember(executorUuid, targetUuid, null, -1L);
     }
 
     public boolean transferLeadership(final UUID currentLeaderUuid, final UUID targetUuid) {
@@ -537,14 +644,16 @@ public class ClanManager {
         if (targetMember == null) {
             return false;
         }
-        final ClanRank leaderRank = clan.getRank("Leader");
-        final ClanRank fallbackRank = leaderRank != null
-                ? getPreviousRank(clan, leaderRank.getPriority())
-                : null;
-        final ClanRank memberRank = clan.getRank("Membre");
-        final ClanRank newLeaderRank = leaderRank != null ? leaderRank : memberRank;
-        final ClanRank newFormerLeaderRank = fallbackRank != null ? fallbackRank : memberRank;
-        if (newLeaderRank == null || newFormerLeaderRank == null) {
+        final ClanRank leaderRank = getRankForRole(clan, ClanRole.LEADER);
+        ClanRole fallbackRole = ClanRole.CO_LEADER;
+        if (getRankForRole(clan, fallbackRole) == null) {
+            fallbackRole = ClanRole.MODERATOR;
+            if (getRankForRole(clan, fallbackRole) == null) {
+                fallbackRole = ClanRole.MEMBER;
+            }
+        }
+        final ClanRank newLeaderRank = leaderRank != null ? leaderRank : getRankForRole(clan, ClanRole.MEMBER);
+        if (newLeaderRank == null) {
             return false;
         }
         final String updateLeaderQuery = "UPDATE clans SET leader_uuid = ? WHERE id = ?";
@@ -561,8 +670,8 @@ public class ClanManager {
             return false;
         }
         clan.setLeaderUUID(targetUuid);
-        setPlayerRank(clan, targetUuid, newLeaderRank);
-        setPlayerRank(clan, currentLeaderUuid, newFormerLeaderRank);
+        updateMemberRole(clan, targetUuid, ClanRole.LEADER);
+        updateMemberRole(clan, currentLeaderUuid, fallbackRole);
 
         final String oldLeaderName = getNameByUuid(currentLeaderUuid);
         final String newLeaderName = getNameByUuid(targetUuid);
@@ -607,7 +716,7 @@ public class ClanManager {
         if (clan == null) {
             return false;
         }
-        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_BANK)) {
+        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_CLAN_INFO)) {
             return false;
         }
         if (clan.getBankCoins() < amount) {
@@ -770,20 +879,26 @@ public class ClanManager {
         final String key = permissionKey.toLowerCase(Locale.ROOT);
         switch (key) {
             case "clan.invite":
-                return ClanPermission.INVITE;
+                return ClanPermission.INVITE_MEMBERS;
             case "clan.manage_bank":
             case "clan.withdraw":
-                return ClanPermission.MANAGE_BANK;
+            case "clan.manage_info":
+                return ClanPermission.MANAGE_CLAN_INFO;
             case "clan.kick":
-                return ClanPermission.KICK;
+                return ClanPermission.KICK_MEMBERS;
             case "clan.promote":
-                return ClanPermission.PROMOTE;
+                return ClanPermission.PROMOTE_MEMBERS;
             case "clan.demote":
-                return ClanPermission.DEMOTE;
+                return ClanPermission.DEMOTE_MEMBERS;
+            case "clan.ban":
+                return ClanPermission.BAN_MEMBERS;
             case "clan.manage_ranks":
-                return ClanPermission.MANAGE_RANKS;
+            case "clan.manage_permissions":
+                return ClanPermission.MANAGE_PERMISSIONS;
+            case "clan.transfer":
+                return ClanPermission.TRANSFER_LEADERSHIP;
             case "clan.disband":
-                return ClanPermission.DISBAND;
+                return ClanPermission.DISBAND_CLAN;
             default:
                 return null;
         }
@@ -839,17 +954,18 @@ public class ClanManager {
     }
 
     private void setupDefaultRanks(final Clan clan) {
-        final EnumSet<ClanPermission> leaderPermissions = EnumSet.allOf(ClanPermission.class);
-        final ClanRank leaderRank = new ClanRank("Leader", Integer.MAX_VALUE, leaderPermissions);
-        clan.addRank(leaderRank);
-        saveRank(clan.getId(), leaderRank);
+        for (final ClanRole role : ClanRole.values()) {
+            final EnumSet<ClanPermission> permissions = role == ClanRole.LEADER
+                    ? EnumSet.allOf(ClanPermission.class)
+                    : role.getPermissions();
+            final ClanRank rank = new ClanRank(role.name(), role.getDisplayName(), role.getLevel(), permissions);
+            clan.addRank(rank);
+            saveRank(clan.getId(), rank);
+        }
 
-        final EnumSet<ClanPermission> memberPermissions = EnumSet.noneOf(ClanPermission.class);
-        final ClanRank memberRank = new ClanRank("Membre", 0, memberPermissions);
-        clan.addRank(memberRank);
-        saveRank(clan.getId(), memberRank);
-
-        clan.addMember(new ClanMember(clan.getLeaderUUID(), leaderRank.getName(), System.currentTimeMillis(), 0L));
+        final ClanRank leaderRank = getRankForRole(clan, ClanRole.LEADER);
+        final String rankName = leaderRank != null ? leaderRank.getName() : ClanRole.LEADER.name();
+        clan.addMember(new ClanMember(clan.getLeaderUUID(), rankName, System.currentTimeMillis(), 0L));
     }
 
     private void saveRank(final int clanId, final ClanRank rank) {
@@ -860,9 +976,9 @@ public class ClanManager {
             statement.setString(3, rank.getDisplayName());
             statement.setString(4, serializePermissions(rank.getPermissions()));
             statement.setInt(5, rank.getPriority());
-            statement.setBoolean(6, rank.hasPermission(ClanPermission.PROMOTE));
-            statement.setBoolean(7, rank.hasPermission(ClanPermission.DEMOTE));
-            statement.setBoolean(8, rank.hasPermission(ClanPermission.MANAGE_RANKS));
+            statement.setBoolean(6, rank.hasPermission(ClanPermission.PROMOTE_MEMBERS));
+            statement.setBoolean(7, rank.hasPermission(ClanPermission.DEMOTE_MEMBERS));
+            statement.setBoolean(8, rank.hasPermission(ClanPermission.MANAGE_PERMISSIONS));
             statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save clan rank", exception);
@@ -874,7 +990,7 @@ public class ClanManager {
         try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, clan.getId());
             statement.setString(2, leaderUUID.toString());
-            statement.setString(3, "Leader");
+            statement.setString(3, resolveRankName(clan, ClanRole.LEADER));
             statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to add clan leader", exception);
@@ -915,19 +1031,32 @@ public class ClanManager {
         }
     }
 
-    private void addClanBan(final int clanId, final UUID memberUuid) {
+    private void addClanBan(final int clanId, final UUID memberUuid, final String reason, final long durationMs) {
         if (memberUuid == null) {
             return;
         }
-        clanBanCache.computeIfAbsent(clanId, key -> ConcurrentHashMap.newKeySet()).add(memberUuid);
+        final long expiresAt = durationMs <= 0L ? -1L : System.currentTimeMillis() + durationMs;
+        clanBanCache.computeIfAbsent(clanId, key -> new ConcurrentHashMap<>())
+                .put(memberUuid, new ClanBanEntry(memberUuid, reason, expiresAt));
     }
 
     private boolean isPlayerBanned(final int clanId, final UUID memberUuid) {
         if (memberUuid == null) {
             return false;
         }
-        final Set<UUID> bans = clanBanCache.get(clanId);
-        return bans != null && bans.contains(memberUuid);
+        final Map<UUID, ClanBanEntry> bans = clanBanCache.get(clanId);
+        if (bans == null) {
+            return false;
+        }
+        final ClanBanEntry entry = bans.get(memberUuid);
+        if (entry == null) {
+            return false;
+        }
+        if (!entry.isActive()) {
+            bans.remove(memberUuid);
+            return false;
+        }
+        return true;
     }
 
     private ClanInvitation saveInvitation(final int clanId, final UUID inviter, final UUID invited, final String message) {
@@ -1254,13 +1383,13 @@ public class ClanManager {
                     final int priority = resultSet.getInt("priority");
                     final Set<ClanPermission> permissions = deserializePermissions(permissionsString);
                     if (hasColumn(metaData, "can_promote") && resultSet.getBoolean("can_promote")) {
-                        permissions.add(ClanPermission.PROMOTE);
+                        permissions.add(ClanPermission.PROMOTE_MEMBERS);
                     }
                     if (hasColumn(metaData, "can_demote") && resultSet.getBoolean("can_demote")) {
-                        permissions.add(ClanPermission.DEMOTE);
+                        permissions.add(ClanPermission.DEMOTE_MEMBERS);
                     }
                     if (hasColumn(metaData, "can_manage_ranks") && resultSet.getBoolean("can_manage_ranks")) {
-                        permissions.add(ClanPermission.MANAGE_RANKS);
+                        permissions.add(ClanPermission.MANAGE_PERMISSIONS);
                     }
                     clan.addRank(new ClanRank(name, displayName, priority, permissions));
                 }
@@ -1311,13 +1440,67 @@ public class ClanManager {
             return null;
         }
         if (clan.isLeader(playerUuid)) {
-            return clan.getRank("Leader");
+            return getRankForRole(clan, ClanRole.LEADER);
         }
         final ClanMember member = clan.getMember(playerUuid);
         if (member == null) {
             return null;
         }
         return clan.getRank(member.getRankName());
+    }
+
+    private ClanRank getRankForRole(final Clan clan, final ClanRole role) {
+        if (clan == null || role == null) {
+            return null;
+        }
+        ClanRank rank = clan.getRank(role.name());
+        if (rank == null) {
+            rank = clan.getRank(role.getDisplayName());
+        }
+        return rank;
+    }
+
+    private String resolveRankName(final Clan clan, final ClanRole role) {
+        final ClanRank rank = getRankForRole(clan, role);
+        return rank != null ? rank.getName() : role.name();
+    }
+
+    private ClanRole getMemberRole(final Clan clan, final UUID memberUuid) {
+        if (clan == null || memberUuid == null) {
+            return null;
+        }
+        if (clan.isLeader(memberUuid)) {
+            return ClanRole.LEADER;
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member == null) {
+            return null;
+        }
+        final String rankName = member.getRankName();
+        ClanRole role = ClanRole.fromName(rankName);
+        if (role != null) {
+            return role;
+        }
+        final ClanRank rank = clan.getRank(rankName);
+        if (rank != null) {
+            role = ClanRole.fromName(rank.getName());
+            if (role != null) {
+                return role;
+            }
+            role = ClanRole.fromName(rank.getDisplayName());
+            if (role != null) {
+                return role;
+            }
+        }
+        return null;
+    }
+
+    private boolean updateMemberRole(final Clan clan, final UUID memberUuid, final ClanRole newRole) {
+        if (clan == null || memberUuid == null || newRole == null) {
+            return false;
+        }
+        final ClanRank targetRank = getRankForRole(clan, newRole);
+        return targetRank != null && setPlayerRank(clan, memberUuid, targetRank);
     }
 
     private ClanRank getNextRank(final Clan clan, final int currentPriority) {
@@ -1435,12 +1618,16 @@ public class ClanManager {
         final String normalized = presetKey.toLowerCase(Locale.ROOT);
         return switch (normalized) {
             case "default", "aucun", "none" -> EnumSet.noneOf(ClanPermission.class);
-            case "moderateur", "moderator", "mod" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK);
-            case "officier", "officer" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK,
-                    ClanPermission.PROMOTE, ClanPermission.DEMOTE);
-            case "gestion", "manager" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK,
-                    ClanPermission.PROMOTE, ClanPermission.DEMOTE, ClanPermission.MANAGE_BANK);
-            case "banquier", "banker" -> EnumSet.of(ClanPermission.MANAGE_BANK);
+            case "moderateur", "moderator", "mod" -> EnumSet.of(
+                    ClanPermission.INVITE_MEMBERS, ClanPermission.KICK_MEMBERS);
+            case "officier", "officer" -> EnumSet.of(
+                    ClanPermission.INVITE_MEMBERS, ClanPermission.KICK_MEMBERS,
+                    ClanPermission.PROMOTE_MEMBERS, ClanPermission.DEMOTE_MEMBERS);
+            case "gestion", "manager" -> EnumSet.of(
+                    ClanPermission.INVITE_MEMBERS, ClanPermission.KICK_MEMBERS,
+                    ClanPermission.PROMOTE_MEMBERS, ClanPermission.DEMOTE_MEMBERS,
+                    ClanPermission.BAN_MEMBERS, ClanPermission.MANAGE_CLAN_INFO);
+            case "banquier", "banker" -> EnumSet.of(ClanPermission.MANAGE_CLAN_INFO);
             case "admin", "toutes", "all" -> EnumSet.allOf(ClanPermission.class);
             default -> EnumSet.noneOf(ClanPermission.class);
         };
@@ -1454,6 +1641,34 @@ public class ClanManager {
             }
         }
         return false;
+    }
+
+    private String formatDuration(final long durationMs) {
+        if (durationMs <= 0L) {
+            return "Permanent";
+        }
+        long remainingSeconds = durationMs / 1000L;
+        final long days = remainingSeconds / 86400L;
+        remainingSeconds %= 86400L;
+        final long hours = remainingSeconds / 3600L;
+        remainingSeconds %= 3600L;
+        final long minutes = remainingSeconds / 60L;
+        final long seconds = remainingSeconds % 60L;
+
+        final List<String> parts = new ArrayList<>();
+        if (days > 0L) {
+            parts.add(days + "j");
+        }
+        if (hours > 0L) {
+            parts.add(hours + "h");
+        }
+        if (minutes > 0L) {
+            parts.add(minutes + "m");
+        }
+        if (seconds > 0L || parts.isEmpty()) {
+            parts.add(seconds + "s");
+        }
+        return String.join(" ", parts);
     }
 
     private String getNameByUuid(final UUID uuid) {
@@ -1484,5 +1699,30 @@ public class ClanManager {
             plugin.getLogger().log(Level.SEVERE, "Failed to resolve player name", exception);
         }
         return null;
+    }
+
+    private static final class ClanBanEntry {
+
+        private final UUID memberUuid;
+        private final String reason;
+        private final long expiresAt;
+
+        private ClanBanEntry(final UUID memberUuid, final String reason, final long expiresAt) {
+            this.memberUuid = memberUuid;
+            this.reason = reason;
+            this.expiresAt = expiresAt;
+        }
+
+        private boolean isActive() {
+            return expiresAt < 0L || expiresAt > System.currentTimeMillis();
+        }
+
+        private String getReason() {
+            return reason;
+        }
+
+        private long getExpiresAt() {
+            return expiresAt;
+        }
     }
 }
