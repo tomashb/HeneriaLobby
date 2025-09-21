@@ -184,8 +184,7 @@ public class MenuManager implements Listener {
                 "friends_menu.yml",
                 "friend_management.yml",
                 "groups_menu.yml",
-                "clan_menu.yml",
-
+                "clan_menu.yml"
         );
         for (String fileName : defaults) {
             final File target = new File(directory, fileName);
