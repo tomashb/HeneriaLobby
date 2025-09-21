@@ -67,6 +67,8 @@ public class ConfiguredMenu implements Menu {
             }
         }
 
+        applyBorders(player);
+
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
             for (String key : itemsSection.getKeys(false)) {
@@ -231,6 +233,76 @@ public class ConfiguredMenu implements Menu {
             return null;
         }
         return processed;
+    }
+
+    private void applyBorders(final Player player) {
+        if (inventory == null) {
+            return;
+        }
+        final List<Map<?, ?>> borders = menuSection.getMapList("borders");
+        if (borders == null || borders.isEmpty()) {
+            return;
+        }
+        for (Map<?, ?> definition : borders) {
+            if (definition == null || definition.isEmpty()) {
+                continue;
+            }
+            final ItemStack borderItem = createBorderItem(player, definition);
+            if (borderItem == null) {
+                continue;
+            }
+            final List<Integer> slots = parseSlots(definition.get("slots"));
+            for (Integer slot : slots) {
+                if (slot == null) {
+                    continue;
+                }
+                final int index = slot;
+                if (index >= 0 && index < inventory.getSize()) {
+                    inventory.setItem(index, borderItem.clone());
+                }
+            }
+        }
+    }
+
+    private ItemStack createBorderItem(final Player player, final Map<?, ?> definition) {
+        final Object materialObject = definition.getOrDefault("material", "BLACK_STAINED_GLASS_PANE");
+        final String materialName = materialObject != null ? materialObject.toString() : "BLACK_STAINED_GLASS_PANE";
+        final Material material = Material.matchMaterial(materialName);
+        if (material == null) {
+            LogUtils.warning(plugin, "Invalid border material '" + materialName + "' in menu '" + menuId + "'.");
+            return null;
+        }
+        final ItemStack itemStack = new ItemStack(material);
+        final ItemMeta meta = itemStack.getItemMeta();
+        if (meta != null) {
+            final Object nameObject = definition.get("name");
+            final String name = nameObject != null
+                    ? MessageUtils.colorize(PlaceholderUtils.applyPlaceholders(plugin, nameObject.toString(), player))
+                    : " ";
+            meta.setDisplayName((name == null || name.isBlank()) ? " " : name);
+            meta.addItemFlags(ItemFlag.values());
+            itemStack.setItemMeta(meta);
+        }
+        return itemStack;
+    }
+
+    private List<Integer> parseSlots(final Object value) {
+        if (value instanceof List<?> list) {
+            final List<Integer> slots = new ArrayList<>();
+            for (Object element : list) {
+                if (element instanceof Number number) {
+                    slots.add(number.intValue());
+                } else if (element instanceof String string) {
+                    try {
+                        slots.add(Integer.parseInt(string.trim()));
+                    } catch (final NumberFormatException ignored) {
+                        // Ignore invalid entries
+                    }
+                }
+            }
+            return slots;
+        }
+        return List.of();
     }
 
     private void storeActions(final int slot, final ConfigurationSection itemSection) {

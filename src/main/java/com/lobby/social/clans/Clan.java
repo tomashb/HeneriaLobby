@@ -139,6 +139,10 @@ public class Clan {
         if (member == null) {
             return false;
         }
+        final var customPermissions = member.getPermissions();
+        if (!customPermissions.isEmpty()) {
+            return customPermissions.contains(permission);
+        }
         final ClanRank rank = ranks.get(member.getRankName());
         return rank != null && rank.hasPermission(permission);
     }

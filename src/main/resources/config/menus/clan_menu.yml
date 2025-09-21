@@ -139,6 +139,19 @@ menu:
       actions:
         - "[CLAN_VAULT]"
 
+    clan_shop:
+      slot: 29
+      material: "PLAYER_HEAD"
+      head: "hdb:38878"
+      name: "&6&lBoutique du Clan"
+      lore:
+        - "&7Investissez les coins du clan"
+        - "&7dans des améliorations et cosmétiques."
+        - "&r"
+        - "&8▶ &7Ouvrir la boutique"
+      actions:
+        - "[MENU] clan_shop_menu"
+
     clan_wars:
       slot: 31
       material: "PLAYER_HEAD"
@@ -170,7 +183,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour créer !"
       actions:
-        - "[COMMAND] clan create"
+        - "[MENU] clan_creation_menu"
 
     clan_delete:
       slot: 33

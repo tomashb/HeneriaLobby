@@ -236,6 +236,93 @@ public class ClanManager {
         return new ArrayList<>(clan.getMembers().values());
     }
 
+    public boolean toggleMemberPermission(final UUID managerUuid, final UUID memberUuid, final String permissionKey) {
+        if (managerUuid == null || memberUuid == null || permissionKey == null || permissionKey.isBlank()) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(managerUuid);
+        final Clan targetClan = getPlayerClan(memberUuid);
+        if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
+            return false;
+        }
+        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_RANKS)) {
+            return false;
+        }
+        if (clan.isLeader(memberUuid)) {
+            return false;
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member == null) {
+            return false;
+        }
+        final ClanPermission permission = resolvePermission(permissionKey);
+        if (permission == null) {
+            return false;
+        }
+        final boolean hadPermission = member.getPermissions().contains(permission);
+        member.togglePermission(permission);
+        final Set<ClanPermission> updated = member.getPermissions().isEmpty()
+                ? EnumSet.noneOf(ClanPermission.class)
+                : EnumSet.copyOf(member.getPermissions());
+        final boolean stored = storeMemberPermissions(clan.getId(), memberUuid, updated);
+        if (!stored) {
+            if (member.getPermissions().contains(permission) != hadPermission) {
+                member.togglePermission(permission);
+            }
+            return hadPermission;
+        }
+        return member.getPermissions().contains(permission);
+    }
+
+    public boolean applyPermissionPreset(final UUID managerUuid, final UUID memberUuid, final String presetKey) {
+        if (managerUuid == null || memberUuid == null || presetKey == null || presetKey.isBlank()) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(managerUuid);
+        final Clan targetClan = getPlayerClan(memberUuid);
+        if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
+            return false;
+        }
+        if (!clan.hasPermission(managerUuid, ClanPermission.MANAGE_RANKS)) {
+            return false;
+        }
+        if (clan.isLeader(memberUuid)) {
+            return false;
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member == null) {
+            return false;
+        }
+        final Set<ClanPermission> preset = resolvePreset(presetKey);
+        member.setPermissions(preset);
+        return storeMemberPermissions(clan.getId(), memberUuid, preset);
+    }
+
+    public List<String> getMemberPermissions(final UUID memberUuid) {
+        if (memberUuid == null) {
+            return List.of();
+        }
+        final Clan clan = getPlayerClan(memberUuid);
+        if (clan == null) {
+            return List.of();
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member == null) {
+            return List.of();
+        }
+        final Set<ClanPermission> permissions;
+        if (member.getPermissions().isEmpty()) {
+            final ClanRank rank = getPlayerRank(clan, memberUuid);
+            permissions = rank != null ? EnumSet.copyOf(rank.getPermissions()) : EnumSet.noneOf(ClanPermission.class);
+        } else {
+            permissions = EnumSet.copyOf(member.getPermissions());
+        }
+        return permissions.stream()
+                .map(permission -> permission.name().toLowerCase(Locale.ROOT).replace('_', ' '))
+                .map(value -> Character.toUpperCase(value.charAt(0)) + value.substring(1))
+                .toList();
+    }
+
     public boolean hasPermission(final int clanId, final UUID playerUuid, final String permissionKey) {
         final Clan clan = getClanById(clanId);
         if (clan == null || playerUuid == null || permissionKey == null || permissionKey.isBlank()) {
@@ -409,6 +496,7 @@ public class ClanManager {
             connection.setAutoCommit(false);
 
             deleteEntries(connection, "DELETE FROM clan_members WHERE clan_id = ?", clan.getId());
+            deleteEntries(connection, "DELETE FROM clan_member_permissions WHERE clan_id = ?", clan.getId());
             deleteEntries(connection, "DELETE FROM clan_ranks WHERE clan_id = ?", clan.getId());
             deleteEntries(connection, "DELETE FROM clan_invitations WHERE clan_id = ?", clan.getId());
             deleteEntries(connection, "DELETE FROM clan_transactions WHERE clan_id = ?", clan.getId());
@@ -542,6 +630,7 @@ public class ClanManager {
         switch (key) {
             case "clan.invite":
                 return ClanPermission.INVITE;
+            case "clan.manage_bank":
             case "clan.withdraw":
                 return ClanPermission.MANAGE_BANK;
             case "clan.kick":
@@ -1012,11 +1101,32 @@ public class ClanManager {
                     final String rankName = resultSet.getString("rank_name");
                     final Timestamp joinedAt = resultSet.getTimestamp("joined_at");
                     final long totalContributions = resultSet.getLong("total_contributions");
-                    clan.addMember(new ClanMember(uuid, rankName,
-                            joinedAt != null ? joinedAt.getTime() : System.currentTimeMillis(), totalContributions));
+                    final ClanMember member = new ClanMember(uuid, rankName,
+                            joinedAt != null ? joinedAt.getTime() : System.currentTimeMillis(), totalContributions);
+                    member.setPermissions(loadMemberPermissions(clan.getId(), uuid, connection));
+                    clan.addMember(member);
                 }
             }
         }
+    }
+
+    private Set<ClanPermission> loadMemberPermissions(final int clanId, final UUID memberUuid,
+                                                      final Connection connection) {
+        final String query = "SELECT permissions FROM clan_member_permissions WHERE clan_id = ? AND player_uuid = ?";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            statement.setString(2, memberUuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    final String data = resultSet.getString("permissions");
+                    return deserializePermissions(data);
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.FINE,
+                    "Failed to load clan member permissions for " + memberUuid, exception);
+        }
+        return EnumSet.noneOf(ClanPermission.class);
     }
 
     private ClanRank getPlayerRank(final Clan clan, final UUID playerUuid) {
@@ -1075,6 +1185,48 @@ public class ClanManager {
         }
     }
 
+    private boolean storeMemberPermissions(final int clanId, final UUID memberUuid,
+                                           final Set<ClanPermission> permissions) {
+        if (permissions == null || permissions.isEmpty()) {
+            return deleteMemberPermissions(clanId, memberUuid);
+        }
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO clan_member_permissions (clan_id, player_uuid, permissions) VALUES (?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE permissions = VALUES(permissions)";
+        } else {
+            query = "INSERT INTO clan_member_permissions (clan_id, player_uuid, permissions) VALUES (?, ?, ?) "
+                    + "ON CONFLICT(clan_id, player_uuid) DO UPDATE SET permissions = excluded.permissions";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            statement.setString(2, memberUuid.toString());
+            statement.setString(3, serializePermissions(permissions));
+            statement.executeUpdate();
+            return true;
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to store clan member permissions for " + memberUuid, exception);
+            return false;
+        }
+    }
+
+    private boolean deleteMemberPermissions(final int clanId, final UUID memberUuid) {
+        final String query = "DELETE FROM clan_member_permissions WHERE clan_id = ? AND player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            statement.setString(2, memberUuid.toString());
+            statement.executeUpdate();
+            return true;
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to delete clan member permissions for " + memberUuid, exception);
+            return false;
+        }
+    }
+
     private Set<ClanPermission> deserializePermissions(final String data) {
         if (data == null || data.isEmpty()) {
             return EnumSet.noneOf(ClanPermission.class);
@@ -1100,6 +1252,21 @@ public class ClanManager {
             return "[]";
         }
         return permissions.stream().map(Enum::name).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private Set<ClanPermission> resolvePreset(final String presetKey) {
+        final String normalized = presetKey.toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "default", "aucun", "none" -> EnumSet.noneOf(ClanPermission.class);
+            case "moderateur", "moderator", "mod" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK);
+            case "officier", "officer" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK,
+                    ClanPermission.PROMOTE, ClanPermission.DEMOTE);
+            case "gestion", "manager" -> EnumSet.of(ClanPermission.INVITE, ClanPermission.KICK,
+                    ClanPermission.PROMOTE, ClanPermission.DEMOTE, ClanPermission.MANAGE_BANK);
+            case "banquier", "banker" -> EnumSet.of(ClanPermission.MANAGE_BANK);
+            case "admin", "toutes", "all" -> EnumSet.allOf(ClanPermission.class);
+            default -> EnumSet.noneOf(ClanPermission.class);
+        };
     }
 
     private boolean hasColumn(final ResultSetMetaData metaData, final String column) throws SQLException {

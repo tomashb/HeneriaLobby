@@ -1,9 +1,11 @@
 package com.lobby.social.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.menus.MenuManager;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.clans.ClanMember;
+import com.lobby.social.clans.ClanPermission;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -14,7 +16,11 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class ClanMenus {
 
@@ -23,6 +29,8 @@ public final class ClanMenus {
     public static final int INVITE_SLOT = 46;
     public static final int DEPOSIT_SLOT = 20;
     public static final int WITHDRAW_SLOT = 24;
+
+    private static final Map<UUID, Map<Integer, UUID>> MEMBER_SLOT_CACHE = new ConcurrentHashMap<>();
 
     private ClanMenus() {
     }
@@ -43,6 +51,7 @@ public final class ClanMenus {
         setupRedBorders(menu);
 
         final List<ClanMember> members = clanManager.getClanMembers(clan.getId());
+        final Map<Integer, UUID> slotMap = new HashMap<>();
         int slot = 10;
         for (ClanMember member : members) {
             if (slot >= 44) {
@@ -50,8 +59,11 @@ public final class ClanMenus {
             }
             final ItemStack item = createClanMemberItem(member);
             menu.setItem(slot, item);
+            slotMap.put(slot, member.getUuid());
             slot = nextContentSlot(slot);
         }
+
+        MEMBER_SLOT_CACHE.put(player.getUniqueId(), slotMap);
 
         if (clanManager.hasPermission(clan.getId(), player.getUniqueId(), "clan.invite")) {
             menu.setItem(INVITE_SLOT, createInviteItem());
@@ -120,6 +132,62 @@ public final class ClanMenus {
         player.openInventory(menu);
     }
 
+    public static void openMemberPermissionsMenu(final Player player, final UUID memberUuid) {
+        if (player == null || memberUuid == null) {
+            return;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (clanManager == null || menuManager == null) {
+            return;
+        }
+        final Clan clan = clanManager.getPlayerClan(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage("§cVous n'êtes dans aucun clan!");
+            return;
+        }
+        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_RANKS)
+                && !clan.isLeader(player.getUniqueId())) {
+            player.sendMessage("§cVous n'avez pas la permission de gérer les rangs.");
+            return;
+        }
+        if (clan.isLeader(memberUuid)) {
+            player.sendMessage("§cVous ne pouvez pas modifier les permissions du chef de clan.");
+            return;
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member == null) {
+            player.sendMessage("§cMembre introuvable.");
+            return;
+        }
+        final var placeholderManager = plugin.getSocialPlaceholderManager();
+        if (placeholderManager != null) {
+            placeholderManager.setClanPermissionTarget(player.getUniqueId(), memberUuid);
+        }
+        menuManager.openMenu(player, "clan_member_permissions_menu");
+    }
+
+    public static UUID getMemberAtSlot(final UUID viewerUuid, final int slot) {
+        if (viewerUuid == null || slot < 0) {
+            return null;
+        }
+        final Map<Integer, UUID> mapping = MEMBER_SLOT_CACHE.get(viewerUuid);
+        if (mapping == null) {
+            return null;
+        }
+        return mapping.get(slot);
+    }
+
+    public static void clearMemberCache(final UUID viewerUuid) {
+        if (viewerUuid != null) {
+            MEMBER_SLOT_CACHE.remove(viewerUuid);
+        }
+    }
+
     private static ItemStack createClanMemberItem(final ClanMember member) {
         final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(member.getUuid());
         final String name = offlinePlayer.getName() != null ? offlinePlayer.getName() : member.getUuid().toString();
@@ -130,7 +198,9 @@ public final class ClanMenus {
             meta.setDisplayName("§e" + name);
             meta.setLore(Arrays.asList(
                     "§7Rang: §f" + member.getRankName(),
-                    "§7Contributions: §b" + member.getTotalContributions()
+                    "§7Contributions: §b" + member.getTotalContributions(),
+                    "§r",
+                    "§8▶ §7Cliquez pour gérer les permissions"
             ));
             item.setItemMeta(meta);
         }

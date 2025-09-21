@@ -4,8 +4,10 @@ import com.lobby.LobbyPlugin;
 import com.lobby.menus.MenuManager;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.clans.ClanManager;
+import com.lobby.social.groups.GroupManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.friends.FriendRequest;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -15,18 +17,24 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.Objects;
+import java.util.UUID;
 
 public final class MenuClickHandler implements Listener {
+
+    private static final String FRIEND_SETTINGS_TITLE = "§8» §dParamètres d'Amis";
+    private static final String GROUP_SETTINGS_TITLE = "§8» §eParamètres de Groupe";
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
     private final FriendManager friendManager;
+    private final GroupManager groupManager;
     private final ClanManager clanManager;
 
     public MenuClickHandler(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.menuManager = plugin.getMenuManager();
         this.friendManager = plugin.getFriendManager();
+        this.groupManager = plugin.getGroupManager();
         this.clanManager = plugin.getClanManager();
     }
 
@@ -35,18 +43,27 @@ public final class MenuClickHandler implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        final String title = event.getView().getTitle();
+        if (title.contains("»")) {
+            event.setCancelled(true);
+        }
+        if (FRIEND_SETTINGS_TITLE.equals(title)) {
+            handleFriendSettings(event, player);
+            return;
+        }
+        if (GROUP_SETTINGS_TITLE.equals(title)) {
+            handleGroupSettings(event, player);
+            return;
+        }
         final Inventory inventory = event.getView().getTopInventory();
         if (!Objects.equals(inventory, event.getClickedInventory())) {
             return;
         }
-        final String title = event.getView().getTitle();
         if (isFriendsMenuTitle(title)) {
-            event.setCancelled(true);
             handleFriendsMenuClick(player, title, event.getSlot(), event.getClick());
             return;
         }
         if (isClanMenuTitle(title)) {
-            event.setCancelled(true);
             handleClanMenuClick(player, title, event.getSlot());
         }
     }
@@ -59,6 +76,19 @@ public final class MenuClickHandler implements Listener {
         final String title = event.getView().getTitle();
         if (isFriendsMenuTitle(title)) {
             FriendsMenus.clearRequestCache(player.getUniqueId());
+        }
+        final var placeholderManager = plugin.getSocialPlaceholderManager();
+        if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)) {
+            ClanMenus.clearMemberCache(player.getUniqueId());
+            if (placeholderManager != null) {
+                placeholderManager.clearClanPermissionTarget(player.getUniqueId());
+            }
+            return;
+        }
+        if (title.startsWith("§8» §cPermissions")) {
+            if (placeholderManager != null) {
+                placeholderManager.clearClanPermissionTarget(player.getUniqueId());
+            }
         }
     }
 
@@ -89,6 +119,30 @@ public final class MenuClickHandler implements Listener {
         }
     }
 
+    private void handleFriendSettings(final InventoryClickEvent event, final Player player) {
+        switch (event.getSlot()) {
+            case 19 -> cycleFriendRequests(player);
+            case 21 -> toggleFriendNotifications(player);
+            case 23 -> cycleFriendVisibility(player);
+            case 25 -> toggleAutoFavorites(player);
+            case 31 -> togglePrivateMessages(player);
+            case 49 -> reopenMenu(player, "friends_menu");
+            default -> {
+            }
+        }
+    }
+
+    private void handleGroupSettings(final InventoryClickEvent event, final Player player) {
+        switch (event.getSlot()) {
+            case 19 -> toggleGroupAutoAccept(player);
+            case 21 -> cycleGroupVisibility(player);
+            case 23 -> reopenMenu(player, "group_manage_menu");
+            case 49 -> reopenMenu(player, "groups_menu");
+            default -> {
+            }
+        }
+    }
+
     private void handleClanMenuClick(final Player player, final String title, final int slot) {
         if (slot < 0) {
             return;
@@ -100,6 +154,11 @@ public final class MenuClickHandler implements Listener {
         if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)) {
             if (slot == ClanMenus.INVITE_SLOT) {
                 ChatInputManager.startClanInviteFlow(player);
+                return;
+            }
+            final UUID target = ClanMenus.getMemberAtSlot(player.getUniqueId(), slot);
+            if (target != null) {
+                ClanMenus.openMemberPermissionsMenu(player, target);
             }
             return;
         }
@@ -172,6 +231,73 @@ public final class MenuClickHandler implements Listener {
         if (menuManager != null) {
             menuManager.openMenu(player, menuId);
         }
+    }
+
+    private void cycleFriendRequests(final Player player) {
+        final String mode = friendManager.cycleRequestAcceptance(player.getUniqueId());
+        player.sendMessage("§aDemandes d'amis: §f" + mode);
+        reopenMenu(player, "friend_settings_menu");
+    }
+
+    private void toggleFriendNotifications(final Player player) {
+        final boolean enabled = friendManager.toggleNotifications(player.getUniqueId());
+        player.sendMessage(enabled
+                ? "§aNotifications d'amis activées"
+                : "§cNotifications d'amis désactivées");
+        reopenMenu(player, "friend_settings_menu");
+    }
+
+    private void cycleFriendVisibility(final Player player) {
+        final String visibility = friendManager.cycleFriendVisibility(player.getUniqueId());
+        player.sendMessage("§aVisibilité: §f" + visibility);
+        reopenMenu(player, "friend_settings_menu");
+    }
+
+    private void toggleAutoFavorites(final Player player) {
+        final boolean enabled = friendManager.toggleAutoAcceptFavorites(player.getUniqueId());
+        player.sendMessage(enabled
+                ? "§aAcceptation auto des favoris activée"
+                : "§cAcceptation auto des favoris désactivée");
+        reopenMenu(player, "friend_settings_menu");
+    }
+
+    private void togglePrivateMessages(final Player player) {
+        final boolean enabled = friendManager.togglePrivateMessages(player.getUniqueId());
+        player.sendMessage(enabled
+                ? "§aMessages privés autorisés"
+                : "§cMessages privés désactivés");
+        reopenMenu(player, "friend_settings_menu");
+    }
+
+    private void toggleGroupAutoAccept(final Player player) {
+        if (groupManager == null) {
+            return;
+        }
+        final boolean enabled = groupManager.toggleAutoAccept(player.getUniqueId());
+        player.sendMessage(enabled
+                ? "§aInvitations automatiques activées"
+                : "§cInvitations automatiques désactivées");
+        reopenMenu(player, "group_settings_menu");
+    }
+
+    private void cycleGroupVisibility(final Player player) {
+        if (groupManager == null) {
+            return;
+        }
+        final String visibility = groupManager.cycleGroupVisibility(player.getUniqueId());
+        player.sendMessage("§aVisibilité du groupe: §f" + visibility);
+        reopenMenu(player, "group_settings_menu");
+    }
+
+    private void reopenMenu(final Player player, final String menuId) {
+        if (menuManager == null || player == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                menuManager.openMenu(player, menuId);
+            }
+        });
     }
 
     private boolean isFriendsMenuTitle(final String title) {

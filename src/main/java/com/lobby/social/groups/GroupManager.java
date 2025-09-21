@@ -12,10 +12,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.ResultSetMetaData;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class GroupManager {
@@ -24,6 +26,7 @@ public class GroupManager {
     private final DatabaseManager databaseManager;
     private final Map<UUID, Group> playerGroups = new HashMap<>();
     private final Map<Integer, Group> groupCache = new HashMap<>();
+    private final Map<UUID, GroupSettings> settingsCache = new ConcurrentHashMap<>();
 
     public GroupManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -33,6 +36,39 @@ public class GroupManager {
     public void reload() {
         playerGroups.clear();
         groupCache.clear();
+        settingsCache.clear();
+    }
+
+    public GroupSettings getGroupSettings(final UUID uuid) {
+        if (uuid == null) {
+            return new GroupSettings(false, GroupVisibility.PUBLIC);
+        }
+        return settingsCache.computeIfAbsent(uuid, this::loadSettings);
+    }
+
+    public boolean toggleAutoAccept(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return false;
+        }
+        final GroupSettings current = getGroupSettings(playerUuid);
+        final GroupSettings updated = new GroupSettings(!current.isAutoAcceptInvites(), current.getVisibility());
+        updateSettings(playerUuid, updated);
+        return updated.isAutoAcceptInvites();
+    }
+
+    public String cycleGroupVisibility(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return formatVisibility(GroupVisibility.PUBLIC);
+        }
+        final GroupSettings current = getGroupSettings(playerUuid);
+        final GroupVisibility next = switch (current.getVisibility()) {
+            case PUBLIC -> GroupVisibility.FRIENDS_ONLY;
+            case FRIENDS_ONLY -> GroupVisibility.INVITE_ONLY;
+            case INVITE_ONLY -> GroupVisibility.PUBLIC;
+        };
+        final GroupSettings updated = new GroupSettings(current.isAutoAcceptInvites(), next);
+        updateSettings(playerUuid, updated);
+        return formatVisibility(next);
     }
 
     public void createGroup(final Player leader) {
@@ -112,6 +148,14 @@ public class GroupManager {
             return;
         }
         final GroupInvitation invitation = saveInvitation(group.getId(), inviter.getUniqueId(), target.getUniqueId());
+        final GroupSettings targetSettings = getGroupSettings(target.getUniqueId());
+        if (targetSettings.isAutoAcceptInvites()) {
+            acceptInvitation(target, inviter.getName());
+            inviter.sendMessage("§a" + target.getName() + " a rejoint automatiquement votre groupe !");
+            target.sendMessage("§aInvitation de §6" + inviter.getName() + " §aacceptée automatiquement.");
+            target.playSound(target.getLocation(), Sound.UI_TOAST_IN, 1.0f, 1.2f);
+            return;
+        }
         inviter.sendMessage("§aInvitation envoyée à §6" + target.getName() + "§a !");
         target.sendMessage("§e" + inviter.getName() + " §avous a invité à rejoindre son groupe !");
         target.sendMessage("§7Groupe: §f" + group.getDisplayName() + " §7(" + group.getSize() + "/" + group.getMaxSize() + ")");
@@ -262,6 +306,93 @@ public class GroupManager {
             cacheGroup(group);
         }
         return group;
+    }
+
+    private void updateSettings(final UUID uuid, final GroupSettings settings) {
+        final String query;
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE auto_accept = VALUES(auto_accept), visibility = VALUES(visibility)";
+        } else {
+            query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, ?, ?) "
+                    + "ON CONFLICT(player_uuid) DO UPDATE SET auto_accept = excluded.auto_accept, "
+                    + "visibility = excluded.visibility";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            statement.setBoolean(2, settings.isAutoAcceptInvites());
+            statement.setString(3, settings.getVisibility().toDatabase());
+            statement.executeUpdate();
+            settingsCache.put(uuid, settings);
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to update group settings for " + uuid, exception);
+        }
+    }
+
+    private GroupSettings loadSettings(final UUID uuid) {
+        final String query = "SELECT * FROM group_settings WHERE player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    final ResultSetMetaData metaData = resultSet.getMetaData();
+                    final boolean autoAccept = getBoolean(resultSet, metaData, "auto_accept", false);
+                    final String visibilityRaw = getString(resultSet, metaData, "visibility");
+                    return new GroupSettings(autoAccept, GroupVisibility.fromDatabase(visibilityRaw));
+                }
+            }
+            insertDefaultSettings(uuid, connection);
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load group settings for " + uuid, exception);
+        }
+        return new GroupSettings(false, GroupVisibility.PUBLIC);
+    }
+
+    private void insertDefaultSettings(final UUID uuid, final Connection connection) throws SQLException {
+        final String query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, 0, 'PUBLIC')";
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            statement.executeUpdate();
+        }
+    }
+
+    private boolean getBoolean(final ResultSet resultSet, final ResultSetMetaData metaData,
+                               final String column, final boolean defaultValue) throws SQLException {
+        if (!hasColumn(metaData, column)) {
+            return defaultValue;
+        }
+        return resultSet.getBoolean(column);
+    }
+
+    private String getString(final ResultSet resultSet, final ResultSetMetaData metaData,
+                             final String column) throws SQLException {
+        if (!hasColumn(metaData, column)) {
+            return null;
+        }
+        return resultSet.getString(column);
+    }
+
+    private boolean hasColumn(final ResultSetMetaData metaData, final String column) throws SQLException {
+        final int count = metaData.getColumnCount();
+        for (int index = 1; index <= count; index++) {
+            if (column.equalsIgnoreCase(metaData.getColumnName(index))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String formatVisibility(final GroupVisibility visibility) {
+        if (visibility == null) {
+            return "Public";
+        }
+        return switch (visibility) {
+            case PUBLIC -> "Public";
+            case FRIENDS_ONLY -> "Amis uniquement";
+            case INVITE_ONLY -> "Sur invitation";
+        };
     }
 
     private void cacheGroup(final Group group) {
