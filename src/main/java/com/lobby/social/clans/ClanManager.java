@@ -322,9 +322,16 @@ public class ClanManager {
             return List.of();
         }
         final Set<ClanPermission> permissions;
-        if (member.getPermissions().isEmpty()) {
+        if (member.getPermissions() == null || member.getPermissions().isEmpty()) {
             final ClanRank rank = getPlayerRank(clan, memberUuid);
-            permissions = rank != null ? EnumSet.copyOf(rank.getPermissions()) : EnumSet.noneOf(ClanPermission.class);
+            if (rank == null) {
+                permissions = EnumSet.noneOf(ClanPermission.class);
+            } else {
+                final Set<ClanPermission> rankPermissions = rank.getPermissions();
+                permissions = (rankPermissions == null || rankPermissions.isEmpty())
+                        ? EnumSet.noneOf(ClanPermission.class)
+                        : EnumSet.copyOf(rankPermissions);
+            }
         } else {
             permissions = EnumSet.copyOf(member.getPermissions());
         }
