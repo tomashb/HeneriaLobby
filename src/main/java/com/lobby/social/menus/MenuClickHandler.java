@@ -18,9 +18,9 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 public final class MenuClickHandler implements Listener {
 
@@ -28,8 +28,9 @@ public final class MenuClickHandler implements Listener {
     private static final String GROUP_SETTINGS_TITLE = "§8» §eParamètres de Groupe";
     private static final String CLAN_MEMBER_MANAGEMENT_PREFIX = "§8» §eGestion";
 
-    private static final long CLICK_COOLDOWN = 500L;
-    private static final ConcurrentMap<UUID, Long> LAST_CLICK_TIME = new ConcurrentHashMap<>();
+    private static final long CLICK_DELAY_TICKS = 10L;
+
+    private final Set<UUID> clickCooldown = ConcurrentHashMap.newKeySet();
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
@@ -50,6 +51,14 @@ public final class MenuClickHandler implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        final UUID playerId = player.getUniqueId();
+        if (clickCooldown.contains(playerId)) {
+            event.setCancelled(true);
+            return;
+        }
+        clickCooldown.add(playerId);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> clickCooldown.remove(playerId), CLICK_DELAY_TICKS);
+
         final String title = event.getView().getTitle();
         final boolean menuTitle = title.contains("»");
         if (menuTitle) {
@@ -98,7 +107,7 @@ public final class MenuClickHandler implements Listener {
             if (placeholderManager != null) {
                 placeholderManager.clearClanPermissionTarget(player.getUniqueId());
             }
-            LAST_CLICK_TIME.remove(player.getUniqueId());
+            clickCooldown.remove(player.getUniqueId());
         }
     }
 
@@ -130,9 +139,6 @@ public final class MenuClickHandler implements Listener {
     }
 
     private void handleFriendSettings(final InventoryClickEvent event, final Player player) {
-        if (isDoubleClick(player)) {
-            return;
-        }
         final int slot = event.getSlot();
         switch (slot) {
             case 19 -> {
@@ -162,9 +168,6 @@ public final class MenuClickHandler implements Listener {
     }
 
     private void handleGroupSettings(final InventoryClickEvent event, final Player player) {
-        if (isDoubleClick(player)) {
-            return;
-        }
         switch (event.getSlot()) {
             case 19 -> {
                 toggleGroupAutoAccept(player);
@@ -357,16 +360,6 @@ public final class MenuClickHandler implements Listener {
                 menuManager.openMenu(player, menuId);
             }
         }, ticks);
-    }
-
-    private boolean isDoubleClick(final Player player) {
-        if (player == null) {
-            return false;
-        }
-        final long now = System.currentTimeMillis();
-        final UUID uuid = player.getUniqueId();
-        final Long last = LAST_CLICK_TIME.put(uuid, now);
-        return last != null && (now - last) < CLICK_COOLDOWN;
     }
 
     private void openClanMemberManagement(final Player player, final UUID target) {

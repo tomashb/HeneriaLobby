@@ -30,13 +30,18 @@ public class ConfiguredMenu implements Menu {
     private final LobbyPlugin plugin;
     private final String menuId;
     private final ConfigurationSection menuSection;
+    private final MenuDesignProvider menuDesignProvider;
     private Inventory inventory;
     private final Map<Integer, List<String>> actionsBySlot = new HashMap<>();
 
-    public ConfiguredMenu(final LobbyPlugin plugin, final String menuId, final ConfigurationSection menuSection) {
+    public ConfiguredMenu(final LobbyPlugin plugin,
+                          final String menuId,
+                          final ConfigurationSection menuSection,
+                          final MenuDesignProvider menuDesignProvider) {
         this.plugin = plugin;
         this.menuId = menuId;
         this.menuSection = menuSection;
+        this.menuDesignProvider = menuDesignProvider;
     }
 
     @Override
@@ -67,6 +72,7 @@ public class ConfiguredMenu implements Menu {
             }
         }
 
+        applyDesignTemplate(player);
         applyBorders(player);
 
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
@@ -82,6 +88,41 @@ public class ConfiguredMenu implements Menu {
         }
 
         player.openInventory(inventory);
+    }
+
+    private void applyDesignTemplate(final Player player) {
+        if (inventory == null || menuDesignProvider == null) {
+            return;
+        }
+        final String templateName = menuSection.getString("design_template");
+        if (templateName == null || templateName.isBlank()) {
+            return;
+        }
+        final Optional<MenuDesign> designOptional = menuDesignProvider.getDesign(templateName);
+        if (designOptional.isEmpty()) {
+            return;
+        }
+        final MenuDesign design = designOptional.get();
+        final ItemStack decorative = design.createDecorativeItem();
+        for (Integer slot : design.decorationSlots()) {
+            if (slot == null) {
+                continue;
+            }
+            final int index = slot;
+            if (index >= 0 && index < inventory.getSize()) {
+                inventory.setItem(index, decorative.clone());
+            }
+        }
+        final ItemStack border = design.createBorderItem();
+        for (Integer slot : design.borderSlots()) {
+            if (slot == null) {
+                continue;
+            }
+            final int index = slot;
+            if (index >= 0 && index < inventory.getSize()) {
+                inventory.setItem(index, border.clone());
+            }
+        }
     }
 
     @Override

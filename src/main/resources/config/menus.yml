@@ -36,7 +36,8 @@ menus:
           - "[MENU] servers_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -279,10 +280,7 @@ menus:
   clan_menu:
     title: "&8» &c&lGestion de Clan"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       clan_overview:
         slot: 19
@@ -422,10 +420,7 @@ menus:
   friends_menu:
     title: "&8» &a&lGestion d'Amis"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       friends_online:
         slot: 20
@@ -530,47 +525,8 @@ menus:
   groups_menu:
     title: "&8» &e&lGestion de Groupes"
     size: 54
+    design_template: "social"
     items:
-      decor_0:
-        slot: 0
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_1:
-        slot: 1
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_2:
-        slot: 2
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_6:
-        slot: 6
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_7:
-        slot: 7
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_8:
-        slot: 8
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_9:
-        slot: 9
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_17:
-        slot: 17
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_45:
-        slot: 45
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
-      decor_53:
-        slot: 53
-        material: YELLOW_STAINED_GLASS_PANE
-        name: "&7"
       group_current:
         slot: 20
         material: PLAYER_HEAD
@@ -677,10 +633,7 @@ menus:
   clan_info_menu:
     title: "&8» &c&lMon Clan"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       details:
         slot: 13
@@ -705,7 +658,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -715,14 +669,12 @@ menus:
   clan_members_menu:
     title: "&8» &c&lMembres du Clan"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       summary:
         slot: 13
-        material: BOOK
+        material: PLAYER_HEAD
+        head: "hdb:9969"
         name: "&eListe des membres"
         lore:
           - "&7Membres totaux: &a%clan_members%"
@@ -740,7 +692,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -750,14 +703,12 @@ menus:
   clan_ranks_menu:
     title: "&8» &d&lRangs de Clan"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       overview:
         slot: 13
-        material: PAPER
+        material: PLAYER_HEAD
+        head: "hdb:38878"
         name: "&dAperçu des rangs"
         lore:
           - "&7Votre rang: &6%clan_player_level%"
@@ -775,7 +726,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -785,14 +737,12 @@ menus:
   clan_vault_menu:
     title: "&8» &a&lTrésor du Clan"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       vault_info:
         slot: 13
-        material: CHEST
+        material: PLAYER_HEAD
+        head: "hdb:35472"
         name: "&aInformations du coffre"
         lore:
           - "&7Solde: &e%clan_coins%"
@@ -809,7 +759,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -819,14 +770,12 @@ menus:
   clan_wars_menu:
     title: "&8» &b&lGuerres de Clans"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       war_info:
         slot: 13
-        material: IRON_SWORD
+        material: PLAYER_HEAD
+        head: "hdb:23022"
         name: "&bStatistiques de guerre"
         lore:
           - "&7Statut: %clan_war_status%"
@@ -844,7 +793,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -854,14 +804,12 @@ menus:
   clan_browse_menu:
     title: "&8» &e&lExplorer les Clans"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       listing:
         slot: 13
-        material: COMPASS
+        material: PLAYER_HEAD
+        head: "hdb:1455"
         name: "&eClans disponibles"
         lore:
           - "&7Clans ouverts: &a%clans_open_count%"
@@ -878,7 +826,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -888,10 +837,7 @@ menus:
   friends_online_menu:
     title: "&8» &a&lAmis En Ligne"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       overview:
         slot: 13
@@ -913,7 +859,8 @@ menus:
           - "[MENU] friends_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -923,14 +870,12 @@ menus:
   friend_requests_menu:
     title: "&8» &e&lDemandes d'Amis"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       summary:
         slot: 13
-        material: PAPER
+        material: PLAYER_HEAD
+        head: "hdb:1455"
         name: "&eDemandes en attente"
         lore:
           - "&7Reçues: &e%friend_requests_received%"
@@ -947,7 +892,8 @@ menus:
           - "[MENU] friends_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -957,10 +903,7 @@ menus:
   friends_all_menu:
     title: "&8» &aMes Amis"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       overview:
         slot: 22
@@ -1032,7 +975,8 @@ menus:
           - "[MENU] friends_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1042,10 +986,7 @@ menus:
   clan_member_permissions_menu:
     title: "&8» &cPermissions de %clan_target_name%"
     size: 54
-    borders:
-      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       target_overview:
         slot: 4
@@ -1215,7 +1156,8 @@ menus:
           - "[CLAN_MEMBERS]"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1225,10 +1167,7 @@ menus:
   clan_member_management_menu:
     title: "&8» &eGestion &6%clan_target_name%"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       member_info:
         slot: 13
@@ -1334,7 +1273,8 @@ menus:
           - "[CLAN_MEMBERS]"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1344,10 +1284,7 @@ menus:
   clan_creation_menu:
     title: "&8» &cCréation de Clan"
     size: 54
-    borders:
-      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       overview:
         slot: 22
@@ -1392,7 +1329,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1402,10 +1340,7 @@ menus:
   clan_shop_menu:
     title: "&8» &cBoutique de Clan"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "RED_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       treasury:
         slot: 22
@@ -1452,7 +1387,8 @@ menus:
           - "[MENU] clan_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1515,7 +1451,8 @@ menus:
           - "[MENU] profil_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1593,7 +1530,8 @@ menus:
           - "[MENU] profil_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1651,7 +1589,8 @@ menus:
           - "[MENU] profil_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1661,10 +1600,7 @@ menus:
   friend_settings_menu:
     title: "&8» &dParamètres d'Amis"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       summary:
         slot: 4
@@ -1766,7 +1702,8 @@ menus:
           - "[MENU] friends_all_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1776,10 +1713,7 @@ menus:
   friends_favorites_menu:
     title: "&8» &6Mes Favoris"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "GREEN_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       favorites_overview:
         slot: 22
@@ -1852,10 +1786,7 @@ menus:
   group_manage_menu:
     title: "&8» &eMon Groupe"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "YELLOW_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       group_info:
         slot: 22
@@ -1932,10 +1863,7 @@ menus:
   group_browse_menu:
     title: "&8» &bExplorer les Groupes"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "YELLOW_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       browse_info:
         slot: 22
@@ -1948,7 +1876,8 @@ menus:
           - "&7Invitations en attente: &f%group_invitations%"
       search_tip:
         slot: 20
-        material: COMPASS
+        material: PLAYER_HEAD
+        head: "hdb:1455"
         name: "&e&lRecherche"
         lore:
           - "&7Parcourez les groupes recommandés"
@@ -1985,7 +1914,8 @@ menus:
           - "[MENU] group_settings_menu"
       close:
         slot: 53
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -1995,14 +1925,12 @@ menus:
   group_invite_menu:
     title: "&8» &d&lInvitations de Groupe"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "YELLOW_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       invite_info:
         slot: 13
-        material: PAPER
+        material: PLAYER_HEAD
+        head: "hdb:7439"
         name: "&dInvitations"
         lore:
           - "&7Amis en ligne: &a%friends_online_count%"
@@ -2019,7 +1947,8 @@ menus:
           - "[MENU] groups_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -2029,14 +1958,12 @@ menus:
   queue_menu:
     title: "&8» &6&lFiles d'Attente"
     size: 27
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,18,26]
-        material: "YELLOW_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       queue_info:
         slot: 13
-        material: CLOCK
+        material: PLAYER_HEAD
+        head: "hdb:23022"
         name: "&6Statut des files"
         lore:
           - "&7Files disponibles: %queue_available%"
@@ -2053,7 +1980,8 @@ menus:
           - "[MENU] groups_menu"
       close:
         slot: 26
-        material: BARRIER
+        material: PLAYER_HEAD
+        head: "hdb:60776"
         name: "&cFermer"
         lore:
           - "&7Fermer le menu"
@@ -2063,10 +1991,7 @@ menus:
   group_settings_menu:
     title: "&8» &eParamètres de Groupe"
     size: 54
-    borders:
-      - slots: [0,1,2,6,7,8,9,17,45,53]
-        material: "YELLOW_STAINED_GLASS_PANE"
-        name: "&7"
+    design_template: "social"
     items:
       auto_accept:
         slot: 19
