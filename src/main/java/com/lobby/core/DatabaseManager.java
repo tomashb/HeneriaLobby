@@ -794,6 +794,7 @@ public class DatabaseManager {
     private void createSocialTablesWithoutFK() throws SQLException {
         createFriendSettingsTable();
         createFriendsTable();
+        createGroupSettingsTable();
         createGroupsTable();
         createGroupMembersTable();
         createGroupInvitationsTable();
@@ -851,6 +852,65 @@ public class DatabaseManager {
         }
         addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
         addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
+    }
+
+    private void createGroupSettingsTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS group_settings (
+                        player_uuid VARCHAR(36) PRIMARY KEY,
+                        auto_accept_invites BOOLEAN DEFAULT FALSE NOT NULL,
+                        preferred_gamemode VARCHAR(50) DEFAULT 'ANY' NOT NULL,
+                        group_visibility ENUM('PUBLIC','FRIENDS_ONLY','INVITE_ONLY') DEFAULT 'PUBLIC' NOT NULL,
+                        max_invitations INT DEFAULT 5 NOT NULL,
+                        allow_notifications BOOLEAN DEFAULT TRUE NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+                        INDEX idx_group_settings_player_uuid (player_uuid)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            addColumnIfNotExists("group_settings", "auto_accept_invites", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("group_settings", "preferred_gamemode", "VARCHAR(50) DEFAULT 'ANY' NOT NULL");
+            addColumnIfNotExists("group_settings", "group_visibility",
+                    "ENUM('PUBLIC','FRIENDS_ONLY','INVITE_ONLY') DEFAULT 'PUBLIC' NOT NULL");
+            addColumnIfNotExists("group_settings", "max_invitations", "INT DEFAULT 5 NOT NULL");
+            addColumnIfNotExists("group_settings", "allow_notifications", "BOOLEAN DEFAULT TRUE NOT NULL");
+            addColumnIfNotExists("group_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL");
+            addColumnIfNotExists("group_settings", "updated_at",
+                    "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL");
+        } else {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS group_settings (
+                        player_uuid VARCHAR(36) PRIMARY KEY,
+                        auto_accept_invites BOOLEAN DEFAULT 0,
+                        preferred_gamemode TEXT DEFAULT 'ANY',
+                        group_visibility TEXT DEFAULT 'PUBLIC',
+                        max_invitations INT DEFAULT 5,
+                        allow_notifications BOOLEAN DEFAULT 1,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                    """;
+            executeSQL(sql);
+            if (createIndexes) {
+                executeSQL("CREATE INDEX IF NOT EXISTS idx_group_settings_player_uuid ON group_settings(player_uuid)");
+            }
+            addColumnIfNotExists("group_settings", "auto_accept_invites", "BOOLEAN DEFAULT 0");
+            addColumnIfNotExists("group_settings", "preferred_gamemode", "TEXT DEFAULT 'ANY'");
+            addColumnIfNotExists("group_settings", "group_visibility", "TEXT DEFAULT 'PUBLIC'");
+            addColumnIfNotExists("group_settings", "max_invitations", "INT DEFAULT 5");
+            addColumnIfNotExists("group_settings", "allow_notifications", "BOOLEAN DEFAULT 1");
+            addColumnIfNotExists("group_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+            addColumnIfNotExists("group_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+        }
+
+        if (columnExists("group_settings", "auto_accept") && columnExists("group_settings", "auto_accept_invites")) {
+            executeSQL("UPDATE group_settings SET auto_accept_invites = auto_accept");
+        }
+        if (columnExists("group_settings", "visibility") && columnExists("group_settings", "group_visibility")) {
+            executeSQL("UPDATE group_settings SET group_visibility = visibility");
+        }
     }
 
     private void createFriendSettingsTable() throws SQLException {

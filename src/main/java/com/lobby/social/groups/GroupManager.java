@@ -11,7 +11,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.sql.ResultSetMetaData;
 import java.util.HashMap;
 import java.util.Locale;
@@ -41,7 +40,7 @@ public class GroupManager {
 
     public GroupSettings getGroupSettings(final UUID uuid) {
         if (uuid == null) {
-            return new GroupSettings(false, GroupVisibility.PUBLIC);
+            return new GroupSettings();
         }
         return settingsCache.computeIfAbsent(uuid, this::loadSettings);
     }
@@ -51,7 +50,12 @@ public class GroupManager {
             return false;
         }
         final GroupSettings current = getGroupSettings(playerUuid);
-        final GroupSettings updated = new GroupSettings(!current.isAutoAcceptInvites(), current.getVisibility());
+        final GroupSettings updated = new GroupSettings(
+                !current.isAutoAcceptInvites(),
+                current.getPreferredGamemode(),
+                current.getVisibility(),
+                current.getMaxInvitations(),
+                current.isAllowNotifications());
         updateSettings(playerUuid, updated);
         return updated.isAutoAcceptInvites();
     }
@@ -66,7 +70,12 @@ public class GroupManager {
             case FRIENDS_ONLY -> GroupVisibility.INVITE_ONLY;
             case INVITE_ONLY -> GroupVisibility.PUBLIC;
         };
-        final GroupSettings updated = new GroupSettings(current.isAutoAcceptInvites(), next);
+        final GroupSettings updated = new GroupSettings(
+                current.isAutoAcceptInvites(),
+                current.getPreferredGamemode(),
+                next,
+                current.getMaxInvitations(),
+                current.isAllowNotifications());
         updateSettings(playerUuid, updated);
         return formatVisibility(next);
     }
@@ -311,18 +320,30 @@ public class GroupManager {
     private void updateSettings(final UUID uuid, final GroupSettings settings) {
         final String query;
         if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
-            query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, ?, ?) "
-                    + "ON DUPLICATE KEY UPDATE auto_accept = VALUES(auto_accept), visibility = VALUES(visibility)";
+            query = "INSERT INTO group_settings (player_uuid, auto_accept_invites, preferred_gamemode, group_visibility, max_invitations, allow_notifications) "
+                    + "VALUES (?, ?, ?, ?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE auto_accept_invites = VALUES(auto_accept_invites), "
+                    + "preferred_gamemode = VALUES(preferred_gamemode), "
+                    + "group_visibility = VALUES(group_visibility), "
+                    + "max_invitations = VALUES(max_invitations), "
+                    + "allow_notifications = VALUES(allow_notifications)";
         } else {
-            query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, ?, ?) "
-                    + "ON CONFLICT(player_uuid) DO UPDATE SET auto_accept = excluded.auto_accept, "
-                    + "visibility = excluded.visibility";
+            query = "INSERT INTO group_settings (player_uuid, auto_accept_invites, preferred_gamemode, group_visibility, max_invitations, allow_notifications) "
+                    + "VALUES (?, ?, ?, ?, ?, ?) "
+                    + "ON CONFLICT(player_uuid) DO UPDATE SET auto_accept_invites = excluded.auto_accept_invites, "
+                    + "preferred_gamemode = excluded.preferred_gamemode, "
+                    + "group_visibility = excluded.group_visibility, "
+                    + "max_invitations = excluded.max_invitations, "
+                    + "allow_notifications = excluded.allow_notifications";
         }
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, uuid.toString());
             statement.setBoolean(2, settings.isAutoAcceptInvites());
-            statement.setString(3, settings.getVisibility().toDatabase());
+            statement.setString(3, settings.getPreferredGamemode());
+            statement.setString(4, settings.getVisibility().toDatabase());
+            statement.setInt(5, settings.getMaxInvitations());
+            statement.setBoolean(6, settings.isAllowNotifications());
             statement.executeUpdate();
             settingsCache.put(uuid, settings);
         } catch (final SQLException exception) {
@@ -338,24 +359,41 @@ public class GroupManager {
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
                     final ResultSetMetaData metaData = resultSet.getMetaData();
-                    final boolean autoAccept = getBoolean(resultSet, metaData, "auto_accept", false);
-                    final String visibilityRaw = getString(resultSet, metaData, "visibility");
-                    return new GroupSettings(autoAccept, GroupVisibility.fromDatabase(visibilityRaw));
+                    final boolean autoAccept = getBoolean(resultSet, metaData, "auto_accept_invites",
+                            getBoolean(resultSet, metaData, "auto_accept", false));
+                    final String preferredGamemode = getString(resultSet, metaData, "preferred_gamemode");
+                    final String visibilityRaw = getString(resultSet, metaData, "group_visibility");
+                    final String fallbackVisibility = visibilityRaw != null
+                            ? visibilityRaw
+                            : getString(resultSet, metaData, "visibility");
+                    final int maxInvitations = getInt(resultSet, metaData, "max_invitations", 5);
+                    final boolean allowNotifications = getBoolean(resultSet, metaData, "allow_notifications", true);
+                    return new GroupSettings(autoAccept, preferredGamemode,
+                            GroupVisibility.fromDatabase(fallbackVisibility), maxInvitations, allowNotifications);
                 }
             }
             insertDefaultSettings(uuid, connection);
         } catch (final SQLException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to load group settings for " + uuid, exception);
+            plugin.getLogger().warning("Could not load group settings for " + uuid + ": " + exception.getMessage());
         }
-        return new GroupSettings(false, GroupVisibility.PUBLIC);
+        return new GroupSettings();
     }
 
     private void insertDefaultSettings(final UUID uuid, final Connection connection) throws SQLException {
-        final String query = "INSERT INTO group_settings (player_uuid, auto_accept, visibility) VALUES (?, 0, 'PUBLIC')";
+        final String query = "INSERT INTO group_settings (player_uuid, auto_accept_invites, preferred_gamemode, group_visibility, max_invitations, allow_notifications) "
+                + "VALUES (?, 0, 'ANY', 'PUBLIC', 5, 1)";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, uuid.toString());
             statement.executeUpdate();
         }
+    }
+
+    private int getInt(final ResultSet resultSet, final ResultSetMetaData metaData,
+                       final String column, final int defaultValue) throws SQLException {
+        if (!hasColumn(metaData, column)) {
+            return defaultValue;
+        }
+        return resultSet.getInt(column);
     }
 
     private boolean getBoolean(final ResultSet resultSet, final ResultSetMetaData metaData,
