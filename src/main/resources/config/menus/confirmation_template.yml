@@ -1,0 +1,40 @@
+confirmation_template:
+  title: "&8» &cConfirmation"
+  size: 27
+
+  items:
+    confirm_action:
+      slot: 11
+      material: "PLAYER_HEAD"
+      head: "@ui_heads.confirm_button"
+      name: "&a&lConfirmer"
+      lore:
+        - "&7Confirmer l'action :"
+        - "&e%action_description%"
+        - "&r"
+        - "&a▶ Cliquez pour confirmer !"
+      actions:
+        - "[CONFIRM_EXECUTE]"
+
+    cancel_action:
+      slot: 15
+      material: "PLAYER_HEAD"
+      head: "@ui_heads.cancel_button"
+      name: "&c&lAnnuler"
+      lore:
+        - "&7Annuler l'action et"
+        - "&7revenir au menu précédent."
+        - "&r"
+        - "&c▶ Cliquez pour annuler !"
+      actions:
+        - "[CONFIRM_CANCEL]"
+        - "[MENU] %previous_menu%"
+
+    info_display:
+      slot: 13
+      material: "PLAYER_HEAD"
+      head: "%action_icon%"
+      name: "%action_title%"
+      lore: "%action_details%"
+      actions:
+        - "[NONE]"

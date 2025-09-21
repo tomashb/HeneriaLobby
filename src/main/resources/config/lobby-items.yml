@@ -27,7 +27,7 @@ lobby_items:
       lore:
         - "&7Consulte tes informations personnelles."
       actions:
-        - "[MENU] profil_menu"
+        - "[MENU] profile_main"
 
     shop:
       slot: 4

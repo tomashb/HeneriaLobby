@@ -178,7 +178,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour voir !"
       actions:
-        - "[MENU] profil_menu"
+        - "[MENU] profile_main"
 
     back:
       slot: 50

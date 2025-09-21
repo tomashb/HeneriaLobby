@@ -82,7 +82,6 @@ public class MenuManager implements Listener {
 
     public void reloadMenus() {
         menuDefinitions.clear();
-        menuDesignProvider.reload();
         loadMenusFromMainConfig();
         loadMenusFromDirectory();
     }
@@ -186,7 +185,7 @@ public class MenuManager implements Listener {
                 "friend_management.yml",
                 "groups_menu.yml",
                 "clan_menu.yml",
-                "social_design_template.yml"
+
         );
         for (String fileName : defaults) {
             final File target = new File(directory, fileName);
