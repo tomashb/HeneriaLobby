@@ -1,0 +1,153 @@
+menu:
+  id: "stats_menu"
+  title: "&8» &bMes Statistiques"
+  size: 54
+
+  items:
+    glass_1:
+      slot: 0
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_2:
+      slot: 1
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_3:
+      slot: 2
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_4:
+      slot: 6
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_5:
+      slot: 7
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_6:
+      slot: 8
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_7:
+      slot: 45
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_8:
+      slot: 53
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    general_stats:
+      slot: 13
+      material: "PLAYER_HEAD"
+      head: "hdb:2736"
+      name: "&6&lStatistiques Générales"
+      lore:
+        - "&7Vos performances globales"
+        - "&7sur le serveur."
+        - "&r"
+        - "&8▸ &7Parties jouées: &e%player_games_total%"
+        - "&8▸ &7Victoires: &a%player_wins_total%"
+        - "&8▸ &7Défaites: &c%player_losses_total%"
+        - "&8▸ &7Ratio V/D: &6%player_ratio%"
+        - "&8▸ &7Expérience: &d%player_experience%"
+        - "&r"
+        - "&7Cliquez pour plus de détails"
+      actions:
+        - "[MESSAGE] &eStatistiques détaillées en cours de développement !"
+
+    bedwars_stats:
+      slot: 20
+      material: "PLAYER_HEAD"
+      head: "hdb:67957"
+      name: "&c&lBedWars"
+      lore:
+        - "&7Vos statistiques BedWars"
+        - "&r"
+        - "&8▸ &7Parties: &e%bedwars_games%"
+        - "&8▸ &7Victoires: &a%bedwars_wins%"
+        - "&8▸ &7Kills: &c%bedwars_kills%"
+        - "&8▸ &7Morts: &7%bedwars_deaths%"
+        - "&8▸ &7Lits cassés: &6%bedwars_beds_broken%"
+        - "&r"
+        - "&a▶ Cliquez pour détails !"
+      actions:
+        - "[MESSAGE] &eStatistiques BedWars en cours de développement !"
+
+    nexus_stats:
+      slot: 22
+      material: "PLAYER_HEAD"
+      head: "hdb:38878"
+      name: "&b&lNexus"
+      lore:
+        - "&7Vos statistiques Nexus"
+        - "&r"
+        - "&8▸ &7Parties: &e%nexus_games%"
+        - "&8▸ &7Victoires: &a%nexus_wins%"
+        - "&8▸ &7Kills: &c%nexus_kills%"
+        - "&8▸ &7Morts: &7%nexus_deaths%"
+        - "&8▸ &7Nexus détruits: &6%nexus_destroyed%"
+        - "&r"
+        - "&a▶ Cliquez pour détails !"
+      actions:
+        - "[MESSAGE] &eStatistiques Nexus en cours de développement !"
+
+    zombie_stats:
+      slot: 24
+      material: "PLAYER_HEAD"
+      head: "hdb:23022"
+      name: "&2&lZombie"
+      lore:
+        - "&7Vos statistiques Zombie"
+        - "&r"
+        - "&8▸ &7Parties: &e%zombie_games%"
+        - "&8▸ &7Record: &6%zombie_record% vagues"
+        - "&8▸ &7Zombies tués: &c%zombie_kills%"
+        - "&8▸ &7Temps de survie: &a%zombie_survival_time%"
+        - "&r"
+        - "&a▶ Cliquez pour détails !"
+      actions:
+        - "[MESSAGE] &eStatistiques Zombie en cours de développement !"
+
+    custom_stats:
+      slot: 26
+      material: "PLAYER_HEAD"
+      head: "hdb:60776"
+      name: "&6&lJeux Inédits"
+      lore:
+        - "&7Vos statistiques dans les"
+        - "&7modes de jeu exclusifs."
+        - "&r"
+        - "&8▸ &7Parties: &e%custom_games%"
+        - "&8▸ &7Victoires: &a%custom_wins%"
+        - "&8▸ &7Mode favori: &6%custom_favorite%"
+        - "&r"
+        - "&a▶ Cliquez pour détails !"
+      actions:
+        - "[MESSAGE] &eStatistiques Jeux Inédits en cours de développement !"
+
+    retour:
+      slot: 49
+      material: "PLAYER_HEAD"
+      head: "hdb:9334"
+      name: "&c&lRetour"
+      lore:
+        - "&7Revenir au menu profil."
+      actions:
+        - "[MENU] profil_menu"

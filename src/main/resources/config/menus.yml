@@ -415,7 +415,7 @@ menus:
         lore:
           - "&7Retourner au menu principal"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
 
   friends_menu:
     title: "&8» &a&lGestion d'Amis"
@@ -520,7 +520,7 @@ menus:
         lore:
           - "&7Retourner au menu profil"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
 
   groups_menu:
     title: "&8» &e&lGestion de Groupes"
@@ -628,7 +628,7 @@ menus:
         lore:
           - "&7Retourner au menu profil"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
 
   clan_info_menu:
     title: "&8» &c&lMon Clan"
@@ -1448,7 +1448,7 @@ menus:
         lore:
           - "&7Retourner au profil"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
       close:
         slot: 53
         material: PLAYER_HEAD
@@ -1527,7 +1527,7 @@ menus:
         lore:
           - "&7Retourner au profil"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
       close:
         slot: 53
         material: PLAYER_HEAD
@@ -1586,7 +1586,7 @@ menus:
         lore:
           - "&7Retourner au profil"
         actions:
-          - "[MENU] profile_main"
+          - "[MENU] profil_menu"
       close:
         slot: 53
         material: PLAYER_HEAD

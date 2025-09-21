@@ -4,37 +4,37 @@ menu:
   size: 45
 
   items:
-    deco_1:
+    glass_1:
       slot: 0
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
-    deco_2:
+    glass_2:
       slot: 1
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
-    deco_3:
+    glass_3:
       slot: 7
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
-    deco_4:
+    glass_4:
       slot: 8
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
-    deco_5:
+    glass_5:
       slot: 36
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
-    deco_6:
+    glass_6:
       slot: 44
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
@@ -44,13 +44,13 @@ menu:
     private_messages:
       slot: 11
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDA2MjYyZjJiM2QwMzU3NjNkYjEzMDUzOTVmMzMxZmYzOTZjN2Q4YTE4OGU4OWNiNzFlNGQyYjc0MzkxYWQ5OSJ9fX0="
+      head: "hdb:3581"
       name: "&a&lMessages Privés"
       lore:
         - "&7Autorisez ou bloquez la réception"
         - "&7de messages privés d'autres joueurs."
         - "&r"
-        - "&8▸ &7Statut actuel: &aActivé"
+        - "&8▸ &7Statut actuel: %setting_private_messages_status%"
         - "&r"
         - "&a▶ Cliquez pour basculer !"
       actions:
@@ -59,29 +59,45 @@ menu:
     friend_requests:
       slot: 13
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNDMxMmNhNDYzMmRlZjVmZmFmMmViMGQ5ZDdjYWE4MWE2M2M2NGQ2NGY3NGNiMzE5YjUzNWJmM2YzMDQzMWMxYSJ9fX0="
+      head: "hdb:13389"
       name: "&e&lDemandes d'Amis"
       lore:
         - "&7Gérez qui peut vous envoyer"
         - "&7des demandes d'ajout en ami."
         - "&r"
-        - "&8▸ &7Statut actuel: &aTous"
+        - "&8▸ &7Statut actuel: %setting_friend_requests_status%"
         - "&8▸ &7Options: Tous / Amis d'amis / Personne"
         - "&r"
         - "&a▶ Cliquez pour modifier !"
       actions:
         - "[MESSAGE] &eParamètre changé ! Demandes d'amis: &6Amis d'amis uniquement"
 
-    visibility:
+    group_requests:
       slot: 15
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzFiYzJiY2ZiMmJkMzc1OWU2YjJlM2Y0ZGNjMmVmMTMxNTJlMjBkNTIyNjBhNzU3NjZjZjQ0YWVmYTY5Y2IwNiJ9fX0="
-      name: "&b&lVisibilité"
+      head: "hdb:8537"
+      name: "&b&lDemandes de Groupe"
+      lore:
+        - "&7Contrôlez qui peut vous inviter"
+        - "&7dans des groupes de jeu."
+        - "&r"
+        - "&8▸ &7Statut actuel: %setting_group_requests_status%"
+        - "&8▸ &7Options: Tous / Amis seulement / Personne"
+        - "&r"
+        - "&a▶ Cliquez pour ajuster !"
+      actions:
+        - "[MESSAGE] &eParamètre changé ! Demandes de groupe: &6Amis seulement"
+
+    visibility:
+      slot: 20
+      material: "PLAYER_HEAD"
+      head: "hdb:32010"
+      name: "&f&lVisibilité des Joueurs"
       lore:
         - "&7Choisissez quels joueurs vous"
         - "&7voulez voir dans le lobby."
         - "&r"
-        - "&8▸ &7Mode actuel: &aTous"
+        - "&8▸ &7Mode actuel: %setting_visibility_status%"
         - "&8▸ &7Options: Tous / Amis / Personne"
         - "&r"
         - "&a▶ Cliquez pour changer !"
@@ -89,62 +105,43 @@ menu:
         - "[MESSAGE] &eParamètre changé ! Visibilité: &6Amis uniquement"
 
     notifications:
-      slot: 29
+      slot: 22
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZGNmMmE3YzhhYTdjYjMyYzQyYTVkOGNhODM4YTVjNDUzNWM5NmY4M2Y0NzgyN2Y5OWJlNDBhODdhYTkxMWI3NSJ9fX0="
+      head: "hdb:1455"
       name: "&c&lNotifications"
       lore:
         - "&7Gérez les types de notifications"
         - "&7que vous souhaitez recevoir."
         - "&r"
-        - "&8▸ &7Notifications d'amis: &aActivées"
-        - "&8▸ &7Notifications de clan: &aActivées"
-        - "&8▸ &7Notifications système: &aActivées"
+        - "&8▸ &7Notifications d'amis: %notif_friends%"
+        - "&8▸ &7Notifications de clan: %notif_clan%"
+        - "&8▸ &7Notifications système: %notif_system%"
         - "&r"
         - "&a▶ Cliquez pour personnaliser !"
       actions:
         - "[MESSAGE] &eGestion des notifications en cours de développement !"
 
     audio:
-      slot: 31
+      slot: 24
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjEzMTE2YzNjZTcwZTY3MjhkNzQ3OGE1Y2ZiNWZkOTNhZDY5YjMzYWQyOGRjZDNkZGE0NDQ3Nzg2NDIyZDdlOCJ9fX0="
+      head: "hdb:7439"
       name: "&6&lSons et Effets"
       lore:
         - "&7Activez ou désactivez les sons"
         - "&7et effets visuels du lobby."
         - "&r"
-        - "&8▸ &7Sons d'interface: &aActivés"
-        - "&8▸ &7Effets de particules: &aActivés"
-        - "&8▸ &7Musique d'ambiance: &cDésactivée"
+        - "&8▸ &7Sons d'interface: %setting_ui_sounds%"
+        - "&8▸ &7Effets de particules: %setting_particles%"
+        - "&8▸ &7Musique d'ambiance: %setting_music%"
         - "&r"
         - "&a▶ Cliquez pour ajuster !"
       actions:
         - "[MESSAGE] &eParamètres audio en cours de développement !"
 
-    language:
-      slot: 33
-      material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMzRlZDI0OWJhOGM0N2M1ZmZjOTdiMjczZjkzNTIyY2YxNmQzOGM4YzJlNWMxZTIzZGI1ZGIzMWRjMjQ5NDg3MSJ9fX0="
-      name: "&f&lLangue &8- &cFrançais"
-      lore:
-        - "&7Changez la langue d'affichage"
-        - "&7de l'interface et des messages."
-        - "&r"
-        - "&8▸ &7Langue actuelle: &c🇫🇷 Français"
-        - "&8▸ &7Langues disponibles:"
-        - "&8  ▸ &c🇫🇷 Français"
-        - "&8  ▸ &f🇬🇧 English"
-        - "&8  ▸ &e🇪🇸 Español"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[MESSAGE] &eLangue changée ! Interface en &fEnglish"
-
     back:
       slot: 40
       material: "PLAYER_HEAD"
-      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzI0MzE5MTFmNDE3OGI0ZDJiNDEzYWE3ZjVjNzhhZTI1MTUyOTI4MjVmYzk2NGEwNmVmOGZmNmM3MzcyYzZlYiJ9fX0="
+      head: "hdb:9334"
       name: "&c&lRetour"
       lore:
         - "&7Revenir au menu profil."

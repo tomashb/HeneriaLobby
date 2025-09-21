@@ -2,13 +2,9 @@ menu:
   id: "language_menu"
   title: "&8» &fSélection de Langue"
   size: 27
-  borders:
-    - slots: [0,1,2,6,7,8,9,17,18,26]
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
 
   items:
-    french:
+    francais:
       slot: 11
       material: "PLAYER_HEAD"
       head: "hdb:2736"
@@ -20,7 +16,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour sélectionner !"
       actions:
-        - "[COMMAND] language set fr"
+        - "[MESSAGE] &aLangue sélectionnée : &cFrançais"
 
     english:
       slot: 13
@@ -34,9 +30,9 @@ menu:
         - "&r"
         - "&a▶ Click to select!"
       actions:
-        - "[COMMAND] language set en"
+        - "[MESSAGE] &aLanguage selected: &fEnglish"
 
-    spanish:
+    espanol:
       slot: 15
       material: "PLAYER_HEAD"
       head: "hdb:2738"
@@ -48,9 +44,9 @@ menu:
         - "&r"
         - "&a▶ ¡Haz clic para seleccionar!"
       actions:
-        - "[COMMAND] language set es"
+        - "[MESSAGE] &aIdioma seleccionado: &eEspañol"
 
-    back:
+    retour:
       slot: 22
       material: "PLAYER_HEAD"
       head: "hdb:9334"
@@ -58,4 +54,4 @@ menu:
       lore:
         - "&7Revenir au menu profil."
       actions:
-        - "[MENU] profile_main"
+        - "[MENU] profil_menu"

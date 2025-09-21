@@ -111,4 +111,4 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour revenir !"
       actions:
-        - "[MENU] profile_main"
+        - "[MENU] profil_menu"
