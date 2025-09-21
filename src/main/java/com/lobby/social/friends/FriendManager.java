@@ -46,52 +46,51 @@ public class FriendManager {
         settingsCache.clear();
     }
 
-    public void sendFriendRequest(final Player sender, final String targetName) {
+    public boolean sendFriendRequest(final Player sender, final String targetName) {
         final Player target = Bukkit.getPlayerExact(targetName);
         if (target == null) {
             sender.sendMessage("§cJoueur introuvable ou hors ligne.");
-            return;
+            return false;
         }
 
         if (sender.getUniqueId().equals(target.getUniqueId())) {
             sender.sendMessage("§cVous ne pouvez pas vous ajouter vous-même !");
-            return;
+            return false;
         }
 
         if (areFriends(sender.getUniqueId(), target.getUniqueId())) {
             sender.sendMessage("§cVous êtes déjà amis avec " + target.getName() + " !");
-            return;
+            return false;
         }
 
         if (isBlocked(sender.getUniqueId(), target.getUniqueId())
                 || isBlocked(target.getUniqueId(), sender.getUniqueId())) {
             sender.sendMessage("§cImpossible d'envoyer une demande : relation bloquée.");
-            return;
+            return false;
         }
 
         if (hasPendingRequest(sender.getUniqueId(), target.getUniqueId())) {
             sender.sendMessage("§cVous avez déjà envoyé une demande d'ami à " + target.getName() + " !");
-            return;
+            return false;
         }
 
         final FriendSettings settings = getFriendSettings(target.getUniqueId());
         if (settings.getAcceptRequests() == AcceptMode.NONE) {
             sender.sendMessage("§c" + target.getName() + " n'accepte pas les demandes d'amis.");
-            return;
+            return false;
         }
 
         if (settings.getAcceptRequests() == AcceptMode.FRIENDS_OF_FRIENDS && !hasMutualFriend(sender.getUniqueId(), target.getUniqueId())) {
             sender.sendMessage("§cVous devez avoir des amis en commun avec " + target.getName() + " pour envoyer une demande.");
-            return;
+            return false;
         }
 
         saveFriendRequest(sender.getUniqueId(), target.getUniqueId());
-
-        sender.sendMessage("§aDemande d'ami envoyée à §6" + target.getName() + "§a !");
         target.sendMessage("§e" + sender.getName() + " §avous a envoyé une demande d'ami !");
         target.sendMessage("§7Tapez §a/friend accept " + sender.getName() + " §7pour accepter");
         target.sendMessage("§7ou §c/friend deny " + sender.getName() + " §7pour refuser");
         target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+        return true;
     }
 
     public void onPlayerJoin(final UUID player) {
@@ -104,58 +103,86 @@ public class FriendManager {
 
     public void acceptFriendRequest(final Player player, final String senderName) {
         final UUID senderUUID = getUuidByName(senderName);
-        if (senderUUID == null) {
+        acceptFriendRequest(player, senderUUID, senderName);
+    }
+
+    public void acceptFriendRequest(final Player player, final UUID senderUuid) {
+        final String senderName = resolveName(senderUuid);
+        acceptFriendRequest(player, senderUuid, senderName);
+    }
+
+    public void denyFriendRequest(final Player player, final String senderName) {
+        final UUID senderUUID = getUuidByName(senderName);
+        denyFriendRequest(player, senderUUID, senderName);
+    }
+
+    public void denyFriendRequest(final Player player, final UUID senderUuid) {
+        final String senderName = resolveName(senderUuid);
+        denyFriendRequest(player, senderUuid, senderName);
+    }
+
+    private void acceptFriendRequest(final Player player, final UUID senderUuid, final String senderName) {
+        if (senderUuid == null) {
             player.sendMessage("§cJoueur introuvable.");
             return;
         }
-
-        if (!hasPendingRequest(senderUUID, player.getUniqueId())) {
+        if (!hasPendingRequest(senderUuid, player.getUniqueId())) {
             player.sendMessage("§cAucune demande d'ami de " + senderName + " trouvée.");
             return;
         }
 
-        acceptFriendship(senderUUID, player.getUniqueId());
+        acceptFriendship(senderUuid, player.getUniqueId());
 
-        addToFriendsCache(senderUUID, player.getUniqueId());
-        addToFriendsCache(player.getUniqueId(), senderUUID);
+        addToFriendsCache(senderUuid, player.getUniqueId());
+        addToFriendsCache(player.getUniqueId(), senderUuid);
 
-        removePendingRequest(senderUUID, player.getUniqueId());
+        removePendingRequest(senderUuid, player.getUniqueId());
 
         player.sendMessage("§aVous êtes maintenant ami avec §6" + senderName + "§a !");
 
-        final Player senderPlayer = Bukkit.getPlayer(senderUUID);
+        final Player senderPlayer = Bukkit.getPlayer(senderUuid);
         if (senderPlayer != null) {
             senderPlayer.sendMessage("§6" + player.getName() + " §aa accepté votre demande d'ami !");
             senderPlayer.playSound(senderPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
         }
         final VelocityManager velocityManager = plugin.getVelocityManager();
         if (velocityManager != null) {
-            velocityManager.broadcastFriendUpdate(player.getUniqueId(), "ACCEPT", senderUUID);
-            velocityManager.broadcastFriendUpdate(senderUUID, "ACCEPT", player.getUniqueId());
+            velocityManager.broadcastFriendUpdate(player.getUniqueId(), "ACCEPT", senderUuid);
+            velocityManager.broadcastFriendUpdate(senderUuid, "ACCEPT", player.getUniqueId());
         }
     }
 
-    public void denyFriendRequest(final Player player, final String senderName) {
-        final UUID senderUUID = getUuidByName(senderName);
-        if (senderUUID == null) {
+    private void denyFriendRequest(final Player player, final UUID senderUuid, final String senderName) {
+        if (senderUuid == null) {
             player.sendMessage("§cJoueur introuvable.");
             return;
         }
-
-        if (!hasPendingRequest(senderUUID, player.getUniqueId())) {
+        if (!hasPendingRequest(senderUuid, player.getUniqueId())) {
             player.sendMessage("§cAucune demande d'ami de " + senderName + " trouvée.");
             return;
         }
 
-        removeFriendship(senderUUID, player.getUniqueId());
-        removePendingRequest(senderUUID, player.getUniqueId());
+        removeFriendship(senderUuid, player.getUniqueId());
+        removePendingRequest(senderUuid, player.getUniqueId());
 
         player.sendMessage("§cVous avez refusé la demande d'ami de §6" + senderName + "§c.");
 
-        final Player senderPlayer = Bukkit.getPlayer(senderUUID);
+        final Player senderPlayer = Bukkit.getPlayer(senderUuid);
         if (senderPlayer != null) {
             senderPlayer.sendMessage("§c" + player.getName() + " a refusé votre demande d'ami.");
         }
+    }
+
+    private String resolveName(final UUID uuid) {
+        if (uuid == null) {
+            return "";
+        }
+        final Player online = Bukkit.getPlayer(uuid);
+        if (online != null) {
+            return online.getName();
+        }
+        final String name = Bukkit.getOfflinePlayer(uuid).getName();
+        return name != null ? name : uuid.toString();
     }
 
     public void removeFriend(final Player player, final String targetName) {

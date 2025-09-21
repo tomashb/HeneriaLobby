@@ -107,7 +107,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour créer !"
       actions:
-        - "[COMMAND] group create"
+        - "[GROUP_CREATE]"
 
     group_join:
       slot: 24

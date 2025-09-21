@@ -88,7 +88,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour voir la liste !"
       actions:
-        - "[MENU] friends_online_menu"
+        - "[FRIENDS_ONLINE]"
 
     friend_requests:
       slot: 22
@@ -104,7 +104,7 @@ menu:
         - "&r"
         - "&e▶ Cliquez pour gérer !"
       actions:
-        - "[MENU] friend_requests_menu"
+        - "[FRIEND_REQUESTS]"
 
     friends_all:
       slot: 24
@@ -136,7 +136,7 @@ menu:
         - "&r"
         - "&d▶ Cliquez pour ajouter !"
       actions:
-        - "[COMMAND] friend add"
+        - "[FRIEND_ADD]"
 
     friend_settings:
       slot: 30

@@ -801,6 +801,7 @@ public class DatabaseManager {
         createClanMembersTable();
         createClanRanksTable();
         createClanInvitationsTable();
+        createClanTransactionsTable();
     }
 
     private void createFriendsTable() throws SQLException {
@@ -959,6 +960,11 @@ public class DatabaseManager {
                 "inviter_uuid", "players", "uuid", "CASCADE");
         addForeignKeyIfNotExists("clan_invitations", "fk_clan_invitations_invited",
                 "invited_uuid", "players", "uuid", "CASCADE");
+
+        addForeignKeyIfNotExists("clan_transactions", "fk_clan_transactions_clan",
+                "clan_id", "clans", "id", "CASCADE");
+        addForeignKeyIfNotExists("clan_transactions", "fk_clan_transactions_player",
+                "player_uuid", "players", "uuid", "CASCADE");
 
         addForeignKeyIfNotExists("shop_items", "fk_shop_items_category",
                 "category_id", "shop_categories", "id", "CASCADE");
@@ -1231,7 +1237,7 @@ public class DatabaseManager {
         final String[] requiredTables = {
                 "players", "friend_settings", "friends",
                 "groups_table", "group_members", "group_invitations",
-                "clans", "clan_members", "clan_ranks", "clan_invitations",
+                "clans", "clan_members", "clan_ranks", "clan_invitations", "clan_transactions",
                 "shop_categories", "shop_items", "transactions"
         };
 
@@ -1690,6 +1696,45 @@ public class DatabaseManager {
         }
         addColumnIfNotExists("clan_invitations", "message", "TEXT");
         addColumnIfNotExists("clan_invitations", "expires_at", "TIMESTAMP NOT NULL");
+    }
+
+    private void createClanTransactionsTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS clan_transactions (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        clan_id INT NOT NULL,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        transaction_type VARCHAR(16) NOT NULL,
+                        amount BIGINT NOT NULL,
+                        balance_after BIGINT NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        INDEX idx_clan_transactions_clan_id (clan_id),
+                        INDEX idx_clan_transactions_player_uuid (player_uuid),
+                        INDEX idx_clan_transactions_type (transaction_type)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS clan_transactions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    clan_id INTEGER NOT NULL,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    transaction_type TEXT NOT NULL,
+                    amount BIGINT NOT NULL,
+                    balance_after BIGINT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """;
+        executeSQL(sql);
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_transactions_clan_id ON clan_transactions(clan_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_transactions_player_uuid ON clan_transactions(player_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_transactions_type ON clan_transactions(transaction_type)");
+        }
     }
 
     public enum DatabaseType {

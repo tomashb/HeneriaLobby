@@ -35,23 +35,56 @@ public class GroupManager {
     }
 
     public void createGroup(final Player leader) {
+        createGroup(leader, null, true);
+    }
+
+    public boolean createGroup(final Player leader, final String groupName, final boolean showTips) {
+        if (leader == null) {
+            return false;
+        }
         if (hasGroup(leader.getUniqueId())) {
             leader.sendMessage("§cVous êtes déjà dans un groupe !");
-            return;
+            return false;
         }
+
+        final String trimmedName = groupName != null ? groupName.trim() : "";
+        if (!trimmedName.isEmpty()) {
+            if (trimmedName.length() < 3 || trimmedName.length() > 20) {
+                leader.sendMessage("§cLe nom du groupe doit faire entre 3 et 20 caractères.");
+                return false;
+            }
+            if (isGroupNameTaken(trimmedName)) {
+                leader.sendMessage("§cCe nom de groupe est déjà utilisé.");
+                return false;
+            }
+        }
+
         final Group group = new Group(leader.getUniqueId());
+        if (!trimmedName.isEmpty()) {
+            group.setName(trimmedName);
+        }
+
         final int groupId = saveGroupToDatabase(group);
         if (groupId <= 0) {
             leader.sendMessage("§cImpossible de créer le groupe pour le moment.");
-            return;
+            return false;
         }
+
         group.setId(groupId);
         saveMember(groupId, leader.getUniqueId(), "LEADER");
         group.addMember(leader.getUniqueId());
         cacheGroup(group);
         playerGroups.put(leader.getUniqueId(), group);
-        leader.sendMessage("§aGroupe créé avec succès !");
-        leader.sendMessage("§7Utilisez §e/group invite <joueur> §7pour inviter des amis.");
+
+        if (showTips) {
+            if (trimmedName.isEmpty()) {
+                leader.sendMessage("§aGroupe créé avec succès !");
+            } else {
+                leader.sendMessage("§aGroupe '" + trimmedName + "' créé !");
+            }
+            leader.sendMessage("§7Utilisez §e/group invite <joueur> §7pour inviter des amis.");
+        }
+        return true;
     }
 
     public void inviteToGroup(final Player inviter, final String targetName) {
@@ -253,6 +286,20 @@ public class GroupManager {
             plugin.getLogger().log(Level.SEVERE, "Failed to create group", exception);
         }
         return -1;
+    }
+
+    private boolean isGroupNameTaken(final String name) {
+        final String query = "SELECT 1 FROM groups_table WHERE LOWER(name) = ? AND disbanded_at IS NULL";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, name.toLowerCase(Locale.ROOT));
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next();
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to check group name availability", exception);
+        }
+        return false;
     }
 
     private void saveMember(final int groupId, final UUID uuid, final String role) {

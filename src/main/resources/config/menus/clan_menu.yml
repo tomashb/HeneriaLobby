@@ -105,7 +105,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour gérer !"
       actions:
-        - "[MENU] clan_members_menu"
+        - "[CLAN_MEMBERS]"
 
     clan_ranks:
       slot: 23
@@ -137,7 +137,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour accéder !"
       actions:
-        - "[MENU] clan_vault_menu"
+        - "[CLAN_VAULT]"
 
     clan_wars:
       slot: 31
