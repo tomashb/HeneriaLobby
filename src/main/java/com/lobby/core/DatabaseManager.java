@@ -864,6 +864,7 @@ public class DatabaseManager {
                         receive_notifications BOOLEAN DEFAULT TRUE NOT NULL,
                         auto_accept_favorites BOOLEAN DEFAULT FALSE NOT NULL,
                         auto_accept_friends BOOLEAN DEFAULT FALSE NOT NULL,
+                        allow_private_messages BOOLEAN DEFAULT TRUE NOT NULL,
                         max_friends INT DEFAULT 100 NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -874,6 +875,7 @@ public class DatabaseManager {
             addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT TRUE NOT NULL");
             addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT FALSE NOT NULL");
             addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("friend_settings", "allow_private_messages", "BOOLEAN DEFAULT TRUE NOT NULL");
             addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100 NOT NULL");
             addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
             addColumnIfNotExists("friend_settings", "updated_at",
@@ -890,6 +892,7 @@ public class DatabaseManager {
                     receive_notifications BOOLEAN DEFAULT 1,
                     auto_accept_favorites BOOLEAN DEFAULT 0,
                     auto_accept_friends BOOLEAN DEFAULT 0,
+                    allow_private_messages BOOLEAN DEFAULT 1,
                     max_friends INT DEFAULT 100,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -902,6 +905,7 @@ public class DatabaseManager {
         addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT 1");
         addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT 0");
         addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("friend_settings", "allow_private_messages", "BOOLEAN DEFAULT 1");
         addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100");
         addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         addColumnIfNotExists("friend_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
@@ -1588,6 +1592,9 @@ public class DatabaseManager {
                         display_name VARCHAR(50) NOT NULL DEFAULT 'Membre',
                         priority INT DEFAULT 0 NOT NULL,
                         permissions JSON NULL,
+                        can_promote BOOLEAN DEFAULT FALSE NOT NULL,
+                        can_demote BOOLEAN DEFAULT FALSE NOT NULL,
+                        can_manage_ranks BOOLEAN DEFAULT FALSE NOT NULL,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                         UNIQUE KEY unique_clan_rank (clan_id, name),
                         INDEX idx_clan_ranks_clan_id (clan_id),
@@ -1597,6 +1604,9 @@ public class DatabaseManager {
             executeSQL(sql);
             addColumnIfNotExists("clan_ranks", "display_name", "VARCHAR(50) NOT NULL DEFAULT 'Membre'");
             addColumnIfNotExists("clan_ranks", "permissions", "JSON NULL");
+            addColumnIfNotExists("clan_ranks", "can_promote", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("clan_ranks", "can_demote", "BOOLEAN DEFAULT FALSE NOT NULL");
+            addColumnIfNotExists("clan_ranks", "can_manage_ranks", "BOOLEAN DEFAULT FALSE NOT NULL");
             addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
             ensureClanRankDisplayNames();
             return;
@@ -1610,6 +1620,9 @@ public class DatabaseManager {
                     display_name TEXT NOT NULL DEFAULT 'Membre',
                     priority INTEGER DEFAULT 0,
                     permissions TEXT,
+                    can_promote BOOLEAN DEFAULT 0,
+                    can_demote BOOLEAN DEFAULT 0,
+                    can_manage_ranks BOOLEAN DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE (clan_id, name)
                 )
@@ -1621,6 +1634,9 @@ public class DatabaseManager {
         }
         addColumnIfNotExists("clan_ranks", "display_name", "TEXT NOT NULL DEFAULT 'Membre'");
         addColumnIfNotExists("clan_ranks", "permissions", "TEXT");
+        addColumnIfNotExists("clan_ranks", "can_promote", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("clan_ranks", "can_demote", "BOOLEAN DEFAULT 0");
+        addColumnIfNotExists("clan_ranks", "can_manage_ranks", "BOOLEAN DEFAULT 0");
         addColumnIfNotExists("clan_ranks", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
         ensureClanRankDisplayNames();
     }
