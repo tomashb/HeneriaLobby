@@ -2,78 +2,12 @@ menu:
   id: "clan_menu"
   title: "&8» &c&lGestion de Clan"
   size: 54
+  borders:
+    - slots: [0,1,2,6,7,8,9,17,45,53]
+      material: "RED_STAINED_GLASS_PANE"
+      name: "&7"
 
   items:
-    decor_top_left_1:
-      slot: 0
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_top_left_2:
-      slot: 1
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_top_left_3:
-      slot: 2
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_top_right_1:
-      slot: 6
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_top_right_2:
-      slot: 7
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_top_right_3:
-      slot: 8
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_left:
-      slot: 9
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_right:
-      slot: 17
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_bottom_left:
-      slot: 45
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
-    decor_bottom_right:
-      slot: 53
-      material: "RED_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-
     my_clan:
       slot: 19
       material: "PLAYER_HEAD"

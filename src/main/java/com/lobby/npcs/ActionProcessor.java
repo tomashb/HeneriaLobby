@@ -107,6 +107,26 @@ public class ActionProcessor {
             ClanMenus.openClanVaultMenu(player);
             return;
         }
+        if (trimmed.equalsIgnoreCase("[CLAN_PROMOTE_MEMBER]")) {
+            handleClanRankChange(player, true);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_DEMOTE_MEMBER]")) {
+            handleClanRankChange(player, false);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_KICK_MEMBER]")) {
+            handleClanRemoval(player, false);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_BAN_MEMBER]")) {
+            handleClanRemoval(player, true);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_TRANSFER_LEADERSHIP]")) {
+            handleClanLeadershipTransfer(player);
+            return;
+        }
         if (startsWithIgnoreCase(trimmed, "[TOGGLE_MEMBER_PERMISSION]")) {
             final String value = processed.substring("[TOGGLE_MEMBER_PERMISSION]".length()).trim();
             toggleMemberPermission(player, value);
@@ -442,6 +462,108 @@ public class ActionProcessor {
         reopenMenu(player, menuId);
     }
 
+    private void handleClanRankChange(final Player player, final boolean promote) {
+        if (player == null) {
+            return;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final var placeholderManager = plugin.getSocialPlaceholderManager();
+        if (clanManager == null || placeholderManager == null) {
+            player.sendMessage("§cAction indisponible pour le moment.");
+            return;
+        }
+        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
+        if (target == null) {
+            player.sendMessage("§cAucun membre sélectionné.");
+            return;
+        }
+        final boolean success = promote
+                ? clanManager.promotePlayer(player.getUniqueId(), target)
+                : clanManager.demotePlayer(player.getUniqueId(), target);
+        final String targetName = resolvePlayerName(target);
+        if (success) {
+            player.sendMessage(promote
+                    ? "§a" + targetName + " a été promu."
+                    : "§e" + targetName + " a été rétrogradé.");
+        } else {
+            player.sendMessage(promote
+                    ? "§cImpossible de promouvoir " + targetName + "."
+                    : "§cImpossible de rétrograder " + targetName + ".");
+        }
+        reopenClanManagementMenu(player);
+    }
+
+    private void handleClanRemoval(final Player player, final boolean ban) {
+        if (player == null) {
+            return;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final var placeholderManager = plugin.getSocialPlaceholderManager();
+        if (clanManager == null || placeholderManager == null) {
+            player.sendMessage("§cAction indisponible pour le moment.");
+            return;
+        }
+        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
+        if (target == null) {
+            player.sendMessage("§cAucun membre sélectionné.");
+            return;
+        }
+        final boolean success = ban
+                ? clanManager.banMember(player.getUniqueId(), target)
+                : clanManager.kickMember(player.getUniqueId(), target);
+        final String targetName = resolvePlayerName(target);
+        if (success) {
+            player.sendMessage(ban
+                    ? "§c" + targetName + " a été banni du clan."
+                    : "§c" + targetName + " a été expulsé du clan.");
+            placeholderManager.clearClanPermissionTarget(player.getUniqueId());
+            openClanMembersMenu(player);
+        } else {
+            player.sendMessage(ban
+                    ? "§cImpossible de bannir " + targetName + "."
+                    : "§cImpossible d'expulser " + targetName + ".");
+            reopenClanManagementMenu(player);
+        }
+    }
+
+    private void handleClanLeadershipTransfer(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final var placeholderManager = plugin.getSocialPlaceholderManager();
+        if (clanManager == null || placeholderManager == null) {
+            player.sendMessage("§cAction indisponible pour le moment.");
+            return;
+        }
+        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
+        if (target == null) {
+            player.sendMessage("§cAucun membre sélectionné.");
+            return;
+        }
+        final boolean success = clanManager.transferLeadership(player.getUniqueId(), target);
+        final String targetName = resolvePlayerName(target);
+        if (success) {
+            player.sendMessage("§aLe leadership a été transféré à §e" + targetName + "§a.");
+            placeholderManager.clearClanPermissionTarget(player.getUniqueId());
+            openClanMembersMenu(player);
+        } else {
+            player.sendMessage("§cImpossible de transférer le leadership à " + targetName + ".");
+            reopenClanManagementMenu(player);
+        }
+    }
+
+    private void reopenClanManagementMenu(final Player player) {
+        reopenMenu(player, "clan_member_management_menu");
+    }
+
+    private void openClanMembersMenu(final Player player) {
+        if (player == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> ClanMenus.openClanMembersMenu(player));
+    }
+
     private void reopenMenu(final Player player, final String menuId) {
         if (player == null || menuId == null || menuId.isBlank()) {
             return;
@@ -466,6 +588,19 @@ public class ActionProcessor {
         } catch (final IllegalArgumentException exception) {
             return null;
         }
+    }
+
+    private String resolvePlayerName(final UUID uuid) {
+        if (uuid == null) {
+            return "Inconnu";
+        }
+        final Player online = Bukkit.getPlayer(uuid);
+        if (online != null) {
+            return online.getName();
+        }
+        final var offline = Bukkit.getOfflinePlayer(uuid);
+        final String name = offline.getName();
+        return name != null ? name : uuid.toString();
     }
 
     private String formatPermissionName(final String permissionKey) {

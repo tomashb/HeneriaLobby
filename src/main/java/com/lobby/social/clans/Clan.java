@@ -11,7 +11,7 @@ public class Clan {
     private int id;
     private final String name;
     private final String tag;
-    private final UUID leaderUUID;
+    private UUID leaderUUID;
     private String description;
     private int maxMembers = 50;
     private int points = 0;
@@ -49,6 +49,12 @@ public class Clan {
 
     public UUID getLeaderUUID() {
         return leaderUUID;
+    }
+
+    public void setLeaderUUID(final UUID leaderUUID) {
+        if (leaderUUID != null) {
+            this.leaderUUID = leaderUUID;
+        }
     }
 
     public String getDescription() {

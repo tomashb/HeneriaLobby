@@ -22,6 +22,8 @@ import org.bukkit.entity.Player;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +36,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class SocialPlaceholderManager {
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
+            .withLocale(Locale.FRENCH);
 
     private final LobbyPlugin plugin;
     private final Map<UUID, UUID> clanPermissionTargets = new ConcurrentHashMap<>();
@@ -382,10 +387,30 @@ public class SocialPlaceholderManager {
                 replacements.put("%clan_target_uuid%", targetUuid.toString());
                 replacements.put("%clan_target_name%", targetName);
                 replacements.put("%clan_target_rank%", target.getRankName());
+
+                final ClanRank targetRank = clan.getRank(target.getRankName());
+                replacements.put("%clan_target_rank_display%", targetRank != null
+                        ? targetRank.getDisplayName()
+                        : target.getRankName());
+                replacements.put("%clan_target_rank_priority%", String.valueOf(targetRank != null
+                        ? targetRank.getPriority()
+                        : 0));
+                replacements.put("%clan_target_join_date%", formatJoinDate(target.getJoinedAt()));
+                replacements.put("%clan_target_last_seen%", formatLastSeen(targetUuid));
+                replacements.put("%clan_target_contribution%", String.valueOf(target.getTotalContributions()));
+
                 final List<String> permissionList = clanManager.getMemberPermissions(targetUuid);
                 replacements.put("%clan_target_permissions%", permissionList.isEmpty()
                         ? "Aucune"
                         : String.join(", ", permissionList));
+                replacements.put("%clan_target_permissions_count%", String.valueOf(permissionList.size()));
+
+                final int rankPriority = targetRank != null ? targetRank.getPriority() : 0;
+                final ClanRank nextRank = targetRank != null ? clanManager.getNextRank(clan.getId(), rankPriority) : null;
+                final ClanRank previousRank = targetRank != null ? clanManager.getPreviousRank(clan.getId(), rankPriority) : null;
+                replacements.put("%clan_target_next_rank%", nextRank != null ? nextRank.getDisplayName() : "Aucun");
+                replacements.put("%clan_target_previous_rank%", previousRank != null ? previousRank.getDisplayName() : "Aucun");
+
                 replacements.put("%clan_permission_invite_status%", formatPermissionStatus(
                         clan.hasPermission(targetUuid, ClanPermission.INVITE)));
                 replacements.put("%clan_permission_kick_status%", formatPermissionStatus(
@@ -400,6 +425,28 @@ public class SocialPlaceholderManager {
                         clan.hasPermission(targetUuid, ClanPermission.MANAGE_BANK)));
                 replacements.put("%clan_permission_disband_status%", formatPermissionStatus(
                         clan.hasPermission(targetUuid, ClanPermission.DISBAND)));
+
+                final boolean isSelf = player.getUniqueId().equals(targetUuid);
+                final boolean targetIsLeader = clan.isLeader(targetUuid);
+                final boolean hasNextRank = nextRank != null;
+                final boolean hasPreviousRank = previousRank != null;
+
+                final boolean canPromoteTarget = !isSelf && hasNextRank && !targetIsLeader
+                        && clanManager.hasPermission(clan.getId(), player.getUniqueId(), "clan.promote");
+                final boolean canDemoteTarget = !isSelf && hasPreviousRank && !targetIsLeader
+                        && clanManager.hasPermission(clan.getId(), player.getUniqueId(), "clan.demote");
+                final boolean canKickTarget = !isSelf && !targetIsLeader
+                        && clanManager.hasPermission(clan.getId(), player.getUniqueId(), "clan.kick");
+                final boolean canBanTarget = !isSelf && !targetIsLeader
+                        && (clan.isLeader(player.getUniqueId())
+                        || clan.hasPermission(player.getUniqueId(), ClanPermission.DISBAND));
+                final boolean canTransfer = clan.isLeader(player.getUniqueId()) && !isSelf && !targetIsLeader;
+
+                replacements.put("%clan_target_can_promote%", formatActionStatus(canPromoteTarget));
+                replacements.put("%clan_target_can_demote%", formatActionStatus(canDemoteTarget));
+                replacements.put("%clan_target_can_kick%", formatActionStatus(canKickTarget));
+                replacements.put("%clan_target_can_ban%", formatActionStatus(canBanTarget));
+                replacements.put("%clan_target_can_transfer%", formatActionStatus(canTransfer));
             }
         }
 
@@ -415,6 +462,13 @@ public class SocialPlaceholderManager {
         } else {
             clanPermissionTargets.put(viewer, target);
         }
+    }
+
+    public UUID getClanPermissionTarget(final UUID viewer) {
+        if (viewer == null) {
+            return null;
+        }
+        return clanPermissionTargets.get(viewer);
     }
 
     public void clearClanPermissionTarget(final UUID viewer) {
@@ -535,6 +589,33 @@ public class SocialPlaceholderManager {
 
     private String formatPermissionStatus(final boolean enabled) {
         return enabled ? "§aActivée" : "§cDésactivée";
+    }
+
+    private String formatActionStatus(final boolean available) {
+        return available ? "§aDisponible" : "§cIndisponible";
+    }
+
+    private String formatJoinDate(final long timestamp) {
+        if (timestamp <= 0L) {
+            return "Inconnue";
+        }
+        final Instant instant = Instant.ofEpochMilli(timestamp);
+        return DATE_TIME_FORMATTER.format(instant.atZone(ZoneId.systemDefault()));
+    }
+
+    private String formatLastSeen(final UUID uuid) {
+        if (uuid == null) {
+            return "Inconnue";
+        }
+        final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+        if (offlinePlayer.isOnline()) {
+            return "En ligne";
+        }
+        final long lastSeen = offlinePlayer.getLastSeen();
+        if (lastSeen <= 0L) {
+            return "Inconnue";
+        }
+        return formatRelativeTime(lastSeen);
     }
 
     private String resolveName(final UUID uuid) {
