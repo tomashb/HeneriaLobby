@@ -45,7 +45,9 @@ public class FriendCommand implements CommandExecutor, TabCompleter {
                     player.sendMessage(ChatColor.RED + "Usage: /" + label + " add <joueur>");
                     return true;
                 }
-                friendManager.sendFriendRequest(player, args[1]);
+                if (friendManager.sendFriendRequest(player, args[1])) {
+                    player.sendMessage("§aDemande envoyée à §6" + args[1] + "§a !");
+                }
                 return true;
             case "accept":
                 if (args.length < 2) {

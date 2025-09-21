@@ -24,7 +24,9 @@ import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.servers.ServerManager;
 import com.lobby.shop.ShopManager;
+import com.lobby.social.ChatInputManager;
 import com.lobby.social.SocialPlaceholderManager;
+import com.lobby.social.menus.MenuClickHandler;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
@@ -55,6 +57,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private ClanManager clanManager;
     private VelocityManager velocityManager;
     private SocialPlaceholderManager socialPlaceholderManager;
+    private ChatInputManager chatInputManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -98,6 +101,7 @@ public final class LobbyPlugin extends JavaPlugin {
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
+        chatInputManager = new ChatInputManager(this);
 
         registerCommands();
 
@@ -106,6 +110,7 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LobbyItemListener(lobbyManager, lobbyManager.getItemManager()), this);
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
+        getServer().getPluginManager().registerEvents(new MenuClickHandler(this), this);
 
         LogUtils.info(this, "LobbyCore activé !");
     }

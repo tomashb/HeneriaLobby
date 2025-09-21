@@ -341,7 +341,7 @@ menus:
           - "&r"
           - "&a▶ Cliquez pour gérer !"
         actions:
-          - "[MENU] clan_members_menu"
+          - "[CLAN_MEMBERS]"
       clan_ranks:
         slot: 23
         material: PLAYER_HEAD
@@ -371,7 +371,7 @@ menus:
           - "&r"
           - "&a▶ Cliquez pour accéder !"
         actions:
-          - "[MENU] clan_vault_menu"
+          - "[CLAN_VAULT]"
       clan_wars:
         slot: 31
         material: PLAYER_HEAD
@@ -486,7 +486,7 @@ menus:
           - "&r"
           - "&a▶ Cliquez pour voir la liste !"
         actions:
-          - "[MENU] friends_online_menu"
+          - "[FRIENDS_ONLINE]"
       friend_requests:
         slot: 22
         material: PLAYER_HEAD
@@ -501,7 +501,7 @@ menus:
           - "&r"
           - "&e▶ Cliquez pour gérer !"
         actions:
-          - "[MENU] friend_requests_menu"
+          - "[FRIEND_REQUESTS]"
       friends_all:
         slot: 24
         material: PLAYER_HEAD
@@ -531,7 +531,7 @@ menus:
           - "&r"
           - "&d▶ Cliquez pour ajouter !"
         actions:
-          - "[COMMAND] friend add"
+          - "[FRIEND_ADD]"
       friend_settings:
         slot: 30
         material: PLAYER_HEAD
@@ -648,7 +648,7 @@ menus:
           - "&r"
           - "&a▶ Cliquez pour créer !"
         actions:
-          - "[COMMAND] group create"
+          - "[GROUP_CREATE]"
       group_join:
         slot: 24
         material: PLAYER_HEAD

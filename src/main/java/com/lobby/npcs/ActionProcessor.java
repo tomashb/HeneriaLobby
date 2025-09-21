@@ -2,6 +2,9 @@ package com.lobby.npcs;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.menus.MenuManager;
+import com.lobby.social.ChatInputManager;
+import com.lobby.social.menus.ClanMenus;
+import com.lobby.social.menus.FriendsMenus;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -47,6 +50,34 @@ public class ActionProcessor {
         if (startsWithIgnoreCase(trimmed, "[MESSAGE]")) {
             final String message = processed.substring(9).trim();
             MessageUtils.sendPrefixedMessage(player, message);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[FRIENDS_ONLINE]")) {
+            FriendsMenus.openFriendsOnlineMenu(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[FRIEND_REQUESTS]")) {
+            FriendsMenus.openFriendRequestsMenu(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[FRIEND_ADD]")) {
+            ChatInputManager.startFriendAddFlow(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[GROUP_CREATE]")) {
+            ChatInputManager.startGroupCreateFlow(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_MEMBERS]")) {
+            ClanMenus.openClanMembersMenu(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_VAULT]")) {
+            ClanMenus.openClanVaultMenu(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_INVITE]")) {
+            ChatInputManager.startClanInviteFlow(player);
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[SOUND]")) {

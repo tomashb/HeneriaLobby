@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
@@ -22,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.util.List;
 
 public class ClanManager {
 
@@ -29,6 +31,7 @@ public class ClanManager {
     private final DatabaseManager databaseManager;
     private final EconomyManager economyManager;
     private final Map<String, Clan> clanCache = new HashMap<>();
+    private final Map<Integer, Clan> clanCacheById = new HashMap<>();
     private final Map<UUID, String> playerClanCache = new HashMap<>();
 
     public ClanManager(final LobbyPlugin plugin) {
@@ -39,6 +42,7 @@ public class ClanManager {
 
     public void reload() {
         clanCache.clear();
+        clanCacheById.clear();
         playerClanCache.clear();
     }
 
@@ -83,15 +87,15 @@ public class ClanManager {
         leader.sendMessage("§7Vous êtes maintenant le leader du clan.");
     }
 
-    public void inviteToClan(final Player inviter, final String targetName, final String message) {
+    public boolean inviteToClan(final Player inviter, final String targetName, final String message) {
         final Clan clan = getPlayerClan(inviter.getUniqueId());
         if (clan == null) {
             inviter.sendMessage("§cVous n'êtes dans aucun clan !");
-            return;
+            return false;
         }
         if (!clan.hasPermission(inviter.getUniqueId(), ClanPermission.INVITE)) {
             inviter.sendMessage("§cVous n'avez pas la permission d'inviter des joueurs !");
-            return;
+            return false;
         }
         UUID targetUUID = null;
         Player targetPlayer = Bukkit.getPlayerExact(targetName);
@@ -102,11 +106,11 @@ public class ClanManager {
         }
         if (targetUUID == null) {
             inviter.sendMessage("§cJoueur introuvable.");
-            return;
+            return false;
         }
         if (hasPlayerClan(targetUUID)) {
             inviter.sendMessage("§c" + targetName + " est déjà dans un clan !");
-            return;
+            return false;
         }
         final ClanInvitation invitation = saveInvitation(clan.getId(), inviter.getUniqueId(), targetUUID, message);
         inviter.sendMessage("§aInvitation envoyée à §6" + targetName + "§a !");
@@ -119,6 +123,7 @@ public class ClanManager {
             targetPlayer.playSound(targetPlayer.getLocation(), Sound.UI_TOAST_IN, 1.0f, 1.0f);
         }
         scheduleInvitationExpiration(invitation);
+        return true;
     }
 
     public void acceptInvitation(final Player player, final String clanName) {
@@ -206,11 +211,159 @@ public class ClanManager {
                 .count();
     }
 
+    public Clan getClanById(final int clanId) {
+        if (clanId <= 0) {
+            return null;
+        }
+        final Clan cached = clanCacheById.get(clanId);
+        if (cached != null) {
+            return cached;
+        }
+        final Clan clan = loadClanById(clanId);
+        if (clan != null) {
+            cacheClan(clan);
+        }
+        return clan;
+    }
+
+    public List<ClanMember> getClanMembers(final int clanId) {
+        final Clan clan = getClanById(clanId);
+        if (clan == null) {
+            return List.of();
+        }
+        return new ArrayList<>(clan.getMembers().values());
+    }
+
+    public boolean hasPermission(final int clanId, final UUID playerUuid, final String permissionKey) {
+        final Clan clan = getClanById(clanId);
+        if (clan == null || playerUuid == null || permissionKey == null || permissionKey.isBlank()) {
+            return false;
+        }
+        final ClanPermission permission = resolvePermission(permissionKey);
+        if (permission == null) {
+            return false;
+        }
+        return clan.hasPermission(playerUuid, permission);
+    }
+
+    public boolean depositCoins(final Player player, final long amount) {
+        if (player == null || amount <= 0) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(player.getUniqueId());
+        if (clan == null) {
+            return false;
+        }
+        if (!economyManager.hasCoins(player.getUniqueId(), amount)) {
+            return false;
+        }
+
+        economyManager.removeCoins(player.getUniqueId(), amount, "Clan deposit");
+        clan.deposit(amount);
+        updateClanBank(clan);
+        updateMemberContribution(clan, player.getUniqueId(), amount);
+        logClanTransaction(clan.getId(), player.getUniqueId(), "DEPOSIT", amount, clan.getBankCoins());
+        return true;
+    }
+
+    public boolean withdrawCoins(final Player player, final long amount) {
+        if (player == null || amount <= 0) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(player.getUniqueId());
+        if (clan == null) {
+            return false;
+        }
+        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_BANK)) {
+            return false;
+        }
+        if (clan.getBankCoins() < amount) {
+            return false;
+        }
+
+        clan.withdraw(amount);
+        updateClanBank(clan);
+        economyManager.addCoins(player.getUniqueId(), amount, "Clan withdraw");
+        logClanTransaction(clan.getId(), player.getUniqueId(), "WITHDRAW", amount, clan.getBankCoins());
+        return true;
+    }
+
     private void cacheClan(final Clan clan) {
         clanCache.put(clan.getName().toLowerCase(Locale.ROOT), clan);
         clanCache.put(clan.getTag().toLowerCase(Locale.ROOT), clan);
+        clanCacheById.put(clan.getId(), clan);
         for (final UUID member : clan.getMembers().keySet()) {
             playerClanCache.put(member, clan.getName().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private void updateClanBank(final Clan clan) {
+        final String query = "UPDATE clans SET bank_coins = ? WHERE id = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setLong(1, clan.getBankCoins());
+            statement.setInt(2, clan.getId());
+            statement.executeUpdate();
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to update clan bank", exception);
+        }
+    }
+
+    private void updateMemberContribution(final Clan clan, final UUID memberUuid, final long amount) {
+        if (clan == null || memberUuid == null || amount <= 0) {
+            return;
+        }
+        final ClanMember member = clan.getMember(memberUuid);
+        if (member != null) {
+            member.addContribution(amount);
+        }
+        final String query = "UPDATE clan_members SET total_contributions = total_contributions + ? WHERE clan_id = ? AND player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setLong(1, amount);
+            statement.setInt(2, clan.getId());
+            statement.setString(3, memberUuid.toString());
+            statement.executeUpdate();
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to update clan member contributions", exception);
+        }
+    }
+
+    private void logClanTransaction(final int clanId, final UUID playerUuid, final String type, final long amount,
+                                    final long balanceAfter) {
+        final String query = "INSERT INTO clan_transactions (clan_id, player_uuid, transaction_type, amount, balance_after, created_at) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            statement.setString(2, playerUuid.toString());
+            statement.setString(3, type);
+            statement.setLong(4, amount);
+            statement.setLong(5, balanceAfter);
+            statement.executeUpdate();
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to log clan transaction", exception);
+        }
+    }
+
+    private ClanPermission resolvePermission(final String permissionKey) {
+        final String key = permissionKey.toLowerCase(Locale.ROOT);
+        switch (key) {
+            case "clan.invite":
+                return ClanPermission.INVITE;
+            case "clan.withdraw":
+                return ClanPermission.MANAGE_BANK;
+            case "clan.kick":
+                return ClanPermission.KICK;
+            case "clan.promote":
+                return ClanPermission.PROMOTE;
+            case "clan.demote":
+                return ClanPermission.DEMOTE;
+            case "clan.manage_ranks":
+                return ClanPermission.MANAGE_RANKS;
+            case "clan.disband":
+                return ClanPermission.DISBAND;
+            default:
+                return null;
         }
     }
 
@@ -545,6 +698,33 @@ public class ClanManager {
             }
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to fetch clan invitation", exception);
+        }
+        return null;
+    }
+
+    private Clan loadClanById(final int clanId) {
+        final String query = "SELECT id, name, tag, leader_uuid, description, max_members, points, level, bank_coins FROM clans WHERE id = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    final String clanName = resultSet.getString("name");
+                    final String tag = resultSet.getString("tag");
+                    final UUID leaderUUID = UUID.fromString(resultSet.getString("leader_uuid"));
+                    final Clan clan = new Clan(clanId, clanName, tag, leaderUUID);
+                    clan.setDescription(resultSet.getString("description"));
+                    clan.setMaxMembers(resultSet.getInt("max_members"));
+                    clan.addPoints(resultSet.getInt("points"));
+                    clan.setLevel(resultSet.getInt("level"));
+                    clan.setBankCoins(resultSet.getLong("bank_coins"));
+                    loadClanRanks(clan, connection);
+                    loadClanMembers(clan, connection);
+                    return clan;
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load clan by id", exception);
         }
         return null;
     }
