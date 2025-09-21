@@ -47,7 +47,7 @@ public class ConfirmationManager implements Listener {
         if (request == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, player::closeInventory);
+        Bukkit.getScheduler().runTask(plugin, (Runnable) player::closeInventory);
         final ActionProcessor processor = resolveActionProcessor();
         if (processor == null) {
             return;

@@ -194,7 +194,7 @@ public final class ChatInputManager implements Listener {
         waitingInputs.put(uuid, session);
         session.scheduleTimeout(plugin, () -> {
             if (waitingInputs.remove(uuid, session)) {
-                Bukkit.getScheduler().runTask(plugin, onTimeout);
+                Bukkit.getScheduler().runTask(plugin, (Runnable) onTimeout);
             }
         });
     }
@@ -208,7 +208,7 @@ public final class ChatInputManager implements Listener {
         }
 
         private void scheduleTimeout(final LobbyPlugin plugin, final Runnable timeoutCallback) {
-            timeoutTask = Bukkit.getScheduler().runTaskLater(plugin, timeoutCallback, 600L);
+            timeoutTask = Bukkit.getScheduler().runTaskLater(plugin, (Runnable) timeoutCallback, 600L);
         }
 
         private void cancelTimeout() {
