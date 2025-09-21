@@ -3,6 +3,8 @@ package com.lobby.npcs;
 import com.lobby.LobbyPlugin;
 import com.lobby.menus.MenuManager;
 import com.lobby.social.ChatInputManager;
+import com.lobby.social.clans.Clan;
+import com.lobby.social.clans.ClanManager;
 import com.lobby.social.menus.ClanMenus;
 import com.lobby.social.menus.FriendsMenus;
 import com.lobby.utils.LogUtils;
@@ -78,6 +80,10 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[CLAN_INVITE]")) {
             ChatInputManager.startClanInviteFlow(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CLAN_DELETE_CONFIRM]")) {
+            handleClanDeleteConfirmation(player);
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[SOUND]")) {
@@ -161,6 +167,81 @@ public class ActionProcessor {
             final String coordinates = processed.substring(10).trim();
             handleTeleport(coordinates, player, npc);
         }
+    }
+
+    public static void openClanDeleteConfirmation(final Player player) {
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return;
+        }
+        final var npcManager = plugin.getNpcManager();
+        if (npcManager == null) {
+            return;
+        }
+        final ActionProcessor processor = npcManager.getActionProcessor();
+        if (processor == null) {
+            return;
+        }
+        processor.handleClanDeleteConfirmation(player);
+    }
+
+    private void handleClanDeleteConfirmation(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            return;
+        }
+        final Clan clan = clanManager.getPlayerClan(player.getUniqueId());
+        if (clan == null) {
+            player.sendMessage("§cVous n'êtes dans aucun clan.");
+            return;
+        }
+        if (!clan.isLeader(player.getUniqueId())) {
+            player.sendMessage("§cSeul le leader peut supprimer le clan.");
+            return;
+        }
+
+        player.closeInventory();
+        player.sendMessage("§c§l⚠ SUPPRESSION DE CLAN ⚠");
+        player.sendMessage("§7Vous êtes sur le point de supprimer définitivement votre clan.");
+        player.sendMessage("§7Cette action est §cIRRÉVERSIBLE§7 !");
+        player.sendMessage("§r");
+        player.sendMessage("§7Conséquences :");
+        player.sendMessage("§8▸ §7Tous les membres seront expulsés");
+        player.sendMessage("§8▸ §7Le trésor du clan sera perdu");
+        player.sendMessage("§8▸ §7Toutes les données seront supprimées");
+        player.sendMessage("§r");
+        player.sendMessage("§7Tapez §c'SUPPRIMER'§7 pour confirmer");
+        player.sendMessage("§7Tapez §a'annuler'§7 pour annuler");
+
+        final var menuManager = plugin.getMenuManager();
+        ChatInputManager.startInputFlow(player, inputRaw -> {
+            final String input = inputRaw.trim();
+            if (input.equalsIgnoreCase("SUPPRIMER")) {
+                final boolean success = clanManager.deleteClan(player.getUniqueId());
+                if (success) {
+                    player.sendMessage("§c§lClan supprimé avec succès !");
+                    player.sendMessage("§7Toutes les données ont été effacées.");
+                } else {
+                    player.sendMessage("§cErreur lors de la suppression du clan.");
+                }
+            } else if (input.equalsIgnoreCase("annuler")) {
+                player.sendMessage("§aSuppression annulée.");
+            } else {
+                player.sendMessage("§cCommande non reconnue - Suppression annulée.");
+            }
+
+            if (menuManager != null) {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> menuManager.openMenu(player, "clan_menu"), 40L);
+            }
+        }, () -> {
+            player.sendMessage("§cTemps écoulé - Suppression annulée.");
+            if (menuManager != null) {
+                menuManager.openMenu(player, "clan_menu");
+            }
+        });
     }
 
     private void parseAmountAndApply(final String raw, final java.util.function.LongConsumer consumer) {
