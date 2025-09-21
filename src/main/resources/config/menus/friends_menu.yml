@@ -88,7 +88,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour voir la liste !"
       actions:
-        - "[MESSAGE] &aListe des amis en ligne bientôt disponible !"
+        - "[MENU] friends_online_menu"
 
     friend_requests:
       slot: 22
@@ -104,7 +104,7 @@ menu:
         - "&r"
         - "&e▶ Cliquez pour gérer !"
       actions:
-        - "[MESSAGE] &eGestion des demandes bientôt disponible !"
+        - "[MENU] friend_requests_menu"
 
     friends_all:
       slot: 24
@@ -120,7 +120,7 @@ menu:
         - "&r"
         - "&b▶ Cliquez pour parcourir !"
       actions:
-        - "[MESSAGE] &bListe complète des amis bientôt disponible !"
+        - "[MENU] friends_all_menu"
 
     friend_add:
       slot: 28
@@ -136,7 +136,7 @@ menu:
         - "&r"
         - "&d▶ Cliquez pour ajouter !"
       actions:
-        - "[MESSAGE] &dSystème d'ajout d'amis bientôt disponible !"
+        - "[COMMAND] friend add"
 
     friend_settings:
       slot: 30
@@ -152,7 +152,7 @@ menu:
         - "&r"
         - "&6▶ Cliquez pour configurer !"
       actions:
-        - "[MESSAGE] &6Paramètres d'amis bientôt disponibles !"
+        - "[MENU] friend_settings_menu"
 
     friends_favorites:
       slot: 32
@@ -168,7 +168,7 @@ menu:
         - "&r"
         - "&c▶ Cliquez pour voir !"
       actions:
-        - "[MESSAGE] &cGestion des favoris bientôt disponible !"
+        - "[MENU] friends_favorites_menu"
 
     back:
       slot: 49

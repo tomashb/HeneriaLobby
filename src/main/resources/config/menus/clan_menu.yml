@@ -89,7 +89,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour voir les détails !"
       actions:
-        - "[MESSAGE] &cInformations du clan affichées !"
+        - "[MENU] clan_info_menu"
 
     clan_members:
       slot: 21
@@ -105,7 +105,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour gérer !"
       actions:
-        - "[MESSAGE] &eGestion des membres bientôt disponible !"
+        - "[MENU] clan_members_menu"
 
     clan_ranks:
       slot: 23
@@ -121,7 +121,7 @@ menu:
         - "&r"
         - "&6⚠ Nécessite rang Officier+"
       actions:
-        - "[MESSAGE] &dGestion des rangs bientôt disponible !"
+        - "[MENU] clan_ranks_menu"
 
     clan_treasury:
       slot: 25
@@ -137,7 +137,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour accéder !"
       actions:
-        - "[MESSAGE] &aTrésor du clan bientôt disponible !"
+        - "[MENU] clan_vault_menu"
 
     clan_wars:
       slot: 31
@@ -154,7 +154,7 @@ menu:
         - "&r"
         - "&c⚔ Cliquez pour les guerres !"
       actions:
-        - "[MESSAGE] &bGuerres de clans bientôt disponibles !"
+        - "[MENU] clan_wars_menu"
 
     clan_create:
       slot: 37
@@ -186,7 +186,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour explorer !"
       actions:
-        - "[MESSAGE] &eListe des clans bientôt disponible !"
+        - "[MENU] clan_browse_menu"
 
     back:
       slot: 49
