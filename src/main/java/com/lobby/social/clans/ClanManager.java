@@ -14,6 +14,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Locale;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
+import java.sql.ResultSetMetaData;
 import java.util.List;
 
 public class ClanManager {
@@ -244,6 +246,109 @@ public class ClanManager {
             return false;
         }
         return clan.hasPermission(playerUuid, permission);
+    }
+
+    public ClanRank getPlayerRank(final UUID playerUuid) {
+        final Clan clan = getPlayerClan(playerUuid);
+        return getPlayerRank(clan, playerUuid);
+    }
+
+    public ClanRank getRank(final int clanId, final String rankName) {
+        if (rankName == null || rankName.isBlank()) {
+            return null;
+        }
+        final Clan clan = getClanById(clanId);
+        if (clan == null) {
+            return null;
+        }
+        return clan.getRank(rankName);
+    }
+
+    public ClanRank getNextRank(final int clanId, final int currentPriority) {
+        final Clan clan = getClanById(clanId);
+        if (clan == null) {
+            return null;
+        }
+        return getNextRank(clan, currentPriority);
+    }
+
+    public ClanRank getPreviousRank(final int clanId, final int currentPriority) {
+        final Clan clan = getClanById(clanId);
+        if (clan == null) {
+            return null;
+        }
+        return getPreviousRank(clan, currentPriority);
+    }
+
+    public boolean promotePlayer(final UUID promoter, final UUID target) {
+        if (promoter == null || target == null) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(promoter);
+        final Clan targetClan = getPlayerClan(target);
+        if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
+            return false;
+        }
+        if (!hasPermission(clan.getId(), promoter, "clan.promote")) {
+            return false;
+        }
+        final ClanRank currentRank = getPlayerRank(clan, target);
+        if (currentRank == null) {
+            return false;
+        }
+        final ClanRank nextRank = getNextRank(clan, currentRank.getPriority());
+        if (nextRank == null) {
+            return false;
+        }
+        final ClanRank promoterRank = getPlayerRank(clan, promoter);
+        if (!clan.isLeader(promoter) && promoterRank != null
+                && nextRank.getPriority() >= promoterRank.getPriority()) {
+            return false;
+        }
+        if (setPlayerRank(clan, target, nextRank)) {
+            final String targetName = getNameByUuid(target);
+            broadcastRankChangeMessage(clan, targetName != null ? targetName : target.toString(),
+                    nextRank.getDisplayName(), true);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean demotePlayer(final UUID demoter, final UUID target) {
+        if (demoter == null || target == null) {
+            return false;
+        }
+        final Clan clan = getPlayerClan(demoter);
+        final Clan targetClan = getPlayerClan(target);
+        if (clan == null || targetClan == null || clan.getId() != targetClan.getId()) {
+            return false;
+        }
+        if (!hasPermission(clan.getId(), demoter, "clan.demote")) {
+            return false;
+        }
+        if (clan.isLeader(target)) {
+            return false;
+        }
+        final ClanRank currentRank = getPlayerRank(clan, target);
+        if (currentRank == null) {
+            return false;
+        }
+        final ClanRank previousRank = getPreviousRank(clan, currentRank.getPriority());
+        if (previousRank == null) {
+            return false;
+        }
+        final ClanRank demoterRank = getPlayerRank(clan, demoter);
+        if (!clan.isLeader(demoter) && demoterRank != null
+                && previousRank.getPriority() >= demoterRank.getPriority()) {
+            return false;
+        }
+        if (setPlayerRank(clan, target, previousRank)) {
+            final String targetName = getNameByUuid(target);
+            broadcastRankChangeMessage(clan, targetName != null ? targetName : target.toString(),
+                    previousRank.getDisplayName(), false);
+            return true;
+        }
+        return false;
     }
 
     public boolean depositCoins(final Player player, final long amount) {
@@ -518,13 +623,16 @@ public class ClanManager {
     }
 
     private void saveRank(final int clanId, final ClanRank rank) {
-        final String query = "INSERT INTO clan_ranks (clan_id, name, display_name, permissions, priority) VALUES (?, ?, ?, ?, ?)";
+        final String query = "INSERT INTO clan_ranks (clan_id, name, display_name, permissions, priority, can_promote, can_demote, can_manage_ranks) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = databaseManager.getConnection(); PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, clanId);
             statement.setString(2, rank.getName());
             statement.setString(3, rank.getDisplayName());
             statement.setString(4, serializePermissions(rank.getPermissions()));
             statement.setInt(5, rank.getPriority());
+            statement.setBoolean(6, rank.hasPermission(ClanPermission.PROMOTE));
+            statement.setBoolean(7, rank.hasPermission(ClanPermission.DEMOTE));
+            statement.setBoolean(8, rank.hasPermission(ClanPermission.MANAGE_RANKS));
             statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save clan rank", exception);
@@ -868,16 +976,26 @@ public class ClanManager {
     }
 
     private void loadClanRanks(final Clan clan, final Connection connection) throws SQLException {
-        final String query = "SELECT name, display_name, permissions, priority FROM clan_ranks WHERE clan_id = ?";
+        final String query = "SELECT name, display_name, permissions, priority, can_promote, can_demote, can_manage_ranks FROM clan_ranks WHERE clan_id = ?";
         try (PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, clan.getId());
             try (ResultSet resultSet = statement.executeQuery()) {
+                final ResultSetMetaData metaData = resultSet.getMetaData();
                 while (resultSet.next()) {
                     final String name = resultSet.getString("name");
                     final String displayName = resultSet.getString("display_name");
                     final String permissionsString = resultSet.getString("permissions");
                     final int priority = resultSet.getInt("priority");
                     final Set<ClanPermission> permissions = deserializePermissions(permissionsString);
+                    if (hasColumn(metaData, "can_promote") && resultSet.getBoolean("can_promote")) {
+                        permissions.add(ClanPermission.PROMOTE);
+                    }
+                    if (hasColumn(metaData, "can_demote") && resultSet.getBoolean("can_demote")) {
+                        permissions.add(ClanPermission.DEMOTE);
+                    }
+                    if (hasColumn(metaData, "can_manage_ranks") && resultSet.getBoolean("can_manage_ranks")) {
+                        permissions.add(ClanPermission.MANAGE_RANKS);
+                    }
                     clan.addRank(new ClanRank(name, displayName, priority, permissions));
                 }
             }
@@ -898,6 +1016,62 @@ public class ClanManager {
                             joinedAt != null ? joinedAt.getTime() : System.currentTimeMillis(), totalContributions));
                 }
             }
+        }
+    }
+
+    private ClanRank getPlayerRank(final Clan clan, final UUID playerUuid) {
+        if (clan == null || playerUuid == null) {
+            return null;
+        }
+        if (clan.isLeader(playerUuid)) {
+            return clan.getRank("Leader");
+        }
+        final ClanMember member = clan.getMember(playerUuid);
+        if (member == null) {
+            return null;
+        }
+        return clan.getRank(member.getRankName());
+    }
+
+    private ClanRank getNextRank(final Clan clan, final int currentPriority) {
+        return clan.getRanks().stream()
+                .filter(rank -> rank.getPriority() > currentPriority)
+                .min(Comparator.comparingInt(ClanRank::getPriority))
+                .orElse(null);
+    }
+
+    private ClanRank getPreviousRank(final Clan clan, final int currentPriority) {
+        return clan.getRanks().stream()
+                .filter(rank -> rank.getPriority() < currentPriority)
+                .max(Comparator.comparingInt(ClanRank::getPriority))
+                .orElse(null);
+    }
+
+    private boolean setPlayerRank(final Clan clan, final UUID playerUuid, final ClanRank targetRank) {
+        if (clan == null || playerUuid == null || targetRank == null) {
+            return false;
+        }
+        final String query = "UPDATE clan_members SET rank_name = ? WHERE clan_id = ? AND player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, targetRank.getName());
+            statement.setInt(2, clan.getId());
+            statement.setString(3, playerUuid.toString());
+            final boolean updated = statement.executeUpdate() > 0;
+            if (updated) {
+                final ClanMember member = clan.getMember(playerUuid);
+                if (member != null) {
+                    member.setRankName(targetRank.getName());
+                }
+                final Player player = Bukkit.getPlayer(playerUuid);
+                if (player != null) {
+                    player.sendMessage("§aVotre rang a été modifié: " + targetRank.getDisplayName());
+                }
+            }
+            return updated;
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to update clan member rank", exception);
+            return false;
         }
     }
 
@@ -926,6 +1100,28 @@ public class ClanManager {
             return "[]";
         }
         return permissions.stream().map(Enum::name).collect(Collectors.joining(",", "[", "]"));
+    }
+
+    private boolean hasColumn(final ResultSetMetaData metaData, final String column) throws SQLException {
+        final int count = metaData.getColumnCount();
+        for (int index = 1; index <= count; index++) {
+            if (column.equalsIgnoreCase(metaData.getColumnName(index))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String getNameByUuid(final UUID uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        final Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            return player.getName();
+        }
+        final org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+        return offlinePlayer.getName();
     }
 
     private UUID getUUIDFromName(final String name) {

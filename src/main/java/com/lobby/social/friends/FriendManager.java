@@ -433,12 +433,77 @@ public class FriendManager {
         return settingsCache.computeIfAbsent(uuid, this::loadSettings);
     }
 
+    public boolean toggleRequestAcceptance(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return true;
+        }
+        final FriendSettings current = getFriendSettings(playerUuid);
+        final AcceptMode nextMode = current.getAcceptRequests() == AcceptMode.NONE ? AcceptMode.ALL : AcceptMode.NONE;
+        final FriendSettings updated = new FriendSettings(nextMode, current.isShowOnlineStatus(),
+                current.isAllowNotifications(), current.isAutoAcceptFavorites(),
+                current.isAllowPrivateMessages(), current.getMaxFriends());
+        updateSettings(playerUuid, updated);
+        return nextMode != AcceptMode.NONE;
+    }
+
+    public boolean toggleNotifications(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return true;
+        }
+        final FriendSettings current = getFriendSettings(playerUuid);
+        final boolean allowNotifications = !current.isAllowNotifications();
+        final FriendSettings updated = new FriendSettings(current.getAcceptRequests(), current.isShowOnlineStatus(),
+                allowNotifications, current.isAutoAcceptFavorites(), current.isAllowPrivateMessages(),
+                current.getMaxFriends());
+        updateSettings(playerUuid, updated);
+        return allowNotifications;
+    }
+
+    public boolean toggleVisibility(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return true;
+        }
+        final FriendSettings current = getFriendSettings(playerUuid);
+        final boolean showStatus = !current.isShowOnlineStatus();
+        final FriendSettings updated = new FriendSettings(current.getAcceptRequests(), showStatus,
+                current.isAllowNotifications(), current.isAutoAcceptFavorites(), current.isAllowPrivateMessages(),
+                current.getMaxFriends());
+        updateSettings(playerUuid, updated);
+        return showStatus;
+    }
+
+    public boolean toggleAutoAcceptFavorites(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return false;
+        }
+        final FriendSettings current = getFriendSettings(playerUuid);
+        final boolean autoFavorites = !current.isAutoAcceptFavorites();
+        final FriendSettings updated = new FriendSettings(current.getAcceptRequests(), current.isShowOnlineStatus(),
+                current.isAllowNotifications(), autoFavorites, current.isAllowPrivateMessages(),
+                current.getMaxFriends());
+        updateSettings(playerUuid, updated);
+        return autoFavorites;
+    }
+
+    public boolean togglePrivateMessages(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return true;
+        }
+        final FriendSettings current = getFriendSettings(playerUuid);
+        final boolean allowPrivateMessages = !current.isAllowPrivateMessages();
+        final FriendSettings updated = new FriendSettings(current.getAcceptRequests(), current.isShowOnlineStatus(),
+                current.isAllowNotifications(), current.isAutoAcceptFavorites(), allowPrivateMessages,
+                current.getMaxFriends());
+        updateSettings(playerUuid, updated);
+        return allowPrivateMessages;
+    }
+
     public void updateSettings(final UUID uuid, final FriendSettings settings) {
         final String query;
         if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
-            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE accept_requests = VALUES(accept_requests), show_online_status = VALUES(show_online_status), allow_notifications = VALUES(allow_notifications), receive_notifications = VALUES(receive_notifications), auto_accept_favorites = VALUES(auto_accept_favorites), auto_accept_friends = VALUES(auto_accept_friends), max_friends = VALUES(max_friends)";
+            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, allow_private_messages, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE accept_requests = VALUES(accept_requests), show_online_status = VALUES(show_online_status), allow_notifications = VALUES(allow_notifications), receive_notifications = VALUES(receive_notifications), auto_accept_favorites = VALUES(auto_accept_favorites), auto_accept_friends = VALUES(auto_accept_friends), allow_private_messages = VALUES(allow_private_messages), max_friends = VALUES(max_friends)";
         } else {
-            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(player_uuid) DO UPDATE SET accept_requests = excluded.accept_requests, show_online_status = excluded.show_online_status, allow_notifications = excluded.allow_notifications, receive_notifications = excluded.receive_notifications, auto_accept_favorites = excluded.auto_accept_favorites, auto_accept_friends = excluded.auto_accept_friends, max_friends = excluded.max_friends";
+            query = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, allow_private_messages, max_friends) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(player_uuid) DO UPDATE SET accept_requests = excluded.accept_requests, show_online_status = excluded.show_online_status, allow_notifications = excluded.allow_notifications, receive_notifications = excluded.receive_notifications, auto_accept_favorites = excluded.auto_accept_favorites, auto_accept_friends = excluded.auto_accept_friends, allow_private_messages = excluded.allow_private_messages, max_friends = excluded.max_friends";
         }
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
@@ -449,7 +514,8 @@ public class FriendManager {
             statement.setBoolean(5, settings.isAllowNotifications());
             statement.setBoolean(6, settings.isAutoAcceptFavorites());
             statement.setBoolean(7, settings.isAutoAcceptFavorites());
-            statement.setInt(8, settings.getMaxFriends());
+            statement.setBoolean(8, settings.isAllowPrivateMessages());
+            statement.setInt(9, settings.getMaxFriends());
             statement.executeUpdate();
             settingsCache.put(uuid, settings);
         } catch (final SQLException exception) {
@@ -471,19 +537,22 @@ public class FriendManager {
                             "allow_notifications", "receive_notifications", true);
                     final boolean autoAcceptFavorites = getBooleanWithFallback(resultSet, metaData,
                             "auto_accept_favorites", "auto_accept_friends", false);
+                    final boolean allowPrivateMessages = getBoolean(resultSet, metaData,
+                            "allow_private_messages", true);
                     final int maxFriends = getIntWithDefault(resultSet, metaData, "max_friends", 100);
-                    return new FriendSettings(acceptMode, showOnline, allowNotifications, autoAcceptFavorites, maxFriends);
+                    return new FriendSettings(acceptMode, showOnline, allowNotifications, autoAcceptFavorites,
+                            allowPrivateMessages, maxFriends);
                 }
             }
             insertDefaultSettings(uuid, connection);
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to load friend settings for " + uuid, exception);
         }
-        return new FriendSettings(AcceptMode.ALL, true, true, false, 100);
+        return new FriendSettings(AcceptMode.ALL, true, true, false, true, 100);
     }
 
     private void insertDefaultSettings(final UUID uuid, final Connection connection) throws SQLException {
-        final String insertQuery = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, max_friends) VALUES (?, 'ALL', 1, 1, 1, 0, 0, 100)";
+        final String insertQuery = "INSERT INTO friend_settings (player_uuid, accept_requests, show_online_status, allow_notifications, receive_notifications, auto_accept_favorites, auto_accept_friends, allow_private_messages, max_friends) VALUES (?, 'ALL', 1, 1, 1, 0, 0, 1, 100)";
         try (PreparedStatement statement = connection.prepareStatement(insertQuery)) {
             statement.setString(1, uuid.toString());
             statement.executeUpdate();
@@ -507,6 +576,14 @@ public class FriendManager {
             }
         }
         return online;
+    }
+
+    public void refreshOnlineFriends(final UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        final Set<UUID> refreshed = loadFriendsFromDatabase(uuid);
+        friendsCache.put(uuid, refreshed);
     }
 
     public List<UUID> getFavoriteFriends(final UUID uuid) {

@@ -1,10 +1,11 @@
 package com.lobby.commands;
 
-import com.lobby.social.friends.AcceptMode;
 import com.lobby.social.friends.FriendInfo;
 import com.lobby.social.friends.FriendManager;
-import com.lobby.social.friends.FriendSettings;
+import com.lobby.LobbyPlugin;
+import com.lobby.menus.MenuManager;
 import org.bukkit.ChatColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -172,61 +173,66 @@ public class FriendCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        final FriendSettings current = friendManager.getFriendSettings(player.getUniqueId());
         final String option = args[2].toLowerCase(Locale.ROOT);
-        FriendSettings updated;
         String feedback;
         switch (option) {
             case "requests":
-                final AcceptMode nextMode = cycleAcceptMode(current.getAcceptRequests());
-                updated = new FriendSettings(nextMode, current.isShowOnlineStatus(), current.isAllowNotifications(),
-                        current.isAutoAcceptFavorites(), current.getMaxFriends());
-                feedback = ChatColor.GREEN + "Demandes d'amis: " + describeAcceptMode(nextMode);
+                final boolean requestsEnabled = friendManager.toggleRequestAcceptance(player.getUniqueId());
+                feedback = requestsEnabled
+                        ? ChatColor.GREEN + "Requêtes d'amis activées"
+                        : ChatColor.RED + "Requêtes d'amis désactivées";
                 break;
             case "notifications":
-                final boolean allowNotifications = !current.isAllowNotifications();
-                updated = new FriendSettings(current.getAcceptRequests(), current.isShowOnlineStatus(), allowNotifications,
-                        current.isAutoAcceptFavorites(), current.getMaxFriends());
-                feedback = ChatColor.GREEN + "Notifications: " + (allowNotifications ? "Activées" : "Désactivées");
+                final boolean notificationsEnabled = friendManager.toggleNotifications(player.getUniqueId());
+                feedback = notificationsEnabled
+                        ? ChatColor.GREEN + "Notifications activées"
+                        : ChatColor.RED + "Notifications désactivées";
                 break;
             case "visibility":
-                final boolean showStatus = !current.isShowOnlineStatus();
-                updated = new FriendSettings(current.getAcceptRequests(), showStatus, current.isAllowNotifications(),
-                        current.isAutoAcceptFavorites(), current.getMaxFriends());
-                feedback = ChatColor.GREEN + "Visibilité: " + (showStatus ? "Visible" : "Caché");
+                final boolean visibilityEnabled = friendManager.toggleVisibility(player.getUniqueId());
+                feedback = visibilityEnabled
+                        ? ChatColor.GREEN + "Visibilité activée"
+                        : ChatColor.RED + "Visibilité masquée";
                 break;
             case "favorites":
-                final boolean autoFavorites = !current.isAutoAcceptFavorites();
-                updated = new FriendSettings(current.getAcceptRequests(), current.isShowOnlineStatus(),
-                        current.isAllowNotifications(), autoFavorites, current.getMaxFriends());
-                feedback = ChatColor.GREEN + "Acceptation auto favoris: " + (autoFavorites ? "Activée" : "Désactivée");
+                final boolean autoFavorites = friendManager.toggleAutoAcceptFavorites(player.getUniqueId());
+                feedback = autoFavorites
+                        ? ChatColor.GREEN + "Acceptation auto favoris activée"
+                        : ChatColor.RED + "Acceptation auto favoris désactivée";
+                break;
+            case "messages":
+                final boolean privateMessages = friendManager.togglePrivateMessages(player.getUniqueId());
+                feedback = privateMessages
+                        ? ChatColor.GREEN + "Messages privés activés"
+                        : ChatColor.RED + "Messages privés désactivés";
                 break;
             default:
                 sendSettingsUsage(player, label);
                 return;
         }
 
-        friendManager.updateSettings(player.getUniqueId(), updated);
         player.sendMessage(feedback);
+        reopenFriendSettingsMenu(player);
     }
 
     private void sendSettingsUsage(final Player player, final String label) {
-        player.sendMessage(ChatColor.YELLOW + "Usage: /" + label + " settings toggle <requests|notifications|visibility|favorites>");
+        player.sendMessage(ChatColor.YELLOW + "Usage: /" + label
+                + " settings toggle <requests|notifications|visibility|favorites|messages>");
     }
 
-    private AcceptMode cycleAcceptMode(final AcceptMode current) {
-        return switch (current) {
-            case ALL -> AcceptMode.FRIENDS_OF_FRIENDS;
-            case FRIENDS_OF_FRIENDS -> AcceptMode.NONE;
-            case NONE -> AcceptMode.ALL;
-        };
-    }
-
-    private String describeAcceptMode(final AcceptMode mode) {
-        return switch (mode) {
-            case ALL -> "Tous";
-            case FRIENDS_OF_FRIENDS -> "Amis d'amis";
-            case NONE -> "Aucun";
-        };
+    private void reopenFriendSettingsMenu(final Player player) {
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null || !player.isOnline()) {
+            return;
+        }
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (menuManager == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (player.isOnline()) {
+                menuManager.openMenu(player, "friend_settings_menu");
+            }
+        }, 20L);
     }
 }

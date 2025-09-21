@@ -1,6 +1,7 @@
 package com.lobby.social.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.friends.FriendRequest;
 import org.bukkit.Bukkit;
@@ -35,21 +36,28 @@ public final class FriendsMenus {
             return;
         }
         final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return;
+        }
         final FriendManager friendManager = plugin.getFriendManager();
+        if (friendManager == null) {
+            return;
+        }
         final List<UUID> onlineFriends = friendManager.getOnlineFriends(player.getUniqueId());
 
         final Inventory menu = Bukkit.createInventory(null, 54, FRIENDS_ONLINE_TITLE);
         setupGreenBorders(menu);
 
         if (onlineFriends.isEmpty()) {
-            final ItemStack noFriends = new ItemStack(Material.BARRIER);
+            final ItemStack noFriends = createHeadItem("hdb:9945", Material.PLAYER_HEAD);
             final ItemMeta meta = noFriends.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName("§cAucun ami en ligne");
                 meta.setLore(Arrays.asList(
                         "§7Vos amis ne sont pas connectés",
+                        "§7pour le moment.",
                         "§r",
-                        "§eInvitez d'autres joueurs !"
+                        "§eInvitez d'autres joueurs à jouer !"
                 ));
                 noFriends.setItemMeta(meta);
             }
@@ -66,6 +74,7 @@ public final class FriendsMenus {
             }
         }
 
+        menu.setItem(46, createRefreshItem());
         addBackButton(menu, 49);
         player.openInventory(menu);
     }
@@ -75,7 +84,13 @@ public final class FriendsMenus {
             return;
         }
         final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return;
+        }
         final FriendManager friendManager = plugin.getFriendManager();
+        if (friendManager == null) {
+            return;
+        }
         final List<FriendRequest> requests = new ArrayList<>(friendManager.getPendingRequestsDetailed(player.getUniqueId()));
 
         final Inventory menu = Bukkit.createInventory(null, 54, FRIEND_REQUESTS_TITLE);
@@ -83,11 +98,17 @@ public final class FriendsMenus {
 
         final Map<Integer, FriendRequest> slotMap = new HashMap<>();
         if (requests.isEmpty()) {
-            final ItemStack none = new ItemStack(Material.BARRIER);
+            final ItemStack none = createHeadItem("hdb:1455", Material.PLAYER_HEAD);
             final ItemMeta meta = none.getItemMeta();
             if (meta != null) {
                 meta.setDisplayName("§cAucune demande d'ami");
-                meta.setLore(Collections.singletonList("§7Vous n'avez aucune demande en attente"));
+                meta.setLore(Arrays.asList(
+                        "§7Vous n'avez aucune demande",
+                        "§7d'ami en attente.",
+                        "§r",
+                        "§ePartagez votre pseudo pour",
+                        "§erecevoir des demandes !"
+                ));
                 none.setItemMeta(meta);
             }
             menu.setItem(22, none);
@@ -158,7 +179,7 @@ public final class FriendsMenus {
     }
 
     private static void addBackButton(final Inventory menu, final int slot) {
-        final ItemStack back = new ItemStack(Material.ARROW);
+        final ItemStack back = createHeadItem("hdb:9334", Material.ARROW);
         final ItemMeta meta = back.getItemMeta();
         if (meta != null) {
             meta.setDisplayName("§c§lRetour");
@@ -179,6 +200,34 @@ public final class FriendsMenus {
         for (int slot : borderSlots) {
             inventory.setItem(slot, pane.clone());
         }
+    }
+
+    private static ItemStack createRefreshItem() {
+        final ItemStack refresh = createHeadItem("hdb:38878", Material.PLAYER_HEAD);
+        final ItemMeta meta = refresh.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName("§b§lActualiser");
+            meta.setLore(Arrays.asList(
+                    "§7Actualiser la liste des",
+                    "§7amis en ligne.",
+                    "§r",
+                    "§b▶ Cliquez pour actualiser!"
+            ));
+            refresh.setItemMeta(meta);
+        }
+        return refresh;
+    }
+
+    private static ItemStack createHeadItem(final String headId, final Material fallback) {
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return new ItemStack(fallback);
+        }
+        final HeadDatabaseManager manager = plugin.getHeadDatabaseManager();
+        if (manager == null) {
+            return new ItemStack(fallback);
+        }
+        return manager.getHead(headId, fallback);
     }
 
     private static int nextContentSlot(final int currentSlot) {

@@ -70,6 +70,11 @@ public final class MenuClickHandler implements Listener {
             openMenu(player, "friends_menu");
             return;
         }
+        if (FriendsMenus.FRIENDS_ONLINE_TITLE.equals(title) && slot == 46) {
+            friendManager.refreshOnlineFriends(player.getUniqueId());
+            FriendsMenus.openFriendsOnlineMenu(player);
+            return;
+        }
         if (FriendsMenus.FRIEND_REQUESTS_TITLE.equals(title)) {
             final FriendRequest request = FriendsMenus.getRequestAt(player, slot);
             if (request == null) {
