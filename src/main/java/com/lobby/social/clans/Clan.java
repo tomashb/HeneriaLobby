@@ -3,6 +3,7 @@ package com.lobby.social.clans;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -126,11 +127,24 @@ public class Clan {
     }
 
     public void addRank(final ClanRank rank) {
-        ranks.put(rank.getName(), rank);
+        if (rank == null) {
+            return;
+        }
+        ranks.put(normalize(rank.getName()), rank);
     }
 
     public ClanRank getRank(final String name) {
-        return ranks.get(name);
+        if (name == null) {
+            return null;
+        }
+        final ClanRank direct = ranks.get(normalize(name));
+        if (direct != null) {
+            return direct;
+        }
+        return ranks.values().stream()
+                .filter(rank -> rank.getDisplayName().equalsIgnoreCase(name))
+                .findFirst()
+                .orElse(null);
     }
 
     public boolean isLeader(final UUID uuid) {
@@ -164,5 +178,9 @@ public class Clan {
             points -= requiredPoints;
             maxMembers += 5;
         }
+    }
+
+    private String normalize(final String value) {
+        return value.toLowerCase(Locale.ROOT);
     }
 }
