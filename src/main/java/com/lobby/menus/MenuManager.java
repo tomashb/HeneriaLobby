@@ -180,6 +180,7 @@ public class MenuManager implements Listener {
                 "settings_menu.yml",
                 "language_menu.yml",
                 "friends_menu.yml",
+                "friend_management.yml",
                 "groups_menu.yml",
                 "clan_menu.yml"
         );
