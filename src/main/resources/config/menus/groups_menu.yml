@@ -90,7 +90,7 @@ menu:
         - "&r"
         - "&e▶ Cliquez pour gérer !"
       actions:
-        - "[MESSAGE] &eGestion de groupe bientôt disponible !"
+        - "[MENU] group_manage_menu"
 
     group_create:
       slot: 22
@@ -107,7 +107,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour créer !"
       actions:
-        - "[MESSAGE] &aCréation de groupe bientôt disponible !"
+        - "[COMMAND] group create"
 
     group_join:
       slot: 24
@@ -123,7 +123,7 @@ menu:
         - "&r"
         - "&b▶ Cliquez pour explorer !"
       actions:
-        - "[MESSAGE] &bRecherche de groupes bientôt disponible !"
+        - "[MENU] group_browse_menu"
 
     group_invite:
       slot: 28
@@ -139,7 +139,7 @@ menu:
         - "&r"
         - "&d▶ Cliquez pour inviter !"
       actions:
-        - "[MESSAGE] &dSystème d'invitation bientôt disponible !"
+        - "[MENU] group_invite_menu"
 
     group_queue:
       slot: 30
@@ -155,7 +155,7 @@ menu:
         - "&r"
         - "&6▶ Cliquez pour rejoindre !"
       actions:
-        - "[MESSAGE] &6Files d'attente bientôt disponibles !"
+        - "[MENU] queue_menu"
 
     group_settings:
       slot: 32
@@ -171,7 +171,7 @@ menu:
         - "&r"
         - "&c▶ Cliquez pour configurer !"
       actions:
-        - "[MESSAGE] &cParamètres de groupe bientôt disponibles !"
+        - "[MENU] group_settings_menu"
 
     back:
       slot: 49
