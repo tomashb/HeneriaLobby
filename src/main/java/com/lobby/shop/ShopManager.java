@@ -161,7 +161,7 @@ public class ShopManager implements Listener {
                 continue;
             }
             final String parsed = command.replace("%player%", player.getName());
-            Bukkit.getScheduler().runTask(plugin, () ->
+            Bukkit.getScheduler().runTask(plugin, (Runnable) () ->
                     Bukkit.dispatchCommand(Bukkit.getConsoleSender(), parsed));
         }
 
@@ -423,7 +423,7 @@ public class ShopManager implements Listener {
         if (context.type() == MenuType.MAIN) {
             final String categoryId = container.get(categoryKey, PersistentDataType.STRING);
             if (categoryId != null && !categoryId.isBlank()) {
-                Bukkit.getScheduler().runTask(plugin, () -> openCategoryMenu(player, categoryId));
+                Bukkit.getScheduler().runTask(plugin, (Runnable) () -> openCategoryMenu(player, categoryId));
             }
             return;
         }

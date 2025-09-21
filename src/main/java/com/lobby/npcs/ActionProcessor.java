@@ -311,7 +311,7 @@ public class ActionProcessor {
             }
 
             if (menuManager != null) {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> menuManager.openMenu(player, "clan_menu"), 40L);
+                Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> menuManager.openMenu(player, "clan_menu"), 40L);
             }
         }, () -> {
             player.sendMessage("§cTemps écoulé - Suppression annulée.");
@@ -672,7 +672,7 @@ public class ActionProcessor {
         if (player == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> ClanMenus.openClanMembersMenu(player));
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> ClanMenus.openClanMembersMenu(player));
     }
 
     private void reopenMenu(final Player player, final String menuId) {
@@ -683,7 +683,7 @@ public class ActionProcessor {
         if (menuManager == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> {
             if (player.isOnline()) {
                 menuManager.openMenu(player, menuId);
             }

@@ -135,7 +135,7 @@ public class LobbyItemManager {
         }
 
         if (heldSlot >= 0 && heldSlot < 9) {
-            Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setHeldItemSlot(heldSlot));
+            Bukkit.getScheduler().runTask(plugin, (Runnable) () -> player.getInventory().setHeldItemSlot(heldSlot));
         }
 
         player.updateInventory();

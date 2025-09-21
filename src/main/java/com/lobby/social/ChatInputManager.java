@@ -173,7 +173,7 @@ public final class ChatInputManager implements Listener {
         }
         event.setCancelled(true);
         session.cancelTimeout();
-        Bukkit.getScheduler().runTask(plugin, () -> session.accept(event.getMessage()));
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> session.accept(event.getMessage()));
     }
 
     @EventHandler

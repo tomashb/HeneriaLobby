@@ -225,7 +225,7 @@ public class FriendCommand implements CommandExecutor, TabCompleter {
         if (menuManager == null) {
             return;
         }
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> {
             if (player.isOnline()) {
                 menuManager.openMenu(player, "friend_settings_menu");
             }
