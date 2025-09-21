@@ -47,50 +47,118 @@ public class FriendManager {
     }
 
     public boolean sendFriendRequest(final Player sender, final String targetName) {
+        if (sender == null || targetName == null || targetName.isBlank()) {
+            return false;
+        }
+
         final Player target = Bukkit.getPlayerExact(targetName);
-        if (target == null) {
+        final UUID targetUuid = target != null ? target.getUniqueId() : getUuidByName(targetName);
+        if (targetUuid == null) {
             sender.sendMessage("§cJoueur introuvable ou hors ligne.");
             return false;
         }
 
-        if (sender.getUniqueId().equals(target.getUniqueId())) {
-            sender.sendMessage("§cVous ne pouvez pas vous ajouter vous-même !");
+        final FriendRequestResult result = sendFriendRequest(sender.getUniqueId(), targetUuid);
+        if (result == FriendRequestResult.SUCCESS) {
+            if (target != null) {
+                target.sendMessage("§e" + sender.getName() + " §avous a envoyé une demande d'ami !");
+                target.sendMessage("§7Tapez §a/friend accept " + sender.getName() + " §7pour accepter");
+                target.sendMessage("§7ou §c/friend deny " + sender.getName() + " §7pour refuser");
+                target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+            }
+            return true;
+        }
+
+        if (result == FriendRequestResult.AUTO_ACCEPTED) {
+            final String resolvedName = target != null ? target.getName() : resolveName(targetUuid);
+            sender.sendMessage("§aVous êtes maintenant ami avec §6" + resolvedName + "§a !");
+            final Player acceptedPlayer = target != null ? target : Bukkit.getPlayer(targetUuid);
+            if (acceptedPlayer != null) {
+                acceptedPlayer.sendMessage("§6" + sender.getName() + " §aa accepté votre demande d'ami !");
+                acceptedPlayer.playSound(acceptedPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+            }
+            return true;
+        }
+
+        final String resolvedName = target != null ? target.getName() : resolveName(targetUuid);
+        return handleFriendRequestFailure(sender, resolvedName, result);
+    }
+
+    public FriendRequestResult sendFriendRequest(final UUID senderUuid, final UUID targetUuid) {
+        if (senderUuid == null || targetUuid == null) {
+            return FriendRequestResult.DATABASE_ERROR;
+        }
+        if (senderUuid.equals(targetUuid)) {
+            return FriendRequestResult.SELF_REQUEST;
+        }
+        if (areFriends(senderUuid, targetUuid)) {
+            return FriendRequestResult.ALREADY_FRIENDS;
+        }
+        if (isBlocked(senderUuid, targetUuid) || isBlocked(targetUuid, senderUuid)) {
+            return FriendRequestResult.BLOCKED;
+        }
+        if (hasPendingRequest(senderUuid, targetUuid)) {
+            return FriendRequestResult.REQUEST_ALREADY_SENT;
+        }
+        if (hasPendingRequest(targetUuid, senderUuid)) {
+            return acceptFriendRequest(senderUuid, targetUuid)
+                    ? FriendRequestResult.AUTO_ACCEPTED
+                    : FriendRequestResult.DATABASE_ERROR;
+        }
+
+        final FriendSettings settings = getFriendSettings(targetUuid);
+        final AcceptMode acceptMode = settings.getAcceptRequests();
+        if (acceptMode == AcceptMode.NONE) {
+            return FriendRequestResult.SETTINGS_DISABLED;
+        }
+        if (acceptMode == AcceptMode.FRIENDS_OF_FRIENDS && !hasMutualFriend(senderUuid, targetUuid)) {
+            return FriendRequestResult.MUTUAL_FRIENDS_REQUIRED;
+        }
+
+        return saveFriendRequest(senderUuid, targetUuid)
+                ? FriendRequestResult.SUCCESS
+                : FriendRequestResult.DATABASE_ERROR;
+    }
+
+    public boolean acceptFriendRequest(final UUID accepterUuid, final UUID requesterUuid) {
+        if (accepterUuid == null || requesterUuid == null) {
+            return false;
+        }
+        if (!hasPendingRequest(requesterUuid, accepterUuid)) {
+            return false;
+        }
+        if (!acceptFriendship(requesterUuid, accepterUuid)) {
             return false;
         }
 
-        if (areFriends(sender.getUniqueId(), target.getUniqueId())) {
-            sender.sendMessage("§cVous êtes déjà amis avec " + target.getName() + " !");
-            return false;
-        }
+        addToFriendsCache(requesterUuid, accepterUuid);
+        addToFriendsCache(accepterUuid, requesterUuid);
+        removePendingRequest(requesterUuid, accepterUuid);
 
-        if (isBlocked(sender.getUniqueId(), target.getUniqueId())
-                || isBlocked(target.getUniqueId(), sender.getUniqueId())) {
-            sender.sendMessage("§cImpossible d'envoyer une demande : relation bloquée.");
-            return false;
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        if (velocityManager != null) {
+            velocityManager.broadcastFriendUpdate(accepterUuid, "ACCEPT", requesterUuid);
+            velocityManager.broadcastFriendUpdate(requesterUuid, "ACCEPT", accepterUuid);
         }
-
-        if (hasPendingRequest(sender.getUniqueId(), target.getUniqueId())) {
-            sender.sendMessage("§cVous avez déjà envoyé une demande d'ami à " + target.getName() + " !");
-            return false;
-        }
-
-        final FriendSettings settings = getFriendSettings(target.getUniqueId());
-        if (settings.getAcceptRequests() == AcceptMode.NONE) {
-            sender.sendMessage("§c" + target.getName() + " n'accepte pas les demandes d'amis.");
-            return false;
-        }
-
-        if (settings.getAcceptRequests() == AcceptMode.FRIENDS_OF_FRIENDS && !hasMutualFriend(sender.getUniqueId(), target.getUniqueId())) {
-            sender.sendMessage("§cVous devez avoir des amis en commun avec " + target.getName() + " pour envoyer une demande.");
-            return false;
-        }
-
-        saveFriendRequest(sender.getUniqueId(), target.getUniqueId());
-        target.sendMessage("§e" + sender.getName() + " §avous a envoyé une demande d'ami !");
-        target.sendMessage("§7Tapez §a/friend accept " + sender.getName() + " §7pour accepter");
-        target.sendMessage("§7ou §c/friend deny " + sender.getName() + " §7pour refuser");
-        target.playSound(target.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
         return true;
+    }
+
+    private boolean handleFriendRequestFailure(final Player sender,
+                                               final String targetName,
+                                               final FriendRequestResult result) {
+        switch (result) {
+            case SELF_REQUEST -> sender.sendMessage("§cVous ne pouvez pas vous ajouter vous-même !");
+            case ALREADY_FRIENDS -> sender.sendMessage("§cVous êtes déjà amis avec " + targetName + " !");
+            case BLOCKED -> sender.sendMessage("§cImpossible d'envoyer une demande : relation bloquée.");
+            case REQUEST_ALREADY_SENT -> sender.sendMessage("§cVous avez déjà envoyé une demande d'ami à " + targetName + " !");
+            case INCOMING_REQUEST_PENDING -> sender.sendMessage("§e" + targetName + " §cvous a déjà envoyé une demande. Tapez §a/friend accept " + targetName + " §cpour l'accepter.");
+            case SETTINGS_DISABLED -> sender.sendMessage("§c" + targetName + " n'accepte pas les demandes d'amis.");
+            case MUTUAL_FRIENDS_REQUIRED -> sender.sendMessage("§cVous devez avoir des amis en commun avec " + targetName + " pour envoyer une demande.");
+            case DATABASE_ERROR -> sender.sendMessage("§cImpossible d'envoyer la demande pour le moment. Veuillez réessayer plus tard.");
+            default -> {
+            }
+        }
+        return result.isSuccess();
     }
 
     public void onPlayerJoin(final UUID player) {
@@ -131,12 +199,10 @@ public class FriendManager {
             return;
         }
 
-        acceptFriendship(senderUuid, player.getUniqueId());
-
-        addToFriendsCache(senderUuid, player.getUniqueId());
-        addToFriendsCache(player.getUniqueId(), senderUuid);
-
-        removePendingRequest(senderUuid, player.getUniqueId());
+        if (!acceptFriendRequest(player.getUniqueId(), senderUuid)) {
+            player.sendMessage("§cImpossible d'accepter la demande pour le moment.");
+            return;
+        }
 
         player.sendMessage("§aVous êtes maintenant ami avec §6" + senderName + "§a !");
 
@@ -144,11 +210,6 @@ public class FriendManager {
         if (senderPlayer != null) {
             senderPlayer.sendMessage("§6" + player.getName() + " §aa accepté votre demande d'ami !");
             senderPlayer.playSound(senderPlayer.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        }
-        final VelocityManager velocityManager = plugin.getVelocityManager();
-        if (velocityManager != null) {
-            velocityManager.broadcastFriendUpdate(player.getUniqueId(), "ACCEPT", senderUuid);
-            velocityManager.broadcastFriendUpdate(senderUuid, "ACCEPT", player.getUniqueId());
         }
     }
 
@@ -302,25 +363,30 @@ public class FriendManager {
         });
     }
 
-    private void saveFriendRequest(final UUID senderUUID, final UUID targetUUID) {
+    private boolean saveFriendRequest(final UUID senderUUID, final UUID targetUUID) {
         final String query;
         if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
             query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, NULL, NULL, FALSE) ON DUPLICATE KEY UPDATE status = 'PENDING', created_at = CURRENT_TIMESTAMP, accepted_at = NULL, blocked_at = NULL, is_favorite = FALSE";
         } else {
             query = "INSERT INTO friends (player_uuid, friend_uuid, status, created_at, accepted_at, blocked_at, is_favorite) VALUES (?, ?, 'PENDING', CURRENT_TIMESTAMP, NULL, NULL, 0) ON CONFLICT(player_uuid, friend_uuid) DO UPDATE SET status = 'PENDING', created_at = CURRENT_TIMESTAMP, accepted_at = NULL, blocked_at = NULL, is_favorite = 0";
         }
+        boolean success = false;
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setString(1, senderUUID.toString());
             statement.setString(2, targetUUID.toString());
             statement.executeUpdate();
+            success = true;
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save friend request", exception);
         }
-        pendingRequests.computeIfAbsent(targetUUID, uuid -> new HashSet<>()).add(senderUUID);
+        if (success) {
+            pendingRequests.computeIfAbsent(targetUUID, uuid -> new HashSet<>()).add(senderUUID);
+        }
+        return success;
     }
 
-    private void acceptFriendship(final UUID senderUUID, final UUID targetUUID) {
+    private boolean acceptFriendship(final UUID senderUUID, final UUID targetUUID) {
         final String updateQuery = "UPDATE friends SET status = 'ACCEPTED', accepted_at = CURRENT_TIMESTAMP, blocked_at = NULL WHERE player_uuid = ? AND friend_uuid = ?";
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(updateQuery)) {
@@ -328,9 +394,11 @@ public class FriendManager {
             statement.setString(2, targetUUID.toString());
             statement.executeUpdate();
             ensureReciprocalFriendship(connection, targetUUID, senderUUID);
+            return true;
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to accept friendship", exception);
         }
+        return false;
     }
 
     private void ensureReciprocalFriendship(final Connection connection,
