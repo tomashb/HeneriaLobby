@@ -4,11 +4,16 @@ import com.lobby.LobbyPlugin;
 import com.lobby.menus.MenuManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.menus.confirmation.ConfirmationRequest;
+import com.lobby.settings.PlayerSettings;
+import com.lobby.settings.PlayerSettingsManager;
+import com.lobby.settings.SettingType;
+import com.lobby.settings.VisibilitySetting;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.menus.ClanMenus;
 import com.lobby.social.menus.FriendsMenus;
+import com.lobby.social.friends.FriendManager;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -22,7 +27,6 @@ import org.bukkit.entity.Player;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +95,16 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_MESSAGES]")) {
             toggleAndRefresh(player, "friend_messages", "friend_settings_menu");
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[SETTING_TOGGLE]")) {
+            final String value = processed.substring("[SETTING_TOGGLE]".length()).trim();
+            handleSettingToggle(player, value);
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[SETTING_LANGUAGE]")) {
+            final String language = processed.substring("[SETTING_LANGUAGE]".length()).trim();
+            handleLanguageChange(player, language);
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[CONFIRM]")) {
@@ -571,6 +585,119 @@ public class ActionProcessor {
                 ? "§aPreset appliqué: §f" + name
                 : "§cImpossible d'appliquer le preset: §f" + name);
         reopenMenu(player, menuId);
+    }
+
+    private void handleSettingToggle(final Player player, final String value) {
+        final PlayerSettingsManager manager = plugin.getPlayerSettingsManager();
+        if (manager == null || player == null || value == null || value.isBlank()) {
+            return;
+        }
+
+        final SettingType type;
+        try {
+            type = SettingType.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (final IllegalArgumentException exception) {
+            LogUtils.warning(plugin, "Unknown setting toggle action: " + value);
+            return;
+        }
+
+        manager.toggleSetting(player.getUniqueId(), type);
+        final PlayerSettings settings = manager.getPlayerSettings(player.getUniqueId());
+        sendSettingChangeMessage(player, type, settings);
+
+        if (type == SettingType.PLAYER_VISIBILITY) {
+            applyVisibilitySetting(player, settings.getVisibilitySetting());
+        }
+        if (type == SettingType.MUSIC) {
+            handleMusicToggle(player, settings.isMusic());
+        }
+
+        refreshCurrentMenu(player);
+    }
+
+    private void handleLanguageChange(final Player player, final String language) {
+        final PlayerSettingsManager manager = plugin.getPlayerSettingsManager();
+        if (manager == null || player == null || language == null || language.isBlank()) {
+            return;
+        }
+
+        manager.setLanguage(player.getUniqueId(), language.trim().toLowerCase(Locale.ROOT));
+        final PlayerSettings settings = manager.getPlayerSettings(player.getUniqueId());
+        final String message = MessageUtils.colorize("&8[&dParamètres&8] &7Langue sélectionnée : "
+                + settings.getLanguageDisplay());
+        player.sendMessage(message);
+        refreshCurrentMenu(player);
+    }
+
+    private void sendSettingChangeMessage(final Player player, final SettingType type, final PlayerSettings settings) {
+        final String prefix = "&8[&dParamètres&8] &7";
+        final String message = switch (type) {
+            case PRIVATE_MESSAGES -> prefix + "Messages privés " + settings.getPrivateMessagesDisplay() + "&7 !";
+            case FRIEND_REQUESTS -> prefix + "Demandes d'amis : " + settings.getFriendRequestsDisplay() + "&7 !";
+            case GROUP_REQUESTS -> prefix + "Demandes de groupe : " + settings.getGroupRequestsDisplay() + "&7 !";
+            case PLAYER_VISIBILITY -> prefix + "Visibilité : " + settings.getVisibilityDisplay() + "&7 !";
+            case UI_SOUNDS -> prefix + "Sons d'interface " + settings.getUiSoundsDisplay() + "&7 !";
+            case PARTICLES -> prefix + "Effets de particules " + settings.getParticlesDisplay() + "&7 !";
+            case MUSIC -> prefix + "Musique d'ambiance " + settings.getMusicDisplay() + "&7 !";
+            case FRIEND_NOTIFICATIONS -> prefix + "Notifications d'amis " + settings.getFriendNotificationsDisplay() + "&7 !";
+            case CLAN_NOTIFICATIONS -> prefix + "Notifications de clan " + settings.getClanNotificationsDisplay() + "&7 !";
+            case SYSTEM_NOTIFICATIONS -> prefix + "Notifications système " + settings.getSystemNotificationsDisplay() + "&7 !";
+        };
+        player.sendMessage(MessageUtils.colorize(message));
+    }
+
+    private void applyVisibilitySetting(final Player player, final VisibilitySetting setting) {
+        if (player == null || setting == null) {
+            return;
+        }
+
+        final FriendManager friendManager = plugin.getFriendManager();
+        switch (setting) {
+            case EVERYONE -> {
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    if (!online.equals(player)) {
+                        player.showPlayer(plugin, online);
+                    }
+                }
+            }
+            case FRIENDS_ONLY -> {
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    if (online.equals(player)) {
+                        continue;
+                    }
+                    final boolean isFriend = friendManager != null
+                            && friendManager.areFriends(player.getUniqueId(), online.getUniqueId());
+                    if (isFriend) {
+                        player.showPlayer(plugin, online);
+                    } else {
+                        player.hidePlayer(plugin, online);
+                    }
+                }
+            }
+            case NOBODY -> {
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    if (!online.equals(player)) {
+                        player.hidePlayer(plugin, online);
+                    }
+                }
+            }
+        }
+    }
+
+    private void handleMusicToggle(final Player player, final boolean enabled) {
+        final String message = enabled
+                ? "&7♪ Musique d'ambiance démarrée..."
+                : "&7♪ Musique d'ambiance arrêtée.";
+        player.sendMessage(MessageUtils.colorize(message));
+    }
+
+    private void refreshCurrentMenu(final Player player) {
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (menuManager == null) {
+            return;
+        }
+        menuManager.getOpenMenu(player.getUniqueId()).ifPresent(menu ->
+                Bukkit.getScheduler().runTask(plugin, () -> menu.open(player)));
     }
 
     private void handleClanRankChange(final Player player, final boolean promote) {

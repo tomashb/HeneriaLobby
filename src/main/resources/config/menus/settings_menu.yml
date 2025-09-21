@@ -50,11 +50,16 @@ menu:
         - "&7Autorisez ou bloquez la réception"
         - "&7de messages privés d'autres joueurs."
         - "&r"
-        - "&8▸ &7Statut actuel: %setting_private_messages_status%"
+        - "&8▸ &7Statut actuel: %setting_private_messages_display%"
+        - "&r"
+        - "&e⚡ Effet immédiat :"
+        - "&7- Bloque les /msg si désactivé"
+        - "&7- Filtre les messages de spam"
         - "&r"
         - "&a▶ Cliquez pour basculer !"
       actions:
-        - "[MESSAGE] &eParamètre basculé ! Messages privés: &cDésactivés"
+        - "[SETTING_TOGGLE] PRIVATE_MESSAGES"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     friend_requests:
       slot: 13
@@ -65,12 +70,20 @@ menu:
         - "&7Gérez qui peut vous envoyer"
         - "&7des demandes d'ajout en ami."
         - "&r"
-        - "&8▸ &7Statut actuel: %setting_friend_requests_status%"
-        - "&8▸ &7Options: Tous / Amis d'amis / Personne"
+        - "&8▸ &7Statut actuel: %setting_friend_requests_display%"
+        - "&8▸ &7Options disponibles :"
+        - "&8  ▸ &aTous les joueurs"
+        - "&8  ▸ &eAmis d'amis uniquement"
+        - "&8  ▸ &cDésactivé"
         - "&r"
-        - "&a▶ Cliquez pour modifier !"
+        - "&e⚡ Effet immédiat :"
+        - "&7- Filtre automatique des demandes"
+        - "&7- Protection contre le spam"
+        - "&r"
+        - "&a▶ Cliquez pour changer !"
       actions:
-        - "[MESSAGE] &eParamètre changé ! Demandes d'amis: &6Amis d'amis uniquement"
+        - "[SETTING_TOGGLE] FRIEND_REQUESTS"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     group_requests:
       slot: 15
@@ -81,12 +94,20 @@ menu:
         - "&7Contrôlez qui peut vous inviter"
         - "&7dans des groupes de jeu."
         - "&r"
-        - "&8▸ &7Statut actuel: %setting_group_requests_status%"
-        - "&8▸ &7Options: Tous / Amis seulement / Personne"
+        - "&8▸ &7Statut actuel: %setting_group_requests_display%"
+        - "&8▸ &7Options disponibles :"
+        - "&8  ▸ &aTous les joueurs"
+        - "&8  ▸ &eAmis seulement"
+        - "&8  ▸ &cDésactivé"
+        - "&r"
+        - "&e⚡ Effet immédiat :"
+        - "&7- Bloque les invitations automatiques"
+        - "&7- Évite les interruptions de jeu"
         - "&r"
         - "&a▶ Cliquez pour ajuster !"
       actions:
-        - "[MESSAGE] &eParamètre changé ! Demandes de groupe: &6Amis seulement"
+        - "[SETTING_TOGGLE] GROUP_REQUESTS"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     visibility:
       slot: 20
@@ -97,12 +118,20 @@ menu:
         - "&7Choisissez quels joueurs vous"
         - "&7voulez voir dans le lobby."
         - "&r"
-        - "&8▸ &7Mode actuel: %setting_visibility_status%"
-        - "&8▸ &7Options: Tous / Amis / Personne"
+        - "&8▸ &7Mode actuel: %setting_visibility_display%"
+        - "&8▸ &7Options disponibles :"
+        - "&8  ▸ &aTous les joueurs (150+)"
+        - "&8  ▸ &eAmis seulement (performance)"
+        - "&8  ▸ &cPersonne (mode focus)"
+        - "&r"
+        - "&e⚡ Effet immédiat :"
+        - "&7- Masque/affiche les joueurs"
+        - "&7- Améliore les performances"
         - "&r"
         - "&a▶ Cliquez pour changer !"
       actions:
-        - "[MESSAGE] &eParamètre changé ! Visibilité: &6Amis uniquement"
+        - "[SETTING_TOGGLE] PLAYER_VISIBILITY"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     notifications:
       slot: 22
@@ -113,13 +142,19 @@ menu:
         - "&7Gérez les types de notifications"
         - "&7que vous souhaitez recevoir."
         - "&r"
-        - "&8▸ &7Notifications d'amis: %notif_friends%"
-        - "&8▸ &7Notifications de clan: %notif_clan%"
-        - "&8▸ &7Notifications système: %notif_system%"
+        - "&8▸ &7Amis: %setting_friend_notifications_display%"
+        - "&8▸ &7Clan: %setting_clan_notifications_display%"
+        - "&8▸ &7Système: %setting_system_notifications_display%"
         - "&r"
-        - "&a▶ Cliquez pour personnaliser !"
+        - "&e⚡ Types de notifications :"
+        - "&7- Connexion/déconnexion d'amis"
+        - "&7- Invitations de clan"
+        - "&7- Événements et nouveautés"
+        - "&r"
+        - "&a▶ Cliquez pour gérer !"
       actions:
-        - "[MESSAGE] &eGestion des notifications en cours de développement !"
+        - "[MENU] notifications_menu"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     audio:
       slot: 24
@@ -130,13 +165,43 @@ menu:
         - "&7Activez ou désactivez les sons"
         - "&7et effets visuels du lobby."
         - "&r"
-        - "&8▸ &7Sons d'interface: %setting_ui_sounds%"
-        - "&8▸ &7Effets de particules: %setting_particles%"
-        - "&8▸ &7Musique d'ambiance: %setting_music%"
+        - "&8▸ &7Sons d'interface: %setting_ui_sounds_display%"
+        - "&8▸ &7Effets de particules: %setting_particles_display%"
+        - "&8▸ &7Musique d'ambiance: %setting_music_display%"
+        - "&r"
+        - "&e⚡ Améliore l'expérience :"
+        - "&7- Sons de clic et validations"
+        - "&7- Particules dans les menus"
+        - "&7- Musique douce en arrière-plan"
         - "&r"
         - "&a▶ Cliquez pour ajuster !"
       actions:
-        - "[MESSAGE] &eParamètres audio en cours de développement !"
+        - "[MENU] audio_settings_menu"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
+
+    language:
+      slot: 31
+      material: "PLAYER_HEAD"
+      head: "hdb:2736"
+      name: "&f&lLangue &8- &c%setting_language_flag% %setting_language_name%"
+      lore:
+        - "&7Changez la langue d'affichage"
+        - "&7de l'interface et des messages."
+        - "&r"
+        - "&8▸ &7Langue actuelle: %setting_language_display%"
+        - "&8▸ &7Langues disponibles:"
+        - "&8  ▸ &c🇫🇷 Français (complet)"
+        - "&8  ▸ &f🇬🇧 English (complet)"
+        - "&8  ▸ &e🇪🇸 Español (partiel)"
+        - "&r"
+        - "&e⚡ Effet immédiat :"
+        - "&7- Tous les menus traduits"
+        - "&7- Messages du serveur traduits"
+        - "&r"
+        - "&a▶ Cliquez pour changer !"
+      actions:
+        - "[MENU] language_menu"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     back:
       slot: 40
@@ -145,5 +210,9 @@ menu:
       name: "&c&lRetour"
       lore:
         - "&7Revenir au menu profil."
+        - "&r"
+        - "&7Vos paramètres sont automatiquement"
+        - "&7sauvegardés à chaque modification."
       actions:
         - "[MENU] profil_menu"
+        - "[SOUND] BLOCK_STONE_BUTTON_CLICK_OFF"

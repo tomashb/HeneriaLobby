@@ -25,6 +25,7 @@ import com.lobby.lobby.listeners.LobbyItemListener;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.servers.ServerManager;
+import com.lobby.settings.PlayerSettingsManager;
 import com.lobby.shop.ShopManager;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.SocialPlaceholderManager;
@@ -32,6 +33,7 @@ import com.lobby.social.menus.MenuClickHandler;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
+import com.lobby.stats.StatsManager;
 import com.lobby.velocity.VelocityManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.command.CommandExecutor;
@@ -62,6 +64,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private VelocityManager velocityManager;
     private SocialPlaceholderManager socialPlaceholderManager;
     private ChatInputManager chatInputManager;
+    private StatsManager statsManager;
+    private PlayerSettingsManager playerSettingsManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -89,6 +93,8 @@ public final class LobbyPlugin extends JavaPlugin {
         serverManager = new ServerManager(this);
 
         playerDataManager = new PlayerDataManager(this, databaseManager);
+        statsManager = new StatsManager(this);
+        playerSettingsManager = new PlayerSettingsManager(this);
         economyManager = new EconomyManager(this);
         velocityManager = new VelocityManager(this);
         friendManager = new FriendManager(this);
@@ -144,6 +150,12 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (databaseManager != null) {
             databaseManager.shutdown();
+        }
+        if (statsManager != null) {
+            statsManager.clearCache();
+        }
+        if (playerSettingsManager != null) {
+            playerSettingsManager.clearCache();
         }
         if (lobbyManager != null) {
             lobbyManager.shutdown();
@@ -225,6 +237,14 @@ public final class LobbyPlugin extends JavaPlugin {
         return socialPlaceholderManager;
     }
 
+    public StatsManager getStatsManager() {
+        return statsManager;
+    }
+
+    public PlayerSettingsManager getPlayerSettingsManager() {
+        return playerSettingsManager;
+    }
+
     public LobbyManager getLobbyManager() {
         return lobbyManager;
     }
@@ -266,6 +286,12 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (clanManager != null) {
             clanManager.reload();
+        }
+        if (statsManager != null) {
+            statsManager.clearCache();
+        }
+        if (playerSettingsManager != null) {
+            playerSettingsManager.clearCache();
         }
     }
 

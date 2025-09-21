@@ -16,7 +16,8 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour sélectionner !"
       actions:
-        - "[MESSAGE] &aLangue sélectionnée : &cFrançais"
+        - "[SETTING_LANGUAGE] fr"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     english:
       slot: 13
@@ -30,7 +31,8 @@ menu:
         - "&r"
         - "&a▶ Click to select!"
       actions:
-        - "[MESSAGE] &aLanguage selected: &fEnglish"
+        - "[SETTING_LANGUAGE] en"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     espanol:
       slot: 15
@@ -44,7 +46,8 @@ menu:
         - "&r"
         - "&a▶ ¡Haz clic para seleccionar!"
       actions:
-        - "[MESSAGE] &aIdioma seleccionado: &eEspañol"
+        - "[SETTING_LANGUAGE] es"
+        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     retour:
       slot: 22
