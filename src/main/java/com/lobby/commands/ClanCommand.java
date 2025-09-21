@@ -1,5 +1,8 @@
 package com.lobby.commands;
 
+import com.lobby.LobbyPlugin;
+import com.lobby.npcs.ActionProcessor;
+import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -42,6 +45,9 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
                 }
                 clanManager.createClan(player, args[1], args[2]);
                 return true;
+            case "delete":
+                handleDelete(player);
+                return true;
             case "invite":
                 if (args.length < 2) {
                     player.sendMessage(ChatColor.RED + "Usage: /" + label + " invite <joueur> [message]");
@@ -74,6 +80,7 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     private void sendUsage(final Player player, final String label) {
         player.sendMessage(ChatColor.YELLOW + "Utilisation de /" + label + ":");
         player.sendMessage(ChatColor.GOLD + "/" + label + " create <nom> <tag> " + ChatColor.WHITE + "- Créer un clan");
+        player.sendMessage(ChatColor.GOLD + "/" + label + " delete " + ChatColor.WHITE + "- Supprimer votre clan");
         player.sendMessage(ChatColor.GOLD + "/" + label + " invite <joueur> [message] " + ChatColor.WHITE + "- Inviter un joueur");
         player.sendMessage(ChatColor.GOLD + "/" + label + " accept <clan> " + ChatColor.WHITE + "- Accepter une invitation");
         player.sendMessage(ChatColor.GOLD + "/" + label + " deny <clan> " + ChatColor.WHITE + "- Refuser une invitation");
@@ -83,11 +90,29 @@ public class ClanCommand implements CommandExecutor, TabCompleter {
     public List<String> onTabComplete(final CommandSender sender, final Command command, final String alias, final String[] args) {
         if (args.length == 1) {
             final List<String> subCommands = new ArrayList<>();
-            Collections.addAll(subCommands, "create", "invite", "accept", "deny");
+            Collections.addAll(subCommands, "create", "delete", "invite", "accept", "deny");
             final String prefix = args[0].toLowerCase(Locale.ROOT);
             subCommands.removeIf(value -> !value.startsWith(prefix));
             return subCommands;
         }
         return Collections.emptyList();
+    }
+
+    private void handleDelete(final Player player) {
+        final Clan playerClan = clanManager.getPlayerClan(player.getUniqueId());
+        if (playerClan == null) {
+            player.sendMessage(ChatColor.RED + "Vous n'êtes dans aucun clan!");
+            return;
+        }
+        if (!playerClan.isLeader(player.getUniqueId())) {
+            player.sendMessage(ChatColor.RED + "Seul le leader peut supprimer le clan!");
+            return;
+        }
+
+        ActionProcessor.openClanDeleteConfirmation(player);
+        if (LobbyPlugin.getInstance() == null || LobbyPlugin.getInstance().getNpcManager() == null
+                || LobbyPlugin.getInstance().getNpcManager().getActionProcessor() == null) {
+            player.sendMessage(ChatColor.RED + "Impossible d'afficher la confirmation de suppression pour le moment.");
+        }
     }
 }

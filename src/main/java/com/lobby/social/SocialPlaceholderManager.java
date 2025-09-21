@@ -83,6 +83,7 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_auto_accept%", "Tous");
         replacements.put("%friend_notifications%", "Activées");
         replacements.put("%friend_visibility%", "Visible");
+        replacements.put("%friend_auto_favorites%", "Désactivée");
 
         if (player == null) {
             return replaceAll(text, replacements);
@@ -148,6 +149,7 @@ public class SocialPlaceholderManager {
                 : formatAcceptMode(settings.getAcceptRequests()));
         replacements.put("%friend_notifications%", settings.isAllowNotifications() ? "Activées" : "Désactivées");
         replacements.put("%friend_visibility%", settings.isShowOnlineStatus() ? "Visible" : "Caché");
+        replacements.put("%friend_auto_favorites%", settings.isAutoAcceptFavorites() ? "Activée" : "Désactivée");
         replacements.put("%friend_limits%", settings.getMaxFriends() <= 0
                 ? "Illimité"
                 : settings.getMaxFriends() + " slots");

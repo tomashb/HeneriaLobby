@@ -172,6 +172,24 @@ menu:
       actions:
         - "[COMMAND] clan create"
 
+    clan_delete:
+      slot: 35
+      material: "PLAYER_HEAD"
+      head: "hdb:60776"
+      name: "&c&lSupprimer le Clan"
+      lore:
+        - "&7Supprimez définitivement votre clan."
+        - "&7Cette action est irréversible !"
+        - "&r"
+        - "&8▸ &7Membres expulsés"
+        - "&8▸ &7Trésor perdu"
+        - "&8▸ &7Données effacées"
+        - "&r"
+        - "&c⚠ Nécessite confirmation"
+        - "&c▶ Cliquez pour supprimer !"
+      actions:
+        - "[CLAN_DELETE_CONFIRM]"
+
     clan_join:
       slot: 43
       material: "PLAYER_HEAD"

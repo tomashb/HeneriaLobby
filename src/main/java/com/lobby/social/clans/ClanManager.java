@@ -288,6 +288,65 @@ public class ClanManager {
         return true;
     }
 
+    public boolean deleteClan(final UUID leaderUuid) {
+        if (leaderUuid == null) {
+            return false;
+        }
+
+        final Clan clan = getPlayerClan(leaderUuid);
+        if (clan == null || !clan.isLeader(leaderUuid)) {
+            return false;
+        }
+
+        Connection connection = null;
+        try {
+            connection = databaseManager.getConnection();
+            connection.setAutoCommit(false);
+
+            deleteEntries(connection, "DELETE FROM clan_members WHERE clan_id = ?", clan.getId());
+            deleteEntries(connection, "DELETE FROM clan_ranks WHERE clan_id = ?", clan.getId());
+            deleteEntries(connection, "DELETE FROM clan_invitations WHERE clan_id = ?", clan.getId());
+            deleteEntries(connection, "DELETE FROM clan_transactions WHERE clan_id = ?", clan.getId());
+            deleteEntries(connection, "DELETE FROM clans WHERE id = ?", clan.getId());
+
+            connection.commit();
+
+            removeClanFromCache(clan);
+            notifyAllClanMembers(clan, "§cLe clan a été supprimé par le leader");
+            return true;
+        } catch (final SQLException exception) {
+            if (connection != null) {
+                try {
+                    connection.rollback();
+                } catch (final SQLException rollbackException) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to rollback clan deletion", rollbackException);
+                }
+            }
+            plugin.getLogger().log(Level.SEVERE, "Failed to delete clan", exception);
+            return false;
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.setAutoCommit(true);
+                } catch (final SQLException exception) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to reset auto-commit after clan deletion", exception);
+                }
+                try {
+                    connection.close();
+                } catch (final SQLException exception) {
+                    plugin.getLogger().log(Level.SEVERE, "Failed to close connection after clan deletion", exception);
+                }
+            }
+        }
+    }
+
+    private void deleteEntries(final Connection connection, final String query, final int clanId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, clanId);
+            statement.executeUpdate();
+        }
+    }
+
     private void cacheClan(final Clan clan) {
         clanCache.put(clan.getName().toLowerCase(Locale.ROOT), clan);
         clanCache.put(clan.getTag().toLowerCase(Locale.ROOT), clan);
@@ -295,6 +354,17 @@ public class ClanManager {
         for (final UUID member : clan.getMembers().keySet()) {
             playerClanCache.put(member, clan.getName().toLowerCase(Locale.ROOT));
         }
+    }
+
+    private void removeClanFromCache(final Clan clan) {
+        if (clan == null) {
+            return;
+        }
+        clanCache.entrySet().removeIf(entry -> entry.getValue() == clan || (entry.getValue() != null
+                && entry.getValue().getId() == clan.getId()));
+        clanCacheById.remove(clan.getId());
+        playerClanCache.entrySet().removeIf(entry -> entry.getValue() != null
+                && entry.getValue().equalsIgnoreCase(clan.getName()));
     }
 
     private void updateClanBank(final Clan clan) {
@@ -342,6 +412,23 @@ public class ClanManager {
             statement.executeUpdate();
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to log clan transaction", exception);
+        }
+    }
+
+    private void notifyAllClanMembers(final Clan clan, final String message) {
+        if (clan == null || message == null || message.isBlank()) {
+            return;
+        }
+        for (final ClanMember member : clan.getMembers().values()) {
+            final Player player = Bukkit.getPlayer(member.getUuid());
+            if (player != null) {
+                player.sendMessage(message);
+            }
+        }
+        final Player leader = Bukkit.getPlayer(clan.getLeaderUUID());
+        if (leader != null && clan.getMembers().values().stream()
+                .noneMatch(member -> member.getUuid().equals(leader.getUniqueId()))) {
+            leader.sendMessage(message);
         }
     }
 

@@ -157,7 +157,7 @@ menu:
     friends_favorites:
       slot: 32
       material: "PLAYER_HEAD"
-      head: "hdb:35472"
+      head: "hdb:12654"
       name: "&c&lAmis Favoris"
       lore:
         - "&7Vos amis les plus proches"
