@@ -977,27 +977,583 @@ menus:
           - "[CLOSE]"
 
   friends_all_menu:
-    title: "&8» &b&lTous mes Amis"
-    size: 27
+    title: "&8» &aMes Amis"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "GREEN_STAINED_GLASS_PANE"
+        name: "&7"
     items:
-      summary:
-        slot: 13
-        material: BOOK
-        name: "&bRésumé des amis"
+      overview:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:8971"
+        name: "&a&lVue d'ensemble"
         lore:
-          - "&7Total: &a%friends_total%"
-          - "&7Favoris: &6%friends_favorites_count%"
-          - "&7Dernier connecté: %friends_last_seen%"
+          - "&7Amis au total: &f%friends_total_count%"
+          - "&7Slots libres: &f%friends_free_slots%"
+          - "&7Dernier ami vu: &f%friends_last_seen%"
+          - "&r"
+          - "&8▶ &7Utilisez ce menu pour consulter vos amis"
+      online_friends:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&b&lAmis en ligne"
+        lore:
+          - "&7Connectés: &a%friends_online_count%/&f%friends_total_count%"
+          - "&7Serveurs populaires: &f%friends_popular_servers%"
+          - "&r"
+          - "&8▶ &7Cliquez pour rafraîchir la liste"
+        actions:
+          - "[FRIENDS_ONLINE]"
+      favorites:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:12654"
+        name: "&e&lAmis favoris"
+        lore:
+          - "&7Favoris enregistrés: &f%friends_favorites_count%"
+          - "&7Demande auto: &f%friend_auto_favorites_status%"
+          - "&r"
+          - "&8▶ &7Afficher la liste des favoris"
+        actions:
+          - "[MENU] friends_favorites_menu"
+      requests_info:
+        slot: 31
+        material: "PLAYER_HEAD"
+        head: "hdb:3581"
+        name: "&d&lDemandes en attente"
+        lore:
+          - "&7Reçues: &f%friend_requests_received%"
+          - "&7Envoyées: &f%friend_requests_sent%"
+          - "&7Plus ancienne: &f%friend_requests_oldest%"
+          - "&r"
+          - "&8▶ &7Gérer les demandes"
+        actions:
+          - "[FRIEND_REQUESTS]"
+      settings:
+        slot: 49
+        material: "PLAYER_HEAD"
+        head: "hdb:8537"
+        name: "&d&lParamètres"
+        lore:
+          - "&7Configurer vos préférences sociales"
+          - "&r"
+          - "&8▶ &7Ouvrir les paramètres d'amis"
+        actions:
+          - "[MENU] friend_settings_menu"
       back:
-        slot: 18
-        material: ARROW
-        name: "&aRetour"
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
         lore:
-          - "&7Retour à la gestion des amis"
+          - "&7Retourner au menu principal des amis"
         actions:
           - "[MENU] friends_menu"
       close:
-        slot: 26
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_member_permissions_menu:
+    title: "&8» &cPermissions de %clan_target_name%"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "RED_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      target_overview:
+        slot: 4
+        material: "PLAYER_HEAD"
+        head: "%clan_target_name%"
+        name: "&c&l%clan_target_name%"
+        lore:
+          - "&7Rang actuel: &f%clan_target_rank%"
+          - "&7Permissions actives: &f%clan_target_permissions%"
+          - "&r"
+          - "&8▶ &7Sélectionnez une permission à basculer"
+      permission_invite:
+        slot: 19
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&a&lInviter des joueurs"
+        lore:
+          - "&7Autorise l'envoi d'invitations."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_invite_status%"
+          - "&r"
+          - "&a▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.invite|clan_member_permissions_menu"
+      permission_kick:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:60776"
+        name: "&c&lExclure des membres"
+        lore:
+          - "&7Autorise l'exclusion de membres."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_kick_status%"
+          - "&r"
+          - "&c▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.kick|clan_member_permissions_menu"
+      permission_promote:
+        slot: 21
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&e&lPromouvoir"
+        lore:
+          - "&7Autorise la promotion de membres."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_promote_status%"
+          - "&r"
+          - "&e▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.promote|clan_member_permissions_menu"
+      permission_demote:
+        slot: 23
+        material: "PLAYER_HEAD"
+        head: "hdb:1218"
+        name: "&6&lRétrograder"
+        lore:
+          - "&7Autorise la rétrogradation de membres."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_demote_status%"
+          - "&r"
+          - "&6▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.demote|clan_member_permissions_menu"
+      permission_manage_ranks:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:38878"
+        name: "&d&lGestion des rangs"
+        lore:
+          - "&7Autorise la modification des rangs."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_manage_ranks_status%"
+          - "&r"
+          - "&d▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.manage_ranks|clan_member_permissions_menu"
+      permission_bank:
+        slot: 25
+        material: "PLAYER_HEAD"
+        head: "hdb:35472"
+        name: "&b&lGestion de la banque"
+        lore:
+          - "&7Autorise les retraits du trésor."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_withdraw_status%"
+          - "&r"
+          - "&b▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.manage_bank|clan_member_permissions_menu"
+      permission_disband:
+        slot: 31
+        material: "PLAYER_HEAD"
+        head: "hdb:60776"
+        name: "&4&lDissolution"
+        lore:
+          - "&7Autorise la suppression du clan."
+          - "&7À n'accorder qu'aux dirigeants dignes de confiance."
+          - "&r"
+          - "&8▸ &7Statut: %clan_permission_disband_status%"
+          - "&r"
+          - "&4▶ Basculer"
+        actions:
+          - "[TOGGLE_MEMBER_PERMISSION] %clan_target_uuid%|clan.disband|clan_member_permissions_menu"
+      preset_default:
+        slot: 37
+        material: "PLAYER_HEAD"
+        head: "hdb:8971"
+        name: "&7&lPreset - Défaut"
+        lore:
+          - "&7Réinitialise les permissions au rang."
+          - "&r"
+          - "&8▶ &7Appliquer le preset"
+        actions:
+          - "[APPLY_MEMBER_PERMISSION_PRESET] %clan_target_uuid%|default|clan_member_permissions_menu"
+      preset_moderator:
+        slot: 38
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&a&lPreset - Modérateur"
+        lore:
+          - "&7Inviter et exclure des membres."
+          - "&r"
+          - "&8▶ &7Appliquer le preset"
+        actions:
+          - "[APPLY_MEMBER_PERMISSION_PRESET] %clan_target_uuid%|moderateur|clan_member_permissions_menu"
+      preset_officer:
+        slot: 39
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&e&lPreset - Officier"
+        lore:
+          - "&7Accès complet aux promotions/dégradations."
+          - "&r"
+          - "&8▶ &7Appliquer le preset"
+        actions:
+          - "[APPLY_MEMBER_PERMISSION_PRESET] %clan_target_uuid%|officier|clan_member_permissions_menu"
+      preset_manager:
+        slot: 40
+        material: "PLAYER_HEAD"
+        head: "hdb:23022"
+        name: "&6&lPreset - Gestion"
+        lore:
+          - "&7Inclut l'accès à la banque du clan."
+          - "&r"
+          - "&8▶ &7Appliquer le preset"
+        actions:
+          - "[APPLY_MEMBER_PERMISSION_PRESET] %clan_target_uuid%|gestion|clan_member_permissions_menu"
+      preset_admin:
+        slot: 41
+        material: "PLAYER_HEAD"
+        head: "hdb:38878"
+        name: "&c&lPreset - Administrateur"
+        lore:
+          - "&7Octroie toutes les permissions disponibles."
+          - "&r"
+          - "&8▶ &7Appliquer le preset"
+        actions:
+          - "[APPLY_MEMBER_PERMISSION_PRESET] %clan_target_uuid%|admin|clan_member_permissions_menu"
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner à la liste des membres"
+        actions:
+          - "[CLAN_MEMBERS]"
+      close:
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_creation_menu:
+    title: "&8» &cCréation de Clan"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "RED_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      overview:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:12654"
+        name: "&c&lCréer votre clan"
+        lore:
+          - "&7Coût: &e10 000 coins"
+          - "&7Taille initiale: &a20 membres"
+          - "&7Accès: &fCoffre, guerres, salon privé"
+          - "&r"
+          - "&8▶ &7Utilisez les options ci-dessous"
+      start_creation:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&a&lCréer maintenant"
+        lore:
+          - "&7Lance le processus de création."
+          - "&7Vous serez invité à entrer un nom."
+          - "&r"
+          - "&a▶ Cliquez pour commencer"
+        actions:
+          - "[PLAYER_COMMAND] clan create"
+      requirements:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&e&lConditions"
+        lore:
+          - "&7Avoir suffisamment de coins."
+          - "&7Être sans clan actuellement."
+          - "&7Respecter les règles du serveur."
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner au menu de clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  clan_shop_menu:
+    title: "&8» &cBoutique de Clan"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "RED_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      treasury:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:35472"
+        name: "&6&lTrésor du clan"
+        lore:
+          - "&7Solde actuel: &e%clan_coins% coins"
+          - "&7Points de clan: &b%clan_points%"
+          - "&r"
+          - "&8▶ &7Sélectionnez une option d'amélioration"
+      upgrade_level:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:38878"
+        name: "&a&lAméliorer le niveau"
+        lore:
+          - "&7Augmente les bonus de membres."
+          - "&7Coût variable selon le niveau."
+          - "&r"
+          - "&a▶ Cliquez pour demander une amélioration"
+        actions:
+          - "[MESSAGE] &eContactez un administrateur pour améliorer votre clan."
+      unlock_cosmetics:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:23022"
+        name: "&d&lDébloquer cosmétiques"
+        lore:
+          - "&7Débloquez des décorations pour votre clan."
+          - "&7Fonctionnalité à venir."
+          - "&r"
+          - "&d▶ Recevoir une notification"
+        actions:
+          - "[MESSAGE] &cFonctionnalité prochainement disponible."
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner au menu de clan"
+        actions:
+          - "[MENU] clan_menu"
+      close:
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  stats_detailed_menu:
+    title: "&8» &9Statistiques détaillées"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "BLUE_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      profile_summary:
+        slot: 4
+        material: "PLAYER_HEAD"
+        head: "%player_name%"
+        name: "&b&lProfil de %player_name%"
+        lore:
+          - "&7Coins: &6%player_coins%"
+          - "&7Tokens: &d%player_tokens%"
+          - "&7Temps de jeu: &f%player_playtime%"
+      combat_stats:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:60776"
+        name: "&c&lStatistiques PvP"
+        lore:
+          - "&7Victoires: &f%stats_pvp_wins%"
+          - "&7Défaites: &f%stats_pvp_losses%"
+          - "&7Ratio: &f%stats_pvp_ratio%"
+          - "&r"
+          - "&8▶ &7Consultation uniquement"
+      mini_games:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:23022"
+        name: "&e&lMini-jeux"
+        lore:
+          - "&7BedWars: &f%stats_bedwars_wins% victoires"
+          - "&7SkyWars: &f%stats_skywars_wins% victoires"
+          - "&7Arcade: &f%stats_arcade_score% points"
+      achievements:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&a&lSuccès"
+        lore:
+          - "&7Succès débloqués: &f%stats_achievements_unlocked%"
+          - "&7Succès restants: &f%stats_achievements_remaining%"
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner au profil"
+        actions:
+          - "[MENU] profil_menu"
+      close:
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  language_menu:
+    title: "&8» &9Choix de la langue"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "BLUE_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      language_info:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:8971"
+        name: "&b&lLangue actuelle"
+        lore:
+          - "&7Langue: &f%player_language%"
+          - "&7Modifiez votre langue préférée ci-dessous."
+      language_fr:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&e&lFrançais"
+        lore:
+          - "&7Interface et messages en français."
+          - "&r"
+          - "&e▶ Sélectionner"
+        actions:
+          - "[PLAYER_COMMAND] language fr"
+      language_en:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&a&lEnglish"
+        lore:
+          - "&7Switch interface to English."
+          - "&r"
+          - "&a▶ Select"
+        actions:
+          - "[PLAYER_COMMAND] language en"
+      language_es:
+        slot: 30
+        material: "PLAYER_HEAD"
+        head: "hdb:23022"
+        name: "&6&lEspañol"
+        lore:
+          - "&7Activa la interfaz en español."
+          - "&r"
+          - "&6▶ Seleccionar"
+        actions:
+          - "[PLAYER_COMMAND] language es"
+      reset_language:
+        slot: 32
+        material: "PLAYER_HEAD"
+        head: "hdb:60776"
+        name: "&c&lRéinitialiser"
+        lore:
+          - "&7Revenir à la langue par défaut du serveur."
+          - "&r"
+          - "&c▶ Réinitialiser"
+        actions:
+          - "[PLAYER_COMMAND] language reset"
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner au profil"
+        actions:
+          - "[MENU] profil_menu"
+      close:
+        slot: 53
+        material: BARRIER
+        name: "&cFermer"
+        lore:
+          - "&7Fermer le menu"
+        actions:
+          - "[CLOSE]"
+
+  daily_reward_menu:
+    title: "&8» &9Récompense quotidienne"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "BLUE_STAINED_GLASS_PANE"
+        name: "&7"
+    items:
+      reward_overview:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:38878"
+        name: "&d&lRécompense du jour"
+        lore:
+          - "&7Prochaine récompense disponible dans: &f%daily_reward_cooldown%"
+          - "&7Récompense actuelle: &e%daily_reward_name%"
+          - "&7Bonus de série: &b%daily_reward_streak%"
+      claim_reward:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&a&lRécupérer"
+        lore:
+          - "&7Cliquez pour recevoir votre récompense quotidienne."
+          - "&r"
+          - "&a▶ Réclamer"
+        actions:
+          - "[PLAYER_COMMAND] dailyreward claim"
+      premium_reward:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&6&lRécompense premium"
+        lore:
+          - "&7Disponible avec un grade premium."
+          - "&7Bonus supplémentaires exclusifs."
+          - "&r"
+          - "&6▶ Découvrir"
+        actions:
+          - "[MESSAGE] &eObtenez un grade premium pour débloquer cette récompense !"
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Retourner au profil"
+        actions:
+          - "[MENU] profil_menu"
+      close:
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -1007,89 +1563,112 @@ menus:
 
   friend_settings_menu:
     title: "&8» &dParamètres d'Amis"
-    size: 45
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "GREEN_STAINED_GLASS_PANE"
+        name: "&7"
     items:
-      accept_requests:
-        slot: 11
-        material: PLAYER_HEAD
-        head: "hdb:3581"
-        name: "&a&lDemandes d'Amis"
+      summary:
+        slot: 4
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&d&lCentre de contrôle"
         lore:
-          - "&7Gérez qui peut vous envoyer"
+          - "&7Demandes: &f%friend_request_mode%"
+          - "&7Notifications: &f%friend_notifications_status%"
+          - "&7Visibilité: &f%friend_visibility_mode%"
+          - "&7Messages privés: &f%friend_private_messages_status%"
+      requests:
+        slot: 19
+        material: "PLAYER_HEAD"
+        head: "hdb:3581"
+        name: "&a&lDemandes d'amis"
+        lore:
+          - "&7Contrôlez qui peut vous envoyer"
           - "&7des demandes d'amitié."
           - "&r"
-          - "&8▸ &7Statut: %friend_auto_accept%"
+          - "&8▸ &7Mode actuel: &f%friend_auto_accept%"
           - "&r"
-          - "&a▶ Cliquez pour modifier!"
+          - "&a▶ Cliquez pour changer"
         actions:
-          - "[PLAYER_COMMAND] friend settings toggle requests"
+          - "[CYCLE_FRIEND_REQUESTS]"
       notifications:
-        slot: 13
-        material: PLAYER_HEAD
+        slot: 21
+        material: "PLAYER_HEAD"
         head: "hdb:1455"
         name: "&e&lNotifications"
         lore:
-          - "&7Activez/désactivez les notifications"
-          - "&7d'amis en ligne."
+          - "&7Activez ou désactivez les alertes"
+          - "&7lorsque vos amis se connectent."
           - "&r"
-          - "&8▸ &7Statut: %friend_notifications%"
+          - "&8▸ &7Statut: &f%friend_notifications_status%"
           - "&r"
-          - "&e▶ Cliquez pour basculer!"
+          - "&e▶ Basculer la notification"
         actions:
-          - "[PLAYER_COMMAND] friend settings toggle notifications"
+          - "[TOGGLE_FRIEND_NOTIFICATIONS]"
       visibility:
-        slot: 15
-        material: PLAYER_HEAD
+        slot: 23
+        material: "PLAYER_HEAD"
         head: "hdb:8537"
         name: "&b&lVisibilité"
         lore:
-          - "&7Contrôlez qui peut voir votre"
+          - "&7Choisissez qui peut voir votre"
           - "&7statut en ligne."
           - "&r"
-          - "&8▸ &7Mode: %friend_visibility%"
+          - "&8▸ &7Mode: &f%friend_visibility_mode%"
           - "&r"
-          - "&b▶ Cliquez pour changer!"
+          - "&b▶ Modifier la visibilité"
         actions:
-          - "[PLAYER_COMMAND] friend settings toggle visibility"
-      auto_accept_favorites:
-        slot: 22
-        material: PLAYER_HEAD
+          - "[CYCLE_FRIEND_VISIBILITY]"
+      auto_favorites:
+        slot: 25
+        material: "PLAYER_HEAD"
         head: "hdb:12654"
-        name: "&6&lAcceptation Auto Favoris"
+        name: "&6&lAuto favoris"
         lore:
           - "&7Acceptez automatiquement les"
-          - "&7demandes de vos amis favoris."
+          - "&7demandes de vos favoris."
           - "&r"
-          - "&8▸ &7Statut: %friend_auto_favorites%"
+          - "&8▸ &7Statut: &f%friend_auto_favorites_status%"
           - "&r"
-          - "&6▶ Cliquez pour basculer!"
+          - "&6▶ Basculer l'acceptation"
         actions:
-          - "[PLAYER_COMMAND] friend settings toggle favorites"
+          - "[TOGGLE_FRIEND_AUTO_FAVORITES]"
       private_messages:
-        slot: 24
-        material: PLAYER_HEAD
+        slot: 31
+        material: "PLAYER_HEAD"
         head: "hdb:2736"
-        name: "&d&lMessages Privés"
+        name: "&d&lMessages privés"
         lore:
-          - "&7Autorisez les messages privés"
-          - "&7de vos amis."
+          - "&7Autorisez vos amis à vous"
+          - "&7envoyer des messages privés."
           - "&r"
-          - "&8▸ &7Statut: &eFonctionnalité à venir"
+          - "&8▸ &7Statut: &f%friend_private_messages_status%"
           - "&r"
-          - "&d▶ Revenez bientôt!"
+          - "&d▶ Basculer les messages"
         actions:
-          - "[NONE]"
+          - "[TOGGLE_FRIEND_MESSAGES]"
       back:
-        slot: 40
-        material: PLAYER_HEAD
+        slot: 45
+        material: "PLAYER_HEAD"
         head: "hdb:9334"
         name: "&c&lRetour"
         lore:
           - "&7Retourner au menu des amis"
         actions:
           - "[MENU] friends_menu"
+      overview_menu:
+        slot: 49
+        material: "PLAYER_HEAD"
+        head: "hdb:9723"
+        name: "&a&lVoir mes amis"
+        lore:
+          - "&7Accédez à la liste complète de vos amis"
+        actions:
+          - "[MENU] friends_all_menu"
       close:
-        slot: 44
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -1098,28 +1677,74 @@ menus:
           - "[CLOSE]"
 
   friends_favorites_menu:
-    title: "&8» &c&lAmis Favoris"
-    size: 27
+    title: "&8» &6Mes Favoris"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "GREEN_STAINED_GLASS_PANE"
+        name: "&7"
     items:
-      favorites_info:
-        slot: 13
-        material: PLAYER_HEAD
-        head: "%player_name%"
-        name: "&cFavoris"
+      favorites_overview:
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:12654"
+        name: "&6&lAmis favoris"
         lore:
-          - "&7Favoris marqués: &6%friends_favorites_count%"
-          - "&7Notifications prioritaires: %friend_notifications%"
-          - "&7Dernière activité: %friends_recent_activity%"
+          - "&7Favoris actuels: &f%friends_favorites_count%"
+          - "&7Notifications: &f%friend_notifications_status%"
+          - "&7Auto-acceptation: &f%friend_auto_favorites_status%"
+          - "&r"
+          - "&8▶ &7Cliquez pour retourner à la liste"
+        actions:
+          - "[MENU] friends_all_menu"
+      auto_accept:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:3581"
+        name: "&a&lAcceptation automatique"
+        lore:
+          - "&7Activez l'ajout instantané"
+          - "&7des demandes provenant de vos favoris."
+          - "&r"
+          - "&8▸ &7Statut: &f%friend_auto_favorites_status%"
+          - "&r"
+          - "&a▶ Basculer la fonctionnalité"
+        actions:
+          - "[TOGGLE_FRIEND_AUTO_FAVORITES]"
+      notifications:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:1455"
+        name: "&e&lAlertes favoris"
+        lore:
+          - "&7Recevez une notification dédiée"
+          - "&7lorsqu'un favori se connecte."
+          - "&r"
+          - "&8▸ &7Statut: &f%friend_notifications_status%"
+          - "&r"
+          - "&e▶ Basculer la notification"
+        actions:
+          - "[TOGGLE_FRIEND_NOTIFICATIONS]"
       back:
-        slot: 18
-        material: ARROW
-        name: "&aRetour"
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
         lore:
-          - "&7Retour à la gestion des amis"
+          - "&7Retourner au menu des amis"
         actions:
           - "[MENU] friends_menu"
+      settings:
+        slot: 49
+        material: "PLAYER_HEAD"
+        head: "hdb:8537"
+        name: "&d&lParamètres"
+        lore:
+          - "&7Configurer les préférences d'amis"
+        actions:
+          - "[MENU] friend_settings_menu"
       close:
-        slot: 26
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -1128,29 +1753,78 @@ menus:
           - "[CLOSE]"
 
   group_manage_menu:
-    title: "&8» &e&lMon Groupe"
-    size: 27
+    title: "&8» &eMon Groupe"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "YELLOW_STAINED_GLASS_PANE"
+        name: "&7"
     items:
       group_info:
-        slot: 13
-        material: PLAYER_HEAD
+        slot: 22
+        material: "PLAYER_HEAD"
         head: "hdb:9723"
-        name: "&eDétails du groupe"
+        name: "&e&lInformations"
         lore:
           - "&7Nom: &f%group_name%"
           - "&7Leader: &6%group_leader%"
           - "&7Membres: &a%group_members%/%group_max%"
-          - "&7Statut: %group_status%"
-      back:
-        slot: 18
-        material: ARROW
-        name: "&aRetour"
+          - "&7Statut: &f%group_status%"
+      invitations:
+        slot: 20
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&b&lInvitations"
         lore:
-          - "&7Retour à la gestion des groupes"
+          - "&7Invitations reçues: &f%group_invitations%"
+          - "&7Invitations envoyées: &f%group_invites_sent%"
+          - "&r"
+          - "&8▶ &7Ouvrir le menu d'invitations"
+        actions:
+          - "[MENU] group_invite_menu"
+      queue:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:23022"
+        name: "&6&lFiles d'attente"
+        lore:
+          - "&7Files disponibles: &f%queue_available%"
+          - "&7Temps moyen: &f%queue_wait_time%"
+          - "&7Joueurs en file: &f%queue_players%"
+          - "&r"
+          - "&8▶ &7Choisir une file"
+        actions:
+          - "[MENU] queue_menu"
+      settings:
+        slot: 49
+        material: "PLAYER_HEAD"
+        head: "hdb:8537"
+        name: "&d&lParamètres"
+        lore:
+          - "&7Configurer les paramètres de groupe"
+        actions:
+          - "[MENU] group_settings_menu"
+      explore:
+        slot: 31
+        material: "PLAYER_HEAD"
+        head: "hdb:1218"
+        name: "&b&lExplorer"
+        lore:
+          - "&7Voir les groupes publics disponibles"
+          - "&7Groupes ouverts: &f%groups_open%"
+        actions:
+          - "[MENU] group_browse_menu"
+      back:
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
+        lore:
+          - "&7Revenir au menu principal"
         actions:
           - "[MENU] groups_menu"
       close:
-        slot: 26
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -1159,27 +1833,61 @@ menus:
           - "[CLOSE]"
 
   group_browse_menu:
-    title: "&8» &b&lExplorer les Groupes"
-    size: 27
+    title: "&8» &bExplorer les Groupes"
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "YELLOW_STAINED_GLASS_PANE"
+        name: "&7"
     items:
       browse_info:
-        slot: 13
+        slot: 22
+        material: "PLAYER_HEAD"
+        head: "hdb:1218"
+        name: "&b&lGroupes ouverts"
+        lore:
+          - "&7Groupes ouverts: &f%groups_open%"
+          - "&7Groupes d'amis: &f%groups_friends%"
+          - "&7Invitations en attente: &f%group_invitations%"
+      search_tip:
+        slot: 20
         material: COMPASS
-        name: "&bGroupes disponibles"
+        name: "&e&lRecherche"
         lore:
-          - "&7Groupes ouverts: &a%groups_open%"
-          - "&7Groupes d'amis: &e%groups_friends%"
-          - "&7Invitations reçues: &b%group_invitations%"
+          - "&7Parcourez les groupes recommandés"
+          - "&7ou utilisez /group browse"
+      auto_join:
+        slot: 24
+        material: "PLAYER_HEAD"
+        head: "hdb:7439"
+        name: "&a&lRejoindre automatiquement"
+        lore:
+          - "&7Acceptez automatiquement les"
+          - "&7invitations si la fonction est active."
+          - "&r"
+          - "&8▸ &7Statut: &f%group_auto_accept%"
+        actions:
+          - "[TOGGLE_GROUP_AUTO_ACCEPT]"
       back:
-        slot: 18
-        material: ARROW
-        name: "&aRetour"
+        slot: 45
+        material: "PLAYER_HEAD"
+        head: "hdb:9334"
+        name: "&a&lRetour"
         lore:
-          - "&7Retour à la gestion des groupes"
+          - "&7Retourner au menu des groupes"
         actions:
           - "[MENU] groups_menu"
+      settings:
+        slot: 49
+        material: "PLAYER_HEAD"
+        head: "hdb:8537"
+        name: "&d&lParamètres"
+        lore:
+          - "&7Configurer vos préférences de groupe"
+        actions:
+          - "[MENU] group_settings_menu"
       close:
-        slot: 26
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:
@@ -1247,89 +1955,75 @@ menus:
 
   group_settings_menu:
     title: "&8» &eParamètres de Groupe"
-    size: 45
+    size: 54
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,9,17,18,26,27,35,36,37,38,39,40,41,42,43,44,46,47,48,50,51,52]
+        material: "YELLOW_STAINED_GLASS_PANE"
+        name: "&7"
     items:
       auto_accept:
-        slot: 11
-        material: PLAYER_HEAD
+        slot: 19
+        material: "PLAYER_HEAD"
         head: "hdb:13389"
-        name: "&a&lAcceptation Automatique"
+        name: "&a&lAcceptation automatique"
         lore:
           - "&7Acceptez automatiquement les"
-          - "&7invitations de groupe d'amis."
+          - "&7invitations des joueurs de confiance."
           - "&r"
-          - "&8▸ &7Statut: %group_auto_accept%"
+          - "&8▸ &7Statut: &f%group_auto_accept%"
           - "&r"
-          - "&a▶ Bientôt disponible"
+          - "&a▶ Basculer"
         actions:
-          - "[NONE]"
-      preferred_gamemode:
-        slot: 13
-        material: PLAYER_HEAD
+          - "[TOGGLE_GROUP_AUTO_ACCEPT]"
+      preferred_mode:
+        slot: 21
+        material: "PLAYER_HEAD"
         head: "hdb:38878"
-        name: "&b&lMode de Jeu Préféré"
+        name: "&b&lMode de jeu préféré"
         lore:
-          - "&7Définissez votre mode de jeu"
-          - "&7préféré pour les groupes."
-          - "&r"
-          - "&8▸ &7Mode actuel: %group_preferred_mode%"
-          - "&r"
-          - "&b▶ Fonctionnalité à venir"
-        actions:
-          - "[NONE]"
+          - "&7Mode actuel: &f%group_preferred_mode%"
+          - "&7(à venir)"
       visibility:
-        slot: 15
-        material: PLAYER_HEAD
+        slot: 23
+        material: "PLAYER_HEAD"
         head: "hdb:7439"
-        name: "&d&lVisibilité du Groupe"
+        name: "&d&lVisibilité"
         lore:
-          - "&7Contrôlez si vos groupes"
-          - "&7sont publics ou privés."
+          - "&7Définissez la visibilité de votre groupe."
           - "&r"
-          - "&8▸ &7Mode: %group_visibility%"
+          - "&8▸ &7Mode: &f%group_visibility%"
           - "&r"
-          - "&d▶ Bientôt disponible"
+          - "&d▶ Changer la visibilité"
         actions:
-          - "[NONE]"
-      max_invites:
-        slot: 22
-        material: PLAYER_HEAD
-        head: "hdb:9969"
-        name: "&6&lLimite d'Invitations"
-        lore:
-          - "&7Nombre maximum d'invitations"
-          - "&7simultanées que vous pouvez avoir."
-          - "&r"
-          - "&8▸ &7Limite actuelle: %group_max%"
-          - "&r"
-          - "&6▶ Paramétrage prochainement"
-        actions:
-          - "[NONE]"
+          - "[CYCLE_GROUP_VISIBILITY]"
       notifications:
-        slot: 24
-        material: PLAYER_HEAD
+        slot: 25
+        material: "PLAYER_HEAD"
         head: "hdb:1455"
-        name: "&c&lNotifications de Groupe"
+        name: "&c&lNotifications"
         lore:
-          - "&7Recevez des notifications pour"
-          - "&7les invitations et événements."
-          - "&r"
-          - "&8▸ &7Statut: %group_status%"
-          - "&r"
-          - "&c▶ Gestion à venir"
-        actions:
-          - "[NONE]"
+          - "&7Alertes d'invitations: &f%group_status%"
+          - "&7(à venir)"
+      info:
+        slot: 31
+        material: "PLAYER_HEAD"
+        head: "hdb:9723"
+        name: "&e&lRésumé"
+        lore:
+          - "&7Groupe: &f%group_name%"
+          - "&7Leader: &6%group_leader%"
+          - "&7Membres: &a%group_members%/%group_max%"
       back:
-        slot: 40
-        material: PLAYER_HEAD
+        slot: 45
+        material: "PLAYER_HEAD"
         head: "hdb:9334"
-        name: "&c&lRetour"
+        name: "&a&lRetour"
         lore:
           - "&7Retourner au menu des groupes"
         actions:
           - "[MENU] groups_menu"
       close:
-        slot: 44
+        slot: 53
         material: BARRIER
         name: "&cFermer"
         lore:

@@ -13,6 +13,8 @@ import com.lobby.social.friends.FriendManager;
 import com.lobby.social.friends.FriendSettings;
 import com.lobby.social.groups.Group;
 import com.lobby.social.groups.GroupManager;
+import com.lobby.social.groups.GroupSettings;
+import com.lobby.social.groups.GroupVisibility;
 import com.lobby.velocity.VelocityManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -28,11 +30,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class SocialPlaceholderManager {
 
     private final LobbyPlugin plugin;
+    private final Map<UUID, UUID> clanPermissionTargets = new ConcurrentHashMap<>();
 
     public SocialPlaceholderManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -44,11 +48,29 @@ public class SocialPlaceholderManager {
         }
         String replaced = text;
         replaced = applyEconomyPlaceholders(player, replaced);
+        replaced = applyStatisticPlaceholders(player, replaced);
         replaced = applyFriendPlaceholders(player, replaced);
         replaced = applyGroupPlaceholders(player, replaced);
         replaced = applyClanPlaceholders(player, replaced);
         replaced = applyServerPlaceholders(replaced);
         return replaced;
+    }
+
+    private String applyStatisticPlaceholders(final Player player, final String text) {
+        final Map<String, String> replacements = new HashMap<>();
+        replacements.put("%stats_pvp_wins%", "0");
+        replacements.put("%stats_pvp_losses%", "0");
+        replacements.put("%stats_pvp_ratio%", "0.0");
+        replacements.put("%stats_bedwars_wins%", "0");
+        replacements.put("%stats_skywars_wins%", "0");
+        replacements.put("%stats_arcade_score%", "0");
+        replacements.put("%stats_achievements_unlocked%", "0");
+        replacements.put("%stats_achievements_remaining%", "0");
+        replacements.put("%player_language%", "Français");
+        replacements.put("%daily_reward_cooldown%", "Disponible");
+        replacements.put("%daily_reward_name%", "Mystery Box");
+        replacements.put("%daily_reward_streak%", "0 jour");
+        return replaceAll(text, replacements);
     }
 
     private String applyEconomyPlaceholders(final Player player, final String text) {
@@ -241,6 +263,10 @@ public class SocialPlaceholderManager {
             return replaceAll(text, replacements);
         }
 
+        final GroupSettings groupSettings = groupManager.getGroupSettings(player.getUniqueId());
+        replacements.put("%group_auto_accept%", groupSettings.isAutoAcceptInvites() ? "Automatique" : "Manuel");
+        replacements.put("%group_visibility%", formatGroupVisibility(groupSettings.getVisibility()));
+
         final Group group = groupManager.getPlayerGroup(player.getUniqueId());
         if (group != null) {
             replacements.put("%group_name%", Objects.requireNonNullElse(group.getDisplayName(), "Groupe"));
@@ -249,9 +275,7 @@ public class SocialPlaceholderManager {
             replacements.put("%group_max%", String.valueOf(group.getMaxSize()));
             replacements.put("%group_slots_free%", String.valueOf(Math.max(0, group.getMaxSize() - group.getSize())));
             replacements.put("%group_status%", group.isFull() ? "Complet" : "Ouvert");
-            replacements.put("%group_auto_accept%", "Invitations manuelles");
             replacements.put("%group_preferred_mode%", "Toutes les files");
-            replacements.put("%group_visibility%", "Privé");
         }
 
         replacements.put("%group_invitations%", String.valueOf(groupManager.countPendingInvitations(player.getUniqueId())));
@@ -285,6 +309,17 @@ public class SocialPlaceholderManager {
         replacements.put("%clan_war_ratio%", formatRatio(0, 0));
         replacements.put("%clans_open_count%", "0");
         replacements.put("%clans_invite_count%", "0");
+        replacements.put("%clan_target_uuid%", "");
+        replacements.put("%clan_target_name%", "Aucun membre");
+        replacements.put("%clan_target_rank%", "Aucun");
+        replacements.put("%clan_target_permissions%", "Aucune");
+        replacements.put("%clan_permission_invite_status%", "§cDésactivée");
+        replacements.put("%clan_permission_kick_status%", "§cDésactivée");
+        replacements.put("%clan_permission_promote_status%", "§cDésactivée");
+        replacements.put("%clan_permission_demote_status%", "§cDésactivée");
+        replacements.put("%clan_permission_manage_ranks_status%", "§cDésactivée");
+        replacements.put("%clan_permission_withdraw_status%", "§cDésactivée");
+        replacements.put("%clan_permission_disband_status%", "§cDésactivée");
 
         final ClanManager clanManager = plugin.getClanManager();
         if (player == null || clanManager == null) {
@@ -339,7 +374,53 @@ public class SocialPlaceholderManager {
         final boolean vaultAccess = clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_BANK);
         replacements.put("%clan_vault_access%", vaultAccess ? "Autorisé" : "Réservé");
 
+        final UUID targetUuid = clanPermissionTargets.get(player.getUniqueId());
+        if (targetUuid != null) {
+            final ClanMember target = clan.getMember(targetUuid);
+            if (target != null) {
+                final String targetName = resolveName(targetUuid);
+                replacements.put("%clan_target_uuid%", targetUuid.toString());
+                replacements.put("%clan_target_name%", targetName);
+                replacements.put("%clan_target_rank%", target.getRankName());
+                final List<String> permissionList = clanManager.getMemberPermissions(targetUuid);
+                replacements.put("%clan_target_permissions%", permissionList.isEmpty()
+                        ? "Aucune"
+                        : String.join(", ", permissionList));
+                replacements.put("%clan_permission_invite_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.INVITE)));
+                replacements.put("%clan_permission_kick_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.KICK)));
+                replacements.put("%clan_permission_promote_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.PROMOTE)));
+                replacements.put("%clan_permission_demote_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.DEMOTE)));
+                replacements.put("%clan_permission_manage_ranks_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_RANKS)));
+                replacements.put("%clan_permission_withdraw_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_BANK)));
+                replacements.put("%clan_permission_disband_status%", formatPermissionStatus(
+                        clan.hasPermission(targetUuid, ClanPermission.DISBAND)));
+            }
+        }
+
         return replaceAll(text, replacements);
+    }
+
+    public void setClanPermissionTarget(final UUID viewer, final UUID target) {
+        if (viewer == null) {
+            return;
+        }
+        if (target == null) {
+            clanPermissionTargets.remove(viewer);
+        } else {
+            clanPermissionTargets.put(viewer, target);
+        }
+    }
+
+    public void clearClanPermissionTarget(final UUID viewer) {
+        if (viewer != null) {
+            clanPermissionTargets.remove(viewer);
+        }
     }
 
     private String applyServerPlaceholders(final String text) {
@@ -431,6 +512,17 @@ public class SocialPlaceholderManager {
         return Character.toUpperCase(formatted.charAt(0)) + formatted.substring(1);
     }
 
+    private String formatGroupVisibility(final GroupVisibility visibility) {
+        if (visibility == null) {
+            return "Public";
+        }
+        return switch (visibility) {
+            case PUBLIC -> "Public";
+            case FRIENDS_ONLY -> "Amis uniquement";
+            case INVITE_ONLY -> "Sur invitation";
+        };
+    }
+
     private String formatRatio(final int wins, final int losses) {
         if (wins <= 0 && losses <= 0) {
             return "0.0";
@@ -439,6 +531,10 @@ public class SocialPlaceholderManager {
             return String.format(Locale.US, "%.2f", (double) wins);
         }
         return String.format(Locale.US, "%.2f", (double) wins / Math.max(1, losses));
+    }
+
+    private String formatPermissionStatus(final boolean enabled) {
+        return enabled ? "§aActivée" : "§cDésactivée";
     }
 
     private String resolveName(final UUID uuid) {

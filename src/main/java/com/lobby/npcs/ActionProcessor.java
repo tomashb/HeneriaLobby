@@ -22,6 +22,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 public class ActionProcessor {
 
@@ -66,8 +67,36 @@ public class ActionProcessor {
             ChatInputManager.startFriendAddFlow(player);
             return;
         }
+        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_NOTIFICATIONS]")) {
+            toggleAndRefresh(player, "friend_notifications", "friend_settings_menu");
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_REQUESTS]")) {
+            cycleAndRefresh(player, "friend_requests", "friend_settings_menu");
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_VISIBILITY]")) {
+            cycleAndRefresh(player, "friend_visibility", "friend_settings_menu");
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_AUTO_FAVORITES]")) {
+            toggleAndRefresh(player, "friend_auto_favorites", "friend_settings_menu");
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_MESSAGES]")) {
+            toggleAndRefresh(player, "friend_messages", "friend_settings_menu");
+            return;
+        }
         if (trimmed.equalsIgnoreCase("[GROUP_CREATE]")) {
             ChatInputManager.startGroupCreateFlow(player);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[TOGGLE_GROUP_AUTO_ACCEPT]")) {
+            toggleAndRefresh(player, "group_auto_accept", "group_settings_menu");
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CYCLE_GROUP_VISIBILITY]")) {
+            cycleAndRefresh(player, "group_visibility", "group_settings_menu");
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_MEMBERS]")) {
@@ -76,6 +105,16 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[CLAN_VAULT]")) {
             ClanMenus.openClanVaultMenu(player);
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[TOGGLE_MEMBER_PERMISSION]")) {
+            final String value = processed.substring("[TOGGLE_MEMBER_PERMISSION]".length()).trim();
+            toggleMemberPermission(player, value);
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[APPLY_MEMBER_PERMISSION_PRESET]")) {
+            final String value = processed.substring("[APPLY_MEMBER_PERMISSION_PRESET]".length()).trim();
+            applyMemberPreset(player, value);
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_INVITE]")) {
@@ -242,6 +281,244 @@ public class ActionProcessor {
                 menuManager.openMenu(player, "clan_menu");
             }
         });
+    }
+
+    private void toggleAndRefresh(final Player player, final String key, final String menuId) {
+        if (player == null || key == null) {
+            return;
+        }
+        switch (key) {
+            case "friend_notifications" -> {
+                final var friendManager = plugin.getFriendManager();
+                if (friendManager == null) {
+                    return;
+                }
+                final boolean enabled = friendManager.toggleNotifications(player.getUniqueId());
+                player.sendMessage(enabled
+                        ? "§aNotifications d'amis activées"
+                        : "§cNotifications d'amis désactivées");
+                reopenMenu(player, menuId);
+            }
+            case "friend_auto_favorites" -> {
+                final var friendManager = plugin.getFriendManager();
+                if (friendManager == null) {
+                    return;
+                }
+                final boolean enabled = friendManager.toggleAutoAcceptFavorites(player.getUniqueId());
+                player.sendMessage(enabled
+                        ? "§aAcceptation auto des favoris activée"
+                        : "§cAcceptation auto des favoris désactivée");
+                reopenMenu(player, menuId);
+            }
+            case "friend_messages" -> {
+                final var friendManager = plugin.getFriendManager();
+                if (friendManager == null) {
+                    return;
+                }
+                final boolean enabled = friendManager.togglePrivateMessages(player.getUniqueId());
+                player.sendMessage(enabled
+                        ? "§aMessages privés autorisés"
+                        : "§cMessages privés désactivés");
+                reopenMenu(player, menuId);
+            }
+            case "group_auto_accept" -> {
+                final var groupManager = plugin.getGroupManager();
+                if (groupManager == null) {
+                    return;
+                }
+                final boolean enabled = groupManager.toggleAutoAccept(player.getUniqueId());
+                player.sendMessage(enabled
+                        ? "§aInvitations automatiques activées"
+                        : "§cInvitations automatiques désactivées");
+                reopenMenu(player, menuId);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void cycleAndRefresh(final Player player, final String key, final String menuId) {
+        if (player == null || key == null) {
+            return;
+        }
+        switch (key) {
+            case "friend_requests" -> {
+                final var friendManager = plugin.getFriendManager();
+                if (friendManager == null) {
+                    return;
+                }
+                final String mode = friendManager.cycleRequestAcceptance(player.getUniqueId());
+                player.sendMessage("§aDemandes d'amis: §f" + mode);
+                reopenMenu(player, menuId);
+            }
+            case "friend_visibility" -> {
+                final var friendManager = plugin.getFriendManager();
+                if (friendManager == null) {
+                    return;
+                }
+                final String visibility = friendManager.cycleFriendVisibility(player.getUniqueId());
+                player.sendMessage("§aVisibilité: §f" + visibility);
+                reopenMenu(player, menuId);
+            }
+            case "group_visibility" -> {
+                final var groupManager = plugin.getGroupManager();
+                if (groupManager == null) {
+                    return;
+                }
+                final String visibility = groupManager.cycleGroupVisibility(player.getUniqueId());
+                player.sendMessage("§aVisibilité du groupe: §f" + visibility);
+                reopenMenu(player, menuId);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private void toggleMemberPermission(final Player player, final String actionValue) {
+        if (player == null || actionValue == null || actionValue.isBlank()) {
+            return;
+        }
+        final String[] parts = actionValue.split("\\|");
+        if (parts.length < 2) {
+            player.sendMessage("§cAction de permission invalide.");
+            return;
+        }
+        final UUID memberUuid = parseUuid(parts[0]);
+        if (memberUuid == null) {
+            player.sendMessage("§cMembre introuvable.");
+            return;
+        }
+        final String permissionKey = parts[1].trim();
+        if (permissionKey.isEmpty()) {
+            player.sendMessage("§cPermission invalide.");
+            return;
+        }
+        final String menuId = parts.length > 2 && !parts[2].trim().isEmpty()
+                ? parts[2].trim()
+                : "clan_member_permissions_menu";
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            return;
+        }
+        final boolean enabled = clanManager.toggleMemberPermission(player.getUniqueId(), memberUuid, permissionKey);
+        final String name = formatPermissionName(permissionKey);
+        player.sendMessage(enabled
+                ? "§aPermission activée: §f" + name
+                : "§cPermission désactivée: §f" + name);
+        reopenMenu(player, menuId);
+    }
+
+    private void applyMemberPreset(final Player player, final String actionValue) {
+        if (player == null || actionValue == null || actionValue.isBlank()) {
+            return;
+        }
+        final String[] parts = actionValue.split("\\|");
+        if (parts.length < 2) {
+            player.sendMessage("§cPreset de permissions invalide.");
+            return;
+        }
+        final UUID memberUuid = parseUuid(parts[0]);
+        if (memberUuid == null) {
+            player.sendMessage("§cMembre introuvable.");
+            return;
+        }
+        final String presetKey = parts[1].trim();
+        if (presetKey.isEmpty()) {
+            player.sendMessage("§cPreset invalide.");
+            return;
+        }
+        final String menuId = parts.length > 2 && !parts[2].trim().isEmpty()
+                ? parts[2].trim()
+                : "clan_member_permissions_menu";
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            return;
+        }
+        final boolean success = clanManager.applyPermissionPreset(player.getUniqueId(), memberUuid, presetKey);
+        final String name = formatPresetName(presetKey);
+        player.sendMessage(success
+                ? "§aPreset appliqué: §f" + name
+                : "§cImpossible d'appliquer le preset: §f" + name);
+        reopenMenu(player, menuId);
+    }
+
+    private void reopenMenu(final Player player, final String menuId) {
+        if (player == null || menuId == null || menuId.isBlank()) {
+            return;
+        }
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (menuManager == null) {
+            return;
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (player.isOnline()) {
+                menuManager.openMenu(player, menuId);
+            }
+        });
+    }
+
+    private UUID parseUuid(final String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(value.trim());
+        } catch (final IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    private String formatPermissionName(final String permissionKey) {
+        if (permissionKey == null || permissionKey.isBlank()) {
+            return "Permission";
+        }
+        final String normalized = permissionKey.toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "clan.invite" -> "Invitations";
+            case "clan.kick" -> "Exclusions";
+            case "clan.promote" -> "Promotions";
+            case "clan.demote" -> "Rétrogradations";
+            case "clan.manage_ranks" -> "Gestion des rangs";
+            case "clan.withdraw", "clan.manage_bank" -> "Banque";
+            case "clan.disband" -> "Dissolution";
+            default -> {
+                final String raw = permissionKey.contains(".")
+                        ? permissionKey.substring(permissionKey.indexOf('.') + 1)
+                        : permissionKey;
+                final String lower = raw.replace('_', ' ').toLowerCase(Locale.ROOT);
+                yield Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+            }
+        };
+    }
+
+    private String formatPresetName(final String presetKey) {
+        if (presetKey == null || presetKey.isBlank()) {
+            return "Preset";
+        }
+        final String normalized = presetKey.toLowerCase(Locale.ROOT);
+        return switch (normalized) {
+            case "default", "aucun", "none" -> "Défaut";
+            case "moderateur", "moderator", "mod" -> "Modérateur";
+            case "officier", "officer" -> "Officier";
+            case "gestion", "manager" -> "Gestion";
+            case "banquier", "banker" -> "Banquier";
+            case "admin", "toutes", "all" -> "Administrateur";
+            default -> {
+                final String cleaned = normalized.replace('-', ' ').replace('_', ' ');
+                final String[] parts = cleaned.split(" ");
+                final StringBuilder builder = new StringBuilder();
+                for (String part : parts) {
+                    if (part.isEmpty()) {
+                        continue;
+                    }
+                    builder.append(Character.toUpperCase(part.charAt(0)))
+                            .append(part.substring(1));
+                    builder.append(' ');
+                }
+                final String result = builder.toString().trim();
+                yield result.isEmpty() ? presetKey : result;
+            }
+        };
     }
 
     private void parseAmountAndApply(final String raw, final java.util.function.LongConsumer consumer) {

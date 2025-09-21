@@ -433,17 +433,21 @@ public class FriendManager {
         return settingsCache.computeIfAbsent(uuid, this::loadSettings);
     }
 
-    public boolean toggleRequestAcceptance(final UUID playerUuid) {
+    public String cycleRequestAcceptance(final UUID playerUuid) {
         if (playerUuid == null) {
-            return true;
+            return "Tous";
         }
         final FriendSettings current = getFriendSettings(playerUuid);
-        final AcceptMode nextMode = current.getAcceptRequests() == AcceptMode.NONE ? AcceptMode.ALL : AcceptMode.NONE;
+        final AcceptMode nextMode = switch (current.getAcceptRequests()) {
+            case ALL -> AcceptMode.FRIENDS_OF_FRIENDS;
+            case FRIENDS_OF_FRIENDS -> AcceptMode.NONE;
+            case NONE -> AcceptMode.ALL;
+        };
         final FriendSettings updated = new FriendSettings(nextMode, current.isShowOnlineStatus(),
                 current.isAllowNotifications(), current.isAutoAcceptFavorites(),
                 current.isAllowPrivateMessages(), current.getMaxFriends());
         updateSettings(playerUuid, updated);
-        return nextMode != AcceptMode.NONE;
+        return formatAcceptMode(nextMode);
     }
 
     public boolean toggleNotifications(final UUID playerUuid) {
@@ -459,9 +463,9 @@ public class FriendManager {
         return allowNotifications;
     }
 
-    public boolean toggleVisibility(final UUID playerUuid) {
+    public String cycleFriendVisibility(final UUID playerUuid) {
         if (playerUuid == null) {
-            return true;
+            return "Visible";
         }
         final FriendSettings current = getFriendSettings(playerUuid);
         final boolean showStatus = !current.isShowOnlineStatus();
@@ -469,7 +473,7 @@ public class FriendManager {
                 current.isAllowNotifications(), current.isAutoAcceptFavorites(), current.isAllowPrivateMessages(),
                 current.getMaxFriends());
         updateSettings(playerUuid, updated);
-        return showStatus;
+        return showStatus ? "Visible" : "Caché";
     }
 
     public boolean toggleAutoAcceptFavorites(final UUID playerUuid) {
@@ -496,6 +500,17 @@ public class FriendManager {
                 current.getMaxFriends());
         updateSettings(playerUuid, updated);
         return allowPrivateMessages;
+    }
+
+    private String formatAcceptMode(final AcceptMode mode) {
+        if (mode == null) {
+            return "Tous";
+        }
+        return switch (mode) {
+            case ALL -> "Tous";
+            case FRIENDS_OF_FRIENDS -> "Amis d'amis";
+            case NONE -> "Personne";
+        };
     }
 
     public void updateSettings(final UUID uuid, final FriendSettings settings) {

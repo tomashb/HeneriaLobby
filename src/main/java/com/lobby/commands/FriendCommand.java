@@ -177,10 +177,8 @@ public class FriendCommand implements CommandExecutor, TabCompleter {
         String feedback;
         switch (option) {
             case "requests":
-                final boolean requestsEnabled = friendManager.toggleRequestAcceptance(player.getUniqueId());
-                feedback = requestsEnabled
-                        ? ChatColor.GREEN + "Requêtes d'amis activées"
-                        : ChatColor.RED + "Requêtes d'amis désactivées";
+                final String requestMode = friendManager.cycleRequestAcceptance(player.getUniqueId());
+                feedback = ChatColor.GREEN + "Demandes d'amis: " + ChatColor.WHITE + requestMode;
                 break;
             case "notifications":
                 final boolean notificationsEnabled = friendManager.toggleNotifications(player.getUniqueId());
@@ -189,10 +187,8 @@ public class FriendCommand implements CommandExecutor, TabCompleter {
                         : ChatColor.RED + "Notifications désactivées";
                 break;
             case "visibility":
-                final boolean visibilityEnabled = friendManager.toggleVisibility(player.getUniqueId());
-                feedback = visibilityEnabled
-                        ? ChatColor.GREEN + "Visibilité activée"
-                        : ChatColor.RED + "Visibilité masquée";
+                final String visibilityMode = friendManager.cycleFriendVisibility(player.getUniqueId());
+                feedback = ChatColor.GREEN + "Visibilité: " + ChatColor.WHITE + visibilityMode;
                 break;
             case "favorites":
                 final boolean autoFavorites = friendManager.toggleAutoAcceptFavorites(player.getUniqueId());
