@@ -2,136 +2,199 @@ menu:
   id: "profil_menu"
   title: "&8» &6Mon Profil"
   size: 54
-  borders:
-    - slots: [0,1,2,6,7,8,9,17,45,53]
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
 
   items:
-    friends:
-      slot: 3
+    deco_1:
+      slot: 0
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_2:
+      slot: 1
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_3:
+      slot: 2
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_4:
+      slot: 6
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_5:
+      slot: 7
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_6:
+      slot: 8
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_7:
+      slot: 9
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_8:
+      slot: 17
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_9:
+      slot: 45
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    deco_10:
+      slot: 53
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    player_info:
+      slot: 13
       material: "PLAYER_HEAD"
-      head: "hdb:9945"
+      head: "%player_name%"
+      name: "&6&l%player_name%"
+      lore:
+        - "&r"
+        - "&8▸ &7Grade: %luckperms_prefix%"
+        - "&8▸ &7Temps de jeu: &f%player_playtime_total%"
+        - "&8▸ &7Première connexion: &f%player_first_join%"
+        - "&8▸ &7Dernière connexion: &f%player_last_join%"
+        - "&r"
+        - "&8▸ &7Coins: &e%player_coins%"
+        - "&8▸ &7Tokens: &b%player_tokens%"
+        - "&r"
+        - "&7Vos informations de profil"
+      actions:
+        - "[NONE]"
+
+    friends:
+      slot: 29
+      material: "PLAYER_HEAD"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjk2ODlkNDczY2Y2MGI4YWY5ZWRiNzZkOGY0N2U0MTgwYmFhNWY2ZjYzNTBjNTc1ZDNmZjEwYjUxMjUwM2E2OSJ9fX0="
       name: "&a&lAmis"
       lore:
-        - "&7Retrouvez toutes vos interactions sociales"
+        - "&7Gérez votre liste d'amis,"
+        - "&7envoyez des invitations et"
+        - "&7voyez qui est en ligne."
         - "&r"
-        - "&8▸ &7Amis en ligne: &a%friends_online%/%friends_total%"
-        - "&8▸ &7Demandes reçues: &e%friend_requests_received%"
-        - "&8▸ &7Dernière activité: &b%friends_recent_activity%"
+        - "&8▸ &7Amis en ligne: &a0&8/&70"
+        - "&8▸ &7Demandes en attente: &e0"
+        - "&8▸ &7Statut: &aEn ligne"
         - "&r"
-        - "&a▶ Cliquez pour gérer vos amis !"
+        - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MENU] friends_menu"
+        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
 
-    groups:
-      slot: 4
+    group:
+      slot: 31
       material: "PLAYER_HEAD"
-      head: "hdb:9723"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTQzMjY5ZDVhOTM4MWE0ZjE5N2ExMzNlZjBjNGEzMzBmYzllMmMwNGI1YWEzMzNkZGFkMmUyMTEwNTNkYzE5MiJ9fX0="
       name: "&e&lGroupe"
       lore:
-        - "&7Gérez votre groupe de jeu en un clic"
+        - "&7Créez ou rejoignez un groupe"
+        - "&7pour jouer avec vos amis !"
         - "&r"
-        - "&8▸ &7Groupe: &e%group_name%"
-        - "&8▸ &7Leader: &6%group_leader%"
-        - "&8▸ &7Membres: &a%group_members%/%group_max%"
+        - "&8▸ &7Groupe actuel: &cAucun"
+        - "&8▸ &7Membres: &a0&8/&78"
+        - "&8▸ &7Leader: &6-"
         - "&r"
-        - "&a▶ Cliquez pour gérer votre groupe !"
+        - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MENU] groups_menu"
+        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
 
-    clans:
-      slot: 5
+    clan:
+      slot: 33
       material: "PLAYER_HEAD"
-      head: "hdb:8971"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMWE0ZjY4Yzg3YTkyMjg1ZGUyODNjNGVkODMwZjM4OTBiZjNhOWE3MjMxZDlhYWMzNmNhNzk3ZTVjOTE4YzI5YyJ9fX0="
       name: "&c&lClan"
       lore:
-        - "&7Accédez à toutes les fonctionnalités de clan"
+        - "&7Rejoignez un clan pour participer"
+        - "&7à des événements exclusifs et"
+        - "&7des guerres de clans !"
         - "&r"
-        - "&8▸ &7Clan: &c%clan_name%"
-        - "&8▸ &7Rang: &6%clan_rank%"
-        - "&8▸ &7Points: &e%clan_points%"
+        - "&8▸ &7Clan: &cAucun"
+        - "&8▸ &7Rang: &6-"
+        - "&8▸ &7Membres: &a0&8/&750"
+        - "&8▸ &7Points: &e0"
         - "&r"
-        - "&a▶ Cliquez pour gérer votre clan !"
+        - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MENU] clan_menu"
+        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
 
     stats:
       slot: 20
       material: "PLAYER_HEAD"
-      head: "%player_name%"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYzY5MTk2YjMzMGM2Yjg5NjE2MjNmNzI4NDM5ZDQxZGE0YzgwOTBiNzNkOWM1ODM5ZTczOGE5ZGE4ZDM0YzNjMCJ9fX0="
       name: "&b&lMes Statistiques"
       lore:
         - "&7Consultez toutes vos performances"
         - "&7détaillées par mode de jeu."
         - "&r"
-        - "&8▸ &7Parties jouées: &e%player_games_total%"
-        - "&8▸ &7Victoires: &a%player_wins_total%"
-        - "&8▸ &7Ratio V/D: &6%player_ratio%"
-        - "&8▸ &7Expérience: &d%player_experience%"
+        - "&8▸ &7Parties jouées: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Ratio V/D: &60.0"
+        - "&8▸ &7Expérience: &d0"
         - "&r"
         - "&a▶ Cliquez pour voir le détail !"
       actions:
-        - "[MENU] stats_detailed_menu"
-
-    language:
-      slot: 22
-      material: "PLAYER_HEAD"
-      head: "hdb:2736"
-      name: "&f&lLangue &8- &cFrançais"
-      lore:
-        - "&7Changez la langue d'affichage"
-        - "&7de l'interface et des messages."
-        - "&r"
-        - "&8▸ &7Langue actuelle: &c🇫🇷 Français"
-        - "&8▸ &7Langues disponibles:"
-        - "&8  ▸ &c🇫🇷 Français"
-        - "&8  ▸ &f🇬🇧 English"
-        - "&8  ▸ &e🇪🇸 Español"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[MENU] language_menu"
+        - "[MESSAGE] &cLes statistiques détaillées ne sont pas encore disponibles !"
 
     settings:
       slot: 24
       material: "PLAYER_HEAD"
-      head: "hdb:1218"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvMjcwNWZkOTRhMGM0MzE5MjdmYjRlNjM5YjBmY2ZiNDk3MTdlNDEyMjg1YTAyYjQzOWI2OTZhMjE4MGViNTkxNSJ9fX0="
       name: "&d&lParamètres"
       lore:
         - "&7Personnalisez votre expérience"
         - "&7de jeu selon vos préférences."
         - "&r"
-        - "&8▸ &7Messages privés: %setting_private_messages%"
-        - "&8▸ &7Demandes d'amis: %setting_friend_requests%"
-        - "&8▸ &7Visibilité: %setting_visibility%"
+        - "&8▸ &7Messages privés: &aActivés"
+        - "&8▸ &7Demandes d'amis: &aActivées"
+        - "&8▸ &7Visibilité: &aTous"
         - "&r"
         - "&a▶ Cliquez pour configurer !"
       actions:
         - "[MENU] settings_menu"
 
-    rewards:
-      slot: 30
+    daily_reward:
+      slot: 26
       material: "PLAYER_HEAD"
-      head: "hdb:12654"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDM0ZTA2M2NhZjY5N2QyZTVmZGQ0YmE5Yjg3YjZjZGI0MDU5M2M0OGFiOTAzZjJiZDVlOGZhNjU1Y2QzYzMxMCJ9fX0="
       name: "&6&lRécompense Journalière"
       lore:
         - "&7Réclamez votre récompense"
         - "&7quotidienne gratuite !"
         - "&r"
-        - "&8▸ &7Statut: %daily_reward_status%"
-        - "&8▸ &7Série actuelle: &e%daily_streak% jours"
-        - "&8▸ &7Prochaine récompense: %daily_next_reward%"
-        - "&8▸ &7Temps restant: &b%daily_cooldown%"
+        - "&8▸ &7Statut: &aDisponible"
+        - "&8▸ &7Série actuelle: &e1 jour"
+        - "&8▸ &7Prochaine récompense: &e100 coins"
+        - "&8▸ &7Temps restant: &b23h 59m"
         - "&r"
         - "&a▶ Cliquez pour réclamer !"
       actions:
-        - "[MENU] daily_reward_menu"
+        - "[MESSAGE] &cLes récompenses journalières ne sont pas encore disponibles !"
 
     back:
       slot: 49
       material: "PLAYER_HEAD"
-      head: "hdb:9334"
+      head: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNzI0MzE5MTFmNDE3OGI0ZDJiNDEzYWE3ZjVjNzhhZTI1MTUyOTI4MjVmYzk2NGEwNmVmOGZmNmM3MzcyYzZlYiJ9fX0="
       name: "&c&lRetour"
       lore:
         - "&7Retourner au menu principal"
