@@ -356,14 +356,15 @@ public class SocialPlaceholderManager {
         replacements.put("%clan_online%", String.valueOf(onlineCount));
 
         final ClanMember member = clan.getMember(player.getUniqueId());
+        final ClanRank rank = member != null ? clan.getRank(member.getRankName()) : null;
         if (member != null) {
-            replacements.put("%clan_rank%", member.getRankName());
-            replacements.put("%clan_player_level%", member.getRankName());
+            final String displayRank = rank != null ? rank.getDisplayName() : member.getRankName();
+            replacements.put("%clan_rank%", displayRank);
+            replacements.put("%clan_player_level%", displayRank);
             replacements.put("%clan_contributions%", String.valueOf(member.getTotalContributions()));
             replacements.put("%clan_last_activity%", formatRelativeTime(member.getJoinedAt()));
         }
 
-        final ClanRank rank = member != null ? clan.getRank(member.getRankName()) : null;
         if (rank != null) {
             final String permissions = rank.getPermissions().isEmpty()
                     ? "Standard"
@@ -376,7 +377,7 @@ public class SocialPlaceholderManager {
             replacements.put("%clan_player_level%", rank.getDisplayName());
         }
 
-        final boolean vaultAccess = clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_BANK);
+        final boolean vaultAccess = clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_CLAN_INFO);
         replacements.put("%clan_vault_access%", vaultAccess ? "Autorisé" : "Réservé");
 
         final UUID targetUuid = clanPermissionTargets.get(player.getUniqueId());
@@ -386,9 +387,10 @@ public class SocialPlaceholderManager {
                 final String targetName = resolveName(targetUuid);
                 replacements.put("%clan_target_uuid%", targetUuid.toString());
                 replacements.put("%clan_target_name%", targetName);
-                replacements.put("%clan_target_rank%", target.getRankName());
-
                 final ClanRank targetRank = clan.getRank(target.getRankName());
+                replacements.put("%clan_target_rank%", targetRank != null
+                        ? targetRank.getDisplayName()
+                        : target.getRankName());
                 replacements.put("%clan_target_rank_display%", targetRank != null
                         ? targetRank.getDisplayName()
                         : target.getRankName());
@@ -412,19 +414,19 @@ public class SocialPlaceholderManager {
                 replacements.put("%clan_target_previous_rank%", previousRank != null ? previousRank.getDisplayName() : "Aucun");
 
                 replacements.put("%clan_permission_invite_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.INVITE)));
+                        clan.hasPermission(targetUuid, ClanPermission.INVITE_MEMBERS)));
                 replacements.put("%clan_permission_kick_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.KICK)));
+                        clan.hasPermission(targetUuid, ClanPermission.KICK_MEMBERS)));
                 replacements.put("%clan_permission_promote_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.PROMOTE)));
+                        clan.hasPermission(targetUuid, ClanPermission.PROMOTE_MEMBERS)));
                 replacements.put("%clan_permission_demote_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.DEMOTE)));
+                        clan.hasPermission(targetUuid, ClanPermission.DEMOTE_MEMBERS)));
                 replacements.put("%clan_permission_manage_ranks_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_RANKS)));
+                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_PERMISSIONS)));
                 replacements.put("%clan_permission_withdraw_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_BANK)));
+                        clan.hasPermission(targetUuid, ClanPermission.MANAGE_CLAN_INFO)));
                 replacements.put("%clan_permission_disband_status%", formatPermissionStatus(
-                        clan.hasPermission(targetUuid, ClanPermission.DISBAND)));
+                        clan.hasPermission(targetUuid, ClanPermission.DISBAND_CLAN)));
 
                 final boolean isSelf = player.getUniqueId().equals(targetUuid);
                 final boolean targetIsLeader = clan.isLeader(targetUuid);
@@ -438,9 +440,9 @@ public class SocialPlaceholderManager {
                 final boolean canKickTarget = !isSelf && !targetIsLeader
                         && clanManager.hasPermission(clan.getId(), player.getUniqueId(), "clan.kick");
                 final boolean canBanTarget = !isSelf && !targetIsLeader
-                        && (clan.isLeader(player.getUniqueId())
-                        || clan.hasPermission(player.getUniqueId(), ClanPermission.DISBAND));
-                final boolean canTransfer = clan.isLeader(player.getUniqueId()) && !isSelf && !targetIsLeader;
+                        && clan.hasPermission(player.getUniqueId(), ClanPermission.BAN_MEMBERS);
+                final boolean canTransfer = !isSelf && !targetIsLeader
+                        && clan.hasPermission(player.getUniqueId(), ClanPermission.TRANSFER_LEADERSHIP);
 
                 replacements.put("%clan_target_can_promote%", formatActionStatus(canPromoteTarget));
                 replacements.put("%clan_target_can_demote%", formatActionStatus(canDemoteTarget));

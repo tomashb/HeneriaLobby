@@ -6,6 +6,7 @@ import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.clans.ClanMember;
 import com.lobby.social.clans.ClanPermission;
+import com.lobby.social.clans.ClanRole;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -150,7 +151,7 @@ public final class ClanMenus {
             player.sendMessage("§cVous n'êtes dans aucun clan!");
             return;
         }
-        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_RANKS)
+        if (!clan.hasPermission(player.getUniqueId(), ClanPermission.MANAGE_PERMISSIONS)
                 && !clan.isLeader(player.getUniqueId())) {
             player.sendMessage("§cVous n'avez pas la permission de gérer les rangs.");
             return;
@@ -196,8 +197,10 @@ public final class ClanMenus {
         if (meta != null) {
             meta.setOwningPlayer(offlinePlayer);
             meta.setDisplayName("§e" + name);
+            final ClanRole role = ClanRole.fromName(member.getRankName());
+            final String displayRank = role != null ? role.getDisplayName() : member.getRankName();
             meta.setLore(Arrays.asList(
-                    "§7Rang: §f" + member.getRankName(),
+                    "§7Rang: §f" + displayRank,
                     "§7Contributions: §b" + member.getTotalContributions(),
                     "§r",
                     "§8▶ §7Cliquez pour gérer les permissions"
