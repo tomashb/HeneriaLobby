@@ -3,6 +3,11 @@ package com.lobby.utils;
 import com.lobby.LobbyPlugin;
 import com.lobby.data.PlayerData;
 import com.lobby.economy.EconomyManager;
+import com.lobby.settings.PlayerSettings;
+import com.lobby.settings.PlayerSettingsManager;
+import com.lobby.stats.GameStats;
+import com.lobby.stats.GlobalStats;
+import com.lobby.stats.StatsManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.holograms.PlaceholderProcessor;
 import org.bukkit.entity.Player;
@@ -14,6 +19,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 public final class PlaceholderUtils {
 
@@ -52,23 +58,24 @@ public final class PlaceholderUtils {
 
         processed = processed.replace("%player_name%", player.getName());
 
+        final UUID uuid = player.getUniqueId();
+
         final EconomyManager economyManager = plugin.getEconomyManager();
-        if (economyManager == null) {
-            return processed;
+        if (economyManager != null) {
+            final PlayerData data = economyManager.getPlayerData(uuid);
+            if (data != null) {
+                processed = processed
+                        .replace("%player_coins%", String.valueOf(data.coins()))
+                        .replace("%player_tokens%", String.valueOf(data.tokens()))
+                        .replace("%player_first_join%", formatInstant(data.firstJoin()))
+                        .replace("%player_last_join%", formatInstant(data.lastJoin()))
+                        .replace("%player_playtime%", formatPlaytime(data.totalPlaytime()))
+                        .replace("%player_playtime_total%", formatPlaytime(data.totalPlaytime()));
+            }
         }
 
-        final PlayerData data = economyManager.getPlayerData(player.getUniqueId());
-        if (data == null) {
-            return processed;
-        }
-
-        processed = processed
-                .replace("%player_coins%", String.valueOf(data.coins()))
-                .replace("%player_tokens%", String.valueOf(data.tokens()))
-                .replace("%player_first_join%", formatInstant(data.firstJoin()))
-                .replace("%player_last_join%", formatInstant(data.lastJoin()))
-                .replace("%player_playtime%", formatPlaytime(data.totalPlaytime()))
-                .replace("%player_playtime_total%", formatPlaytime(data.totalPlaytime()));
+        processed = applyStatsPlaceholders(plugin, processed, uuid);
+        processed = applySettingsPlaceholders(plugin, processed, uuid);
 
         return processed;
     }
@@ -115,5 +122,107 @@ public final class PlaceholderUtils {
         }
         final String result = builder.toString().trim();
         return result.isEmpty() ? "0s" : result;
+    }
+
+    private static String applyStatsPlaceholders(final LobbyPlugin plugin, final String text, final UUID uuid) {
+        if (text == null || uuid == null || !text.contains("%stats_")) {
+            return text;
+        }
+        final StatsManager statsManager = plugin.getStatsManager();
+        if (statsManager == null) {
+            return text;
+        }
+
+        String processed = text;
+        final GlobalStats globalStats = statsManager.getGlobalStats(uuid);
+        processed = processed
+                .replace("%stats_global_games%", String.valueOf(globalStats.getTotalGames()))
+                .replace("%stats_global_wins%", String.valueOf(globalStats.getTotalWins()))
+                .replace("%stats_global_losses%", String.valueOf(globalStats.getTotalLosses()))
+                .replace("%stats_global_ratio%", formatRatio(globalStats.getRatio()))
+                .replace("%stats_global_kills%", String.valueOf(globalStats.getTotalKills()))
+                .replace("%stats_global_deaths%", String.valueOf(globalStats.getTotalDeaths()))
+                .replace("%stats_global_playtime%", globalStats.getFormattedPlaytime());
+
+        processed = applyGameStats(processed, statsManager.getPlayerStats(uuid, "BEDWARS"),
+                "bedwars", true, false);
+        processed = applyGameStats(processed, statsManager.getPlayerStats(uuid, "NEXUS"),
+                "nexus", true, false);
+        processed = applyGameStats(processed, statsManager.getPlayerStats(uuid, "ZOMBIE"),
+                "zombie", false, true);
+        processed = applyGameStats(processed, statsManager.getPlayerStats(uuid, "CUSTOM"),
+                "custom", false, false);
+
+        return processed;
+    }
+
+    private static String applySettingsPlaceholders(final LobbyPlugin plugin, final String text, final UUID uuid) {
+        if (text == null || uuid == null || (!text.contains("%setting_") && !text.contains("%lang_"))) {
+            return text;
+        }
+        final PlayerSettingsManager settingsManager = plugin.getPlayerSettingsManager();
+        if (settingsManager == null) {
+            return text;
+        }
+        final PlayerSettings settings = settingsManager.getPlayerSettings(uuid);
+        if (settings == null) {
+            return text;
+        }
+
+        String processed = text
+                .replace("%setting_private_messages_display%", settings.getPrivateMessagesDisplay())
+                .replace("%setting_friend_requests_display%", settings.getFriendRequestsDisplay())
+                .replace("%setting_group_requests_display%", settings.getGroupRequestsDisplay())
+                .replace("%setting_visibility_display%", settings.getVisibilityDisplay())
+                .replace("%setting_ui_sounds_display%", settings.getUiSoundsDisplay())
+                .replace("%setting_particles_display%", settings.getParticlesDisplay())
+                .replace("%setting_music_display%", settings.getMusicDisplay())
+                .replace("%setting_friend_notifications_display%", settings.getFriendNotificationsDisplay())
+                .replace("%setting_clan_notifications_display%", settings.getClanNotificationsDisplay())
+                .replace("%setting_system_notifications_display%", settings.getSystemNotificationsDisplay())
+                .replace("%setting_language_flag%", settings.getLanguageFlag())
+                .replace("%setting_language_name%", settings.getLanguageName())
+                .replace("%setting_language_display%", settings.getLanguageDisplay());
+
+        processed = processed
+                .replace("%lang_fr_status%", settings.getLanguageStatus("fr"))
+                .replace("%lang_en_status%", settings.getLanguageStatus("en"))
+                .replace("%lang_es_status%", settings.getLanguageStatus("es"));
+
+        return processed;
+    }
+
+    private static String applyGameStats(final String text,
+                                         final GameStats stats,
+                                         final String prefix,
+                                         final boolean useSpecialOne,
+                                         final boolean useSpecialTwo) {
+        if (stats == null) {
+            return text;
+        }
+        String processed = text
+                .replace("%stats_" + prefix + "_games%", String.valueOf(stats.getGamesPlayed()))
+                .replace("%stats_" + prefix + "_wins%", String.valueOf(stats.getWins()))
+                .replace("%stats_" + prefix + "_losses%", String.valueOf(stats.getLosses()))
+                .replace("%stats_" + prefix + "_ratio%", formatRatio(stats.getRatio()))
+                .replace("%stats_" + prefix + "_kills%", String.valueOf(stats.getKills()))
+                .replace("%stats_" + prefix + "_deaths%", String.valueOf(stats.getDeaths()))
+                .replace("%stats_" + prefix + "_playtime%", stats.getFormattedPlaytime());
+
+        if (useSpecialOne) {
+            processed = processed.replace("%stats_" + prefix + "_beds%", String.valueOf(stats.getSpecialStat1()))
+                    .replace("%stats_" + prefix + "_destroyed%", String.valueOf(stats.getSpecialStat1()));
+        }
+        if (useSpecialTwo) {
+            processed = processed.replace("%stats_" + prefix + "_record%", String.valueOf(stats.getSpecialStat2()));
+        }
+        return processed;
+    }
+
+    private static String formatRatio(final double ratio) {
+        if (Double.isNaN(ratio) || Double.isInfinite(ratio)) {
+            return "0.00";
+        }
+        return String.format(Locale.US, "%.2f", ratio);
     }
 }

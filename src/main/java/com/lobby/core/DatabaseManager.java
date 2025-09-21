@@ -207,7 +207,7 @@ public class DatabaseManager {
         createOrUpdatePlayersTable();
         createOrUpdateNPCsTable();
 
-        executeSQL(getCreateStatsTableSQL());
+        createOrUpdateStatsTables();
         executeSQL(getCreateHologramsTableSQL());
         final String animationDefinition = databaseType == DatabaseType.MYSQL
                 ? "VARCHAR(32) DEFAULT 'NONE'"
@@ -525,31 +525,116 @@ public class DatabaseManager {
         }
     }
 
-    private String getCreateStatsTableSQL() {
+    private void createOrUpdateStatsTables() throws SQLException {
+        executeSQL(getCreatePlayerGameStatsTableSQL());
+        executeSQL(getCreatePlayerSettingsTableSQL());
+
+        if (!createIndexes) {
+            return;
+        }
+
+        try {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_player_game_stats_player ON player_game_stats(player_uuid)");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to create idx_player_game_stats_player index: " + exception.getMessage(), exception);
+        }
+
+        try {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_player_game_stats_game ON player_game_stats(game_type)");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to create idx_player_game_stats_game index: " + exception.getMessage(), exception);
+        }
+
+        try {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_player_settings_language ON player_settings(language)");
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.FINE,
+                    "Failed to create idx_player_settings_language index: " + exception.getMessage(), exception);
+        }
+    }
+
+    private String getCreatePlayerGameStatsTableSQL() {
         if (databaseType == DatabaseType.MYSQL) {
             return """
-                    CREATE TABLE IF NOT EXISTS player_stats (
+                    CREATE TABLE IF NOT EXISTS player_game_stats (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         player_uuid VARCHAR(36) NOT NULL,
-                        server_name VARCHAR(50) NOT NULL,
-                        playtime BIGINT DEFAULT 0,
+                        game_type VARCHAR(50) NOT NULL,
+                        games_played INT DEFAULT 0,
+                        wins INT DEFAULT 0,
+                        losses INT DEFAULT 0,
                         kills INT DEFAULT 0,
                         deaths INT DEFAULT 0,
-                        wins INT DEFAULT 0,
-                        INDEX idx_player_server (player_uuid, server_name)
+                        special_stat_1 INT DEFAULT 0,
+                        special_stat_2 INT DEFAULT 0,
+                        playtime_seconds BIGINT DEFAULT 0,
+                        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        UNIQUE KEY unique_player_game (player_uuid, game_type),
+                        INDEX idx_player_game_stats_player (player_uuid),
+                        INDEX idx_player_game_stats_game (game_type),
+                        CONSTRAINT fk_player_game_stats_player FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
                     """;
         }
 
         return """
-                CREATE TABLE IF NOT EXISTS player_stats (
+                CREATE TABLE IF NOT EXISTS player_game_stats (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     player_uuid TEXT NOT NULL,
-                    server_name TEXT NOT NULL,
-                    playtime INTEGER DEFAULT 0,
+                    game_type TEXT NOT NULL,
+                    games_played INTEGER DEFAULT 0,
+                    wins INTEGER DEFAULT 0,
+                    losses INTEGER DEFAULT 0,
                     kills INTEGER DEFAULT 0,
                     deaths INTEGER DEFAULT 0,
-                    wins INTEGER DEFAULT 0
+                    special_stat_1 INTEGER DEFAULT 0,
+                    special_stat_2 INTEGER DEFAULT 0,
+                    playtime_seconds INTEGER DEFAULT 0,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE(player_uuid, game_type)
+                )
+                """;
+    }
+
+    private String getCreatePlayerSettingsTableSQL() {
+        if (databaseType == DatabaseType.MYSQL) {
+            return """
+                    CREATE TABLE IF NOT EXISTS player_settings (
+                        player_uuid VARCHAR(36) PRIMARY KEY,
+                        private_messages BOOLEAN DEFAULT TRUE,
+                        friend_requests VARCHAR(20) DEFAULT 'EVERYONE',
+                        group_requests VARCHAR(20) DEFAULT 'EVERYONE',
+                        visibility VARCHAR(20) DEFAULT 'EVERYONE',
+                        ui_sounds BOOLEAN DEFAULT TRUE,
+                        particles BOOLEAN DEFAULT TRUE,
+                        music BOOLEAN DEFAULT FALSE,
+                        friend_notifications BOOLEAN DEFAULT TRUE,
+                        clan_notifications BOOLEAN DEFAULT TRUE,
+                        system_notifications BOOLEAN DEFAULT TRUE,
+                        language VARCHAR(5) DEFAULT 'fr',
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        CONSTRAINT fk_player_settings_player FOREIGN KEY (player_uuid) REFERENCES players(uuid) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+                    """;
+        }
+
+        return """
+                CREATE TABLE IF NOT EXISTS player_settings (
+                    player_uuid TEXT PRIMARY KEY,
+                    private_messages INTEGER DEFAULT 1,
+                    friend_requests TEXT DEFAULT 'EVERYONE',
+                    group_requests TEXT DEFAULT 'EVERYONE',
+                    visibility TEXT DEFAULT 'EVERYONE',
+                    ui_sounds INTEGER DEFAULT 1,
+                    particles INTEGER DEFAULT 1,
+                    music INTEGER DEFAULT 0,
+                    friend_notifications INTEGER DEFAULT 1,
+                    clan_notifications INTEGER DEFAULT 1,
+                    system_notifications INTEGER DEFAULT 1,
+                    language TEXT DEFAULT 'fr',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """;
     }

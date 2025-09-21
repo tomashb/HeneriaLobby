@@ -1,0 +1,15 @@
+package com.lobby.settings;
+
+public enum SettingType {
+    PRIVATE_MESSAGES,
+    FRIEND_REQUESTS,
+    GROUP_REQUESTS,
+    PLAYER_VISIBILITY,
+    UI_SOUNDS,
+    PARTICLES,
+    MUSIC,
+    FRIEND_NOTIFICATIONS,
+    CLAN_NOTIFICATIONS,
+    SYSTEM_NOTIFICATIONS
+}
+
