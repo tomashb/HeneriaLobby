@@ -2,6 +2,7 @@ package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.heads.HeadDatabaseManager;
+import com.lobby.menus.templates.DesignTemplate;
 import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
@@ -19,6 +20,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -47,9 +49,11 @@ public class ConfiguredMenu implements Menu {
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
 
-        final ItemStack filler = createFillerItem(menuSection.getString("fill_material"));
+        final DesignTemplate designTemplate = resolveDesignTemplate();
+
+        final ItemStack filler = createFillerItem(resolveFillMaterial(designTemplate));
         if (filler != null) {
-            final List<Integer> fillSlots = menuSection.getIntegerList("fill_slots");
+            final List<Integer> fillSlots = resolveFillSlots(designTemplate);
             if (fillSlots == null || fillSlots.isEmpty()) {
                 for (int slot = 0; slot < inventory.getSize(); slot++) {
                     inventory.setItem(slot, filler.clone());
@@ -67,7 +71,8 @@ public class ConfiguredMenu implements Menu {
             }
         }
 
-        applyBorders(player);
+        applyBorders(player, designTemplate);
+        applyTemplateItems(player, designTemplate);
 
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
@@ -114,11 +119,14 @@ public class ConfiguredMenu implements Menu {
     }
 
     private Optional<Integer> createItem(final Player player, final ConfigurationSection itemSection) {
-        final String materialName = itemSection.getString("material", "STONE");
-        final Material material = Material.matchMaterial(materialName);
+        String materialName = itemSection.getString("material");
+        Material material = materialName != null ? Material.matchMaterial(materialName) : null;
+        final boolean headDefined = itemSection.contains("head") || itemSection.contains("head_id");
         if (material == null) {
-            LogUtils.warning(plugin, "Invalid material '" + materialName + "' in menu '" + menuId + "'.");
-            return Optional.empty();
+            if (materialName != null && !materialName.isBlank()) {
+                LogUtils.warning(plugin, "Invalid material '" + materialName + "' in menu '" + menuId + "'.");
+            }
+            material = headDefined ? Material.PLAYER_HEAD : Material.STONE;
         }
 
         final int amount = Math.max(1, itemSection.getInt("amount", 1));
@@ -149,6 +157,14 @@ public class ConfiguredMenu implements Menu {
                         .map(MessageUtils::colorize)
                         .toList();
                 meta.setLore(lore);
+            } else if (itemSection.isString("lore")) {
+                final String processedLore = PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player);
+                if (processedLore != null && !processedLore.isBlank()) {
+                    final List<String> lore = Arrays.stream(processedLore.split("\\n"))
+                            .map(MessageUtils::colorize)
+                            .toList();
+                    meta.setLore(lore);
+                }
             }
 
             if (itemSection.contains("custom_model_data")) {
@@ -232,15 +248,36 @@ public class ConfiguredMenu implements Menu {
         if (processed == null || processed.isBlank()) {
             return null;
         }
+        final var templateManager = plugin.getUiTemplateManager();
+        if (templateManager != null) {
+            if (processed.startsWith("@")) {
+                final String identifier = processed.substring(1);
+                final String resolved = templateManager.resolveHead(identifier);
+                if (resolved != null && !resolved.isBlank()) {
+                    return resolved;
+                }
+            }
+            final String resolved = templateManager.resolveHead(processed);
+            if (resolved != null && !resolved.isBlank()) {
+                return resolved;
+            }
+        }
         return processed;
     }
 
-    private void applyBorders(final Player player) {
+    private void applyBorders(final Player player, final DesignTemplate designTemplate) {
         if (inventory == null) {
             return;
         }
-        final List<Map<?, ?>> borders = menuSection.getMapList("borders");
-        if (borders == null || borders.isEmpty()) {
+        final List<Map<?, ?>> borders = new ArrayList<>();
+        if (designTemplate != null) {
+            borders.addAll(designTemplate.getBorders());
+        }
+        final List<Map<?, ?>> menuBorders = menuSection.getMapList("borders");
+        if (menuBorders != null) {
+            borders.addAll(menuBorders);
+        }
+        if (borders.isEmpty()) {
             return;
         }
         for (Map<?, ?> definition : borders) {
@@ -261,6 +298,27 @@ public class ConfiguredMenu implements Menu {
                     inventory.setItem(index, borderItem.clone());
                 }
             }
+        }
+    }
+
+    private void applyTemplateItems(final Player player, final DesignTemplate designTemplate) {
+        if (designTemplate == null) {
+            return;
+        }
+        final ConfigurationSection templateItems = designTemplate.getItemsSection();
+        if (templateItems == null) {
+            return;
+        }
+        for (String key : templateItems.getKeys(false)) {
+            if (key == null) {
+                continue;
+            }
+            final ConfigurationSection itemSection = templateItems.getConfigurationSection(key);
+            if (itemSection == null) {
+                continue;
+            }
+            final Optional<Integer> slot = createItem(player, itemSection);
+            slot.ifPresent(index -> storeActions(index, itemSection));
         }
     }
 
@@ -326,6 +384,31 @@ public class ConfiguredMenu implements Menu {
         if (!sanitized.isEmpty()) {
             actionsBySlot.put(slot, List.copyOf(sanitized));
         }
+    }
+
+    private DesignTemplate resolveDesignTemplate() {
+        final String designName = menuSection.getString("design");
+        if (designName == null || designName.isBlank()) {
+            return null;
+        }
+        if (plugin.getUiTemplateManager() == null) {
+            return null;
+        }
+        return plugin.getUiTemplateManager().getDesignTemplate(designName);
+    }
+
+    private String resolveFillMaterial(final DesignTemplate designTemplate) {
+        if (menuSection.contains("fill_material")) {
+            return menuSection.getString("fill_material");
+        }
+        return designTemplate != null ? designTemplate.getFillMaterial() : null;
+    }
+
+    private List<Integer> resolveFillSlots(final DesignTemplate designTemplate) {
+        if (menuSection.contains("fill_slots")) {
+            return menuSection.getIntegerList("fill_slots");
+        }
+        return designTemplate != null ? designTemplate.getFillSlots() : List.of();
     }
 
     private int resolveSlot(final int slot, final ItemStack itemStack) {

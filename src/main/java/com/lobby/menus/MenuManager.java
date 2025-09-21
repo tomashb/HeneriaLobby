@@ -80,6 +80,10 @@ public class MenuManager implements Listener {
 
     public void reloadMenus() {
         menuDefinitions.clear();
+        final var templateManager = plugin.getUiTemplateManager();
+        if (templateManager != null) {
+            templateManager.reload();
+        }
         loadMenusFromMainConfig();
         loadMenusFromDirectory();
     }
@@ -181,7 +185,9 @@ public class MenuManager implements Listener {
                 "language_menu.yml",
                 "friends_menu.yml",
                 "groups_menu.yml",
-                "clan_menu.yml"
+                "clan_menu.yml",
+                "profile_main_redesigned.yml",
+                "confirmation_template.yml"
         );
         for (String fileName : defaults) {
             final File target = new File(directory, fileName);

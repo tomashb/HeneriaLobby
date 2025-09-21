@@ -110,4 +110,4 @@ menu:
       lore:
         - "&7Revenir au menu profil."
       actions:
-        - "[MENU] profil_menu"
+        - "[MENU] profile_main"

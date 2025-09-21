@@ -38,6 +38,14 @@ public final class PlaceholderUtils {
             }
         }
 
+        if (plugin.getSocialPlaceholderManager() != null) {
+            processed = plugin.getSocialPlaceholderManager().replacePlaceholders(player, processed);
+        }
+
+        if (plugin.getConfirmationManager() != null) {
+            processed = plugin.getConfirmationManager().applyPlaceholders(player, processed);
+        }
+
         if (player == null) {
             return processed;
         }
@@ -59,7 +67,8 @@ public final class PlaceholderUtils {
                 .replace("%player_tokens%", String.valueOf(data.tokens()))
                 .replace("%player_first_join%", formatInstant(data.firstJoin()))
                 .replace("%player_last_join%", formatInstant(data.lastJoin()))
-                .replace("%player_playtime%", formatPlaytime(data.totalPlaytime()));
+                .replace("%player_playtime%", formatPlaytime(data.totalPlaytime()))
+                .replace("%player_playtime_total%", formatPlaytime(data.totalPlaytime()));
 
         return processed;
     }

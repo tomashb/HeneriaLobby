@@ -15,6 +15,8 @@ import com.lobby.economy.EconomyManager;
 import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.menus.MenuManager;
+import com.lobby.menus.confirmation.ConfirmationManager;
+import com.lobby.menus.templates.UITemplateManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -48,6 +50,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
     private MenuManager menuManager;
+    private UITemplateManager uiTemplateManager;
+    private ConfirmationManager confirmationManager;
     private HeadDatabaseManager headDatabaseManager;
     private ShopManager shopManager;
     private ShopCommands shopCommands;
@@ -97,7 +101,9 @@ public final class LobbyPlugin extends JavaPlugin {
         npcManager.initialize();
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
+        uiTemplateManager = new UITemplateManager(this);
         menuManager = new MenuManager(this);
+        confirmationManager = new ConfirmationManager(this);
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
@@ -145,6 +151,9 @@ public final class LobbyPlugin extends JavaPlugin {
         if (menuManager != null) {
             menuManager.closeAll();
         }
+        if (confirmationManager != null) {
+            confirmationManager.clearAll();
+        }
         instance = null;
     }
 
@@ -176,8 +185,16 @@ public final class LobbyPlugin extends JavaPlugin {
         return menuManager;
     }
 
+    public UITemplateManager getUiTemplateManager() {
+        return uiTemplateManager;
+    }
+
     public HeadDatabaseManager getHeadDatabaseManager() {
         return headDatabaseManager;
+    }
+
+    public ConfirmationManager getConfirmationManager() {
+        return confirmationManager;
     }
 
     public ShopManager getShopManager() {

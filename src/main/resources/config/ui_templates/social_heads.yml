@@ -1,0 +1,34 @@
+ui_heads:
+  # Navigation
+  back_button: "hdb:9334"
+  close_button: "hdb:5152"
+  confirm_button: "hdb:5390"
+  cancel_button: "hdb:5393"
+
+  # Actions sociales
+  add_friend: "hdb:9945"
+  remove_friend: "hdb:9334"
+  block_player: "hdb:46237"
+  invite_group: "hdb:9723"
+  promote_member: "hdb:5390"
+  demote_member: "hdb:5393"
+  kick_member: "hdb:9334"
+  ban_member: "hdb:46237"
+  transfer_leadership: "hdb:50218"
+
+  # Statuts
+  online_status: "hdb:8664"
+  offline_status: "hdb:8665"
+  busy_status: "hdb:8666"
+  away_status: "hdb:8667"
+
+  # Paramètres
+  setting_enabled: "hdb:5390"
+  setting_disabled: "hdb:5393"
+  setting_partial: "hdb:8537"
+
+  # Rôles de clan
+  clan_leader: "hdb:50218"
+  clan_co_leader: "hdb:12654"
+  clan_moderator: "hdb:8971"
+  clan_member: "hdb:9945"

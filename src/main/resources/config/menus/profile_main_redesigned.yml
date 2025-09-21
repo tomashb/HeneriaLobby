@@ -1,0 +1,80 @@
+menu:
+  id: "profile_main"
+  title: "&8» &6Mon Profil"
+  size: 54
+  design: "social_template"
+
+  items:
+    player_head:
+      slot: 13
+      material: "PLAYER_HEAD"
+      head: "%player_name%"
+      name: "&6&l%player_name%"
+      lore:
+        - "&r"
+        - "&8▸ &7Grade: %luckperms_prefix%"
+        - "&8▸ &7Niveau: &e%player_level%"
+        - "&8▸ &7Expérience: &d%player_experience%"
+        - "&8▸ &7Temps de jeu: &f%player_playtime_total%"
+        - "&8▸ &7Première connexion: &f%player_first_join%"
+        - "&r"
+        - "&7Vos informations personnelles"
+      actions:
+        - "[NONE]"
+
+    friends_management:
+      slot: 29
+      material: "PLAYER_HEAD"
+      head: "@ui_heads.add_friend"
+      name: "&a&lAmis &8(&e%friends_online%&8/&7%friends_total%&8)"
+      lore:
+        - "&7Gérez votre liste d'amis,"
+        - "&7envoyez des invitations et"
+        - "&7voyez qui est en ligne."
+        - "&r"
+        - "&8▸ &7Amis en ligne: &a%friends_online%"
+        - "&8▸ &7Total d'amis: &7%friends_total%"
+        - "&8▸ &7Demandes en attente: &e%friend_requests%"
+        - "&8▸ &7Votre statut: %friend_status%"
+        - "&r"
+        - "&a▶ Cliquez pour gérer !"
+      actions:
+        - "[MENU] friends_menu"
+
+    group_management:
+      slot: 31
+      material: "PLAYER_HEAD"
+      head: "@ui_heads.invite_group"
+      name: "&e&lGroupe %group_status%"
+      lore:
+        - "&7Créez ou rejoignez un groupe"
+        - "&7pour jouer avec vos amis !"
+        - "&r"
+        - "&8▸ &7Groupe actuel: %group_name%"
+        - "&8▸ &7Membres: &a%group_members%&8/&7%group_max%"
+        - "&8▸ &7Votre rôle: &6%group_role%"
+        - "&8▸ &7Leader: &6%group_leader%"
+        - "&r"
+        - "&e▶ Cliquez pour gérer !"
+      actions:
+        - "[MENU] groups_menu"
+
+    clan_management:
+      slot: 33
+      material: "PLAYER_HEAD"
+      head: "@ui_heads.clan_moderator"
+      name: "&c&lClan %clan_status%"
+      lore:
+        - "&7Rejoignez un clan pour participer"
+        - "&7à des événements exclusifs et"
+        - "&7des guerres de clans !"
+        - "&r"
+        - "&8▸ &7Clan: %clan_name%"
+        - "&8▸ &7Votre rang: &6%clan_rank%"
+        - "&8▸ &7Membres: &a%clan_members%&8/&7%clan_max%"
+        - "&8▸ &7Points: &e%clan_points%"
+        - "&8▸ &7Niveau: &d%clan_level%"
+        - "&r"
+        - "&c▶ Cliquez pour gérer !"
+      actions:
+        - "[MENU] clan_menu"

@@ -75,6 +75,10 @@ public class SocialPlaceholderManager {
         replacements.put("%daily_reward_cooldown%", "Disponible");
         replacements.put("%daily_reward_name%", "Mystery Box");
         replacements.put("%daily_reward_streak%", "0 jour");
+        replacements.put("%player_level%", "1");
+        replacements.put("%player_experience%", "0");
+        replacements.put("%player_playtime_total%", "0s");
+        replacements.put("%luckperms_prefix%", "&7Joueur");
         return replaceAll(text, replacements);
     }
 
@@ -120,6 +124,8 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_private_messages_status%", "Autorisés");
         replacements.put("%friend_max_friends%", "Illimité");
         replacements.put("%friends_free_slots%", "Illimité");
+        replacements.put("%friend_requests%", "0");
+        replacements.put("%friend_status%", "Disponible");
 
         if (player == null) {
             return replaceAll(text, replacements);
@@ -173,6 +179,7 @@ public class SocialPlaceholderManager {
 
         final int requestsReceived = friendManager.getPendingRequests(player.getUniqueId()).size();
         replacements.put("%friend_requests_received%", String.valueOf(requestsReceived));
+        replacements.put("%friend_requests%", String.valueOf(requestsReceived));
 
         final int requestsSent = friendManager.countSentRequests(player.getUniqueId());
         replacements.put("%friend_requests_sent%", String.valueOf(requestsSent));
@@ -195,6 +202,7 @@ public class SocialPlaceholderManager {
         final boolean visible = settings.isShowOnlineStatus();
         replacements.put("%friend_visibility%", visible ? "Visible" : "Caché");
         replacements.put("%friend_visibility_mode%", formatVisibilityMode(visible));
+        replacements.put("%friend_status%", visible ? "Disponible" : "Invisible");
 
         final boolean autoFavorites = settings.isAutoAcceptFavorites();
         replacements.put("%friend_auto_favorites%", autoFavorites ? "Activée" : "Désactivée");
@@ -238,6 +246,7 @@ public class SocialPlaceholderManager {
         replacements.put("%group_auto_accept%", "Désactivé");
         replacements.put("%group_preferred_mode%", "Automatique");
         replacements.put("%group_visibility%", "Public");
+        replacements.put("%group_role%", "Aucun");
         replacements.put("%group_invitations%", "0");
         replacements.put("%group_invites_sent%", "0");
         replacements.put("%groups_open%", "0");
@@ -281,6 +290,13 @@ public class SocialPlaceholderManager {
             replacements.put("%group_slots_free%", String.valueOf(Math.max(0, group.getMaxSize() - group.getSize())));
             replacements.put("%group_status%", group.isFull() ? "Complet" : "Ouvert");
             replacements.put("%group_preferred_mode%", "Toutes les files");
+            String role = "Membre";
+            if (group.isLeader(player.getUniqueId())) {
+                role = "Leader";
+            } else if (group.isModerator(player.getUniqueId())) {
+                role = "Modérateur";
+            }
+            replacements.put("%group_role%", role);
         }
 
         replacements.put("%group_invitations%", String.valueOf(groupManager.countPendingInvitations(player.getUniqueId())));
@@ -312,6 +328,7 @@ public class SocialPlaceholderManager {
         replacements.put("%clan_war_wins%", "0");
         replacements.put("%clan_war_losses%", "0");
         replacements.put("%clan_war_ratio%", formatRatio(0, 0));
+        replacements.put("%clan_status%", "Sans clan");
         replacements.put("%clans_open_count%", "0");
         replacements.put("%clans_invite_count%", "0");
         replacements.put("%clan_target_uuid%", "");
@@ -361,6 +378,9 @@ public class SocialPlaceholderManager {
             replacements.put("%clan_player_level%", member.getRankName());
             replacements.put("%clan_contributions%", String.valueOf(member.getTotalContributions()));
             replacements.put("%clan_last_activity%", formatRelativeTime(member.getJoinedAt()));
+            replacements.put("%clan_status%", member.getRankName());
+        } else {
+            replacements.put("%clan_status%", "Membre");
         }
 
         final ClanRank rank = member != null ? clan.getRank(member.getRankName()) : null;

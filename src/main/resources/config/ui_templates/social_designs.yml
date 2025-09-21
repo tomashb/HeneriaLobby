@@ -1,0 +1,11 @@
+designs:
+  social_template:
+    fill:
+      material: "BLACK_STAINED_GLASS_PANE"
+    borders:
+      - slots: [0,1,2,3,4,5,6,7,8,45,46,47,48,49,50,51,52,53]
+        material: "GRAY_STAINED_GLASS_PANE"
+        name: "&7"
+      - slots: [9,17,18,26,27,35,36,44]
+        material: "LIGHT_GRAY_STAINED_GLASS_PANE"
+        name: "&7"

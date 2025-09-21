@@ -2,6 +2,8 @@ package com.lobby.npcs;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.menus.MenuManager;
+import com.lobby.menus.confirmation.ConfirmationManager;
+import com.lobby.menus.confirmation.ConfirmationRequest;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
@@ -20,8 +22,12 @@ import org.bukkit.entity.Player;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 public class ActionProcessor {
@@ -85,6 +91,18 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_MESSAGES]")) {
             toggleAndRefresh(player, "friend_messages", "friend_settings_menu");
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[CONFIRM]")) {
+            handleConfirmationAction(player, processed.substring("[CONFIRM]".length()).trim());
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CONFIRM_EXECUTE]")) {
+            handleConfirmationExecution(player, true);
+            return;
+        }
+        if (trimmed.equalsIgnoreCase("[CONFIRM_CANCEL]")) {
+            handleConfirmationExecution(player, false);
             return;
         }
         if (trimmed.equalsIgnoreCase("[GROUP_CREATE]")) {
@@ -301,6 +319,99 @@ public class ActionProcessor {
                 menuManager.openMenu(player, "clan_menu");
             }
         });
+    }
+
+    private void handleConfirmationExecution(final Player player, final boolean confirmed) {
+        if (player == null) {
+            return;
+        }
+        final ConfirmationManager confirmationManager = plugin.getConfirmationManager();
+        if (confirmationManager == null) {
+            LogUtils.warning(plugin, "Confirmation execution requested but ConfirmationManager is unavailable.");
+            return;
+        }
+        confirmationManager.executeConfirmation(player, confirmed);
+    }
+
+    private void handleConfirmationAction(final Player player, final String parameterString) {
+        if (player == null) {
+            return;
+        }
+        final ConfirmationManager confirmationManager = plugin.getConfirmationManager();
+        if (confirmationManager == null) {
+            LogUtils.warning(plugin, "Confirmation requested but ConfirmationManager is unavailable.");
+            return;
+        }
+        final Map<String, String> parameters = parseConfirmationParameters(parameterString);
+        final ConfirmationRequest.Builder builder = ConfirmationRequest.builder();
+        builder.templateId(firstNonBlank(parameters.get("template"), parameters.get("menu_id")));
+        builder.previousMenuId(firstNonBlank(parameters.get("previous"), parameters.get("menu"), parameters.get("back"),
+                parameters.get("previous_menu")));
+        builder.actionDescription(firstNonBlank(parameters.get("description"), parameters.get("action"),
+                parameters.get("text")));
+        builder.actionTitle(firstNonBlank(parameters.get("title"), parameters.get("name")));
+        builder.actionIcon(firstNonBlank(parameters.get("icon"), parameters.get("head"), parameters.get("skull")));
+
+        splitValues(firstNonBlank(parameters.get("details"), parameters.get("detail"), parameters.get("info")))
+                .forEach(builder::addDetail);
+
+        List<String> confirmActions = new ArrayList<>(splitValues(parameters.get("confirm")));
+        if (confirmActions.isEmpty() && parameters.isEmpty()
+                && parameterString != null && !parameterString.isBlank()) {
+            confirmActions = new ArrayList<>(splitValues(parameterString));
+        }
+        if (confirmActions.isEmpty()) {
+            LogUtils.warning(plugin, "Confirmation action opened without any confirm actions defined.");
+        } else {
+            confirmActions.forEach(builder::addConfirmAction);
+        }
+
+        splitValues(parameters.get("cancel")).forEach(builder::addCancelAction);
+
+        confirmationManager.openConfirmation(player, builder.build());
+    }
+
+    private Map<String, String> parseConfirmationParameters(final String parameterString) {
+        final Map<String, String> parameters = new HashMap<>();
+        if (parameterString == null || parameterString.isBlank()) {
+            return parameters;
+        }
+        final String[] segments = parameterString.split(";");
+        for (String segment : segments) {
+            if (segment == null || segment.isBlank()) {
+                continue;
+            }
+            final int separator = segment.indexOf('=');
+            if (separator <= 0 || separator >= segment.length() - 1) {
+                continue;
+            }
+            final String key = segment.substring(0, separator).trim().toLowerCase(Locale.ROOT);
+            final String value = segment.substring(separator + 1).trim();
+            parameters.put(key, value);
+        }
+        return parameters;
+    }
+
+    private List<String> splitValues(final String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(raw.split("\\|\\||\\n"))
+                .map(String::trim)
+                .filter(value -> !value.isEmpty())
+                .toList();
+    }
+
+    private String firstNonBlank(final String... values) {
+        if (values == null) {
+            return null;
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private void toggleAndRefresh(final Player player, final String key, final String menuId) {
