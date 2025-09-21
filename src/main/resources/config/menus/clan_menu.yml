@@ -157,7 +157,7 @@ menu:
         - "[MENU] clan_wars_menu"
 
     clan_create:
-      slot: 37
+      slot: 48
       material: "PLAYER_HEAD"
       head: "hdb:12654"
       name: "&6&lCréer un Clan"
@@ -173,7 +173,7 @@ menu:
         - "[COMMAND] clan create"
 
     clan_delete:
-      slot: 35
+      slot: 33
       material: "PLAYER_HEAD"
       head: "hdb:60776"
       name: "&c&lSupprimer le Clan"
@@ -191,7 +191,7 @@ menu:
         - "[CLAN_DELETE_CONFIRM]"
 
     clan_join:
-      slot: 43
+      slot: 50
       material: "PLAYER_HEAD"
       head: "hdb:23022"
       name: "&e&lRejoindre un Clan"
