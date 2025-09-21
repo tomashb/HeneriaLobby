@@ -265,7 +265,9 @@ public class ConfiguredMenu implements Menu {
     }
 
     private ItemStack createBorderItem(final Player player, final Map<?, ?> definition) {
-        final Object materialObject = definition.getOrDefault("material", "BLACK_STAINED_GLASS_PANE");
+        final Object materialObject = definition.containsKey("material")
+                ? definition.get("material")
+                : "BLACK_STAINED_GLASS_PANE";
         final String materialName = materialObject != null ? materialObject.toString() : "BLACK_STAINED_GLASS_PANE";
         final Material material = Material.matchMaterial(materialName);
         if (material == null) {
