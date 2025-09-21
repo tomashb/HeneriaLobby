@@ -68,6 +68,8 @@ public class SocialPlaceholderManager {
     private String applyFriendPlaceholders(final Player player, final String text) {
         final Map<String, String> replacements = new HashMap<>();
         replacements.put("%friends_total%", "0");
+        replacements.put("%friends_total_count%", "0");
+        replacements.put("%friends_current_count%", "0");
         replacements.put("%friends_online%", "0");
         replacements.put("%friends_online_count%", "0");
         replacements.put("%friends_popular_servers%", "Aucun");
@@ -82,8 +84,15 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_request_status%", "Disponibles");
         replacements.put("%friend_auto_accept%", "Tous");
         replacements.put("%friend_notifications%", "Activées");
+        replacements.put("%friend_notifications_status%", "Activées");
         replacements.put("%friend_visibility%", "Visible");
+        replacements.put("%friend_visibility_mode%", "Visible");
         replacements.put("%friend_auto_favorites%", "Désactivée");
+        replacements.put("%friend_auto_favorites_status%", "Désactivée");
+        replacements.put("%friend_request_mode%", "Tous");
+        replacements.put("%friend_private_messages_status%", "Autorisés");
+        replacements.put("%friend_max_friends%", "Illimité");
+        replacements.put("%friends_free_slots%", "Illimité");
 
         if (player == null) {
             return replaceAll(text, replacements);
@@ -97,7 +106,10 @@ public class SocialPlaceholderManager {
         final List<FriendInfo> friends = friendManager.getFriendsList(player.getUniqueId());
         final long online = friends.stream().filter(FriendInfo::isOnline).count();
         final long favoritesCount = friends.stream().filter(FriendInfo::isFavorite).count();
-        replacements.put("%friends_total%", String.valueOf(friends.size()));
+        final int totalFriends = friends.size();
+        replacements.put("%friends_total%", String.valueOf(totalFriends));
+        replacements.put("%friends_total_count%", String.valueOf(totalFriends));
+        replacements.put("%friends_current_count%", String.valueOf(totalFriends));
         replacements.put("%friends_online%", String.valueOf(online));
         replacements.put("%friends_online_count%", String.valueOf(online));
         replacements.put("%friends_favorites_count%", String.valueOf(favoritesCount));
@@ -147,12 +159,34 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_auto_accept%", settings.isAutoAcceptFavorites()
                 ? "Favoris auto"
                 : formatAcceptMode(settings.getAcceptRequests()));
-        replacements.put("%friend_notifications%", settings.isAllowNotifications() ? "Activées" : "Désactivées");
-        replacements.put("%friend_visibility%", settings.isShowOnlineStatus() ? "Visible" : "Caché");
-        replacements.put("%friend_auto_favorites%", settings.isAutoAcceptFavorites() ? "Activée" : "Désactivée");
-        replacements.put("%friend_limits%", settings.getMaxFriends() <= 0
-                ? "Illimité"
-                : settings.getMaxFriends() + " slots");
+        replacements.put("%friend_request_mode%", formatDetailedAcceptMode(settings.getAcceptRequests()));
+
+        final boolean notificationsEnabled = settings.isAllowNotifications();
+        replacements.put("%friend_notifications%", notificationsEnabled ? "Activées" : "Désactivées");
+        replacements.put("%friend_notifications_status%", notificationsEnabled ? "Activées" : "Désactivées");
+
+        final boolean visible = settings.isShowOnlineStatus();
+        replacements.put("%friend_visibility%", visible ? "Visible" : "Caché");
+        replacements.put("%friend_visibility_mode%", formatVisibilityMode(visible));
+
+        final boolean autoFavorites = settings.isAutoAcceptFavorites();
+        replacements.put("%friend_auto_favorites%", autoFavorites ? "Activée" : "Désactivée");
+        replacements.put("%friend_auto_favorites_status%", autoFavorites ? "Activée" : "Désactivée");
+
+        final boolean pmEnabled = settings.isAllowPrivateMessages();
+        replacements.put("%friend_private_messages_status%", pmEnabled ? "Autorisés" : "Désactivés");
+
+        final int maxFriends = settings.getMaxFriends();
+        if (maxFriends <= 0) {
+            replacements.put("%friend_limits%", "Illimité");
+            replacements.put("%friend_max_friends%", "Illimité");
+            replacements.put("%friends_free_slots%", "Illimité");
+        } else {
+            replacements.put("%friend_limits%", maxFriends + " slots");
+            replacements.put("%friend_max_friends%", String.valueOf(maxFriends));
+            final int freeSlots = Math.max(0, maxFriends - totalFriends);
+            replacements.put("%friends_free_slots%", String.valueOf(freeSlots));
+        }
 
         if (settings.getAcceptRequests() == AcceptMode.NONE) {
             replacements.put("%friend_request_status%", "Demandes désactivées");
@@ -375,6 +409,21 @@ public class SocialPlaceholderManager {
             case FRIENDS_OF_FRIENDS -> "Amis d'amis";
             case NONE -> "Personne";
         };
+    }
+
+    private String formatDetailedAcceptMode(final AcceptMode mode) {
+        if (mode == null) {
+            return "Tous les joueurs";
+        }
+        return switch (mode) {
+            case ALL -> "Tous les joueurs";
+            case FRIENDS_OF_FRIENDS -> "Amis d'amis seulement";
+            case NONE -> "Personne";
+        };
+    }
+
+    private String formatVisibilityMode(final boolean showOnlineStatus) {
+        return showOnlineStatus ? "Visible par tous" : "Invisible";
     }
 
     private String formatPermissionName(final ClanPermission permission) {
