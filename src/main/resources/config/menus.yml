@@ -1,48 +1,4 @@
 menus:
-  main_menu:
-    title: "&6Menu Principal"
-    size: 27
-    items:
-      profile:
-        slot: 11
-        material: PLAYER_HEAD
-        head: "%player_name%"
-        name: "&bProfil de %player_name%"
-        lore:
-          - "&7Coins: &6%player_coins%"
-          - "&7Tokens: &d%player_tokens%"
-          - "&7Temps de jeu: &f%player_playtime%"
-          - ""
-          - "&eClique pour consulter ton profil"
-        actions:
-          - "[MENU] profile_menu"
-      shop:
-        slot: 13
-        material: EMERALD
-        name: "&aBoutique"
-        lore:
-          - "&7Découvre des offres exclusives"
-          - "&7Solde disponible: &6%player_coins%"
-        actions:
-          - "[MENU] shop_menu"
-      servers:
-        slot: 15
-        material: COMPASS
-        name: "&eSélecteur de serveurs"
-        lore:
-          - "&7Joueurs sur le réseau: &f%server_online%"
-          - "&7Clique pour choisir une destination"
-        actions:
-          - "[MENU] servers_menu"
-      close:
-        slot: 26
-        material: PLAYER_HEAD
-        head: "hdb:60776"
-        name: "&cFermer"
-        lore:
-          - "&7Fermer le menu"
-        actions:
-          - "[CLOSE]"
 
   shop_menu:
     title: "&aBoutique"
@@ -81,7 +37,7 @@ menus:
         lore:
           - "&7Revenir au menu principal"
         actions:
-          - "[MENU] main_menu"
+          - "[MENU] jeux_menu"
       close:
         slot: 26
         material: BARRIER
@@ -138,7 +94,7 @@ menus:
         lore:
           - "&7Retour au menu principal"
         actions:
-          - "[MENU] main_menu"
+          - "[MENU] jeux_menu"
       close:
         slot: 35
         material: BARRIER
@@ -231,7 +187,7 @@ menus:
         lore:
           - "&7Retour au menu principal"
         actions:
-          - "[MENU] main_menu"
+          - "[MENU] jeux_menu"
       close:
         slot: 44
         material: BARRIER

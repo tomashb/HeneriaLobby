@@ -41,12 +41,24 @@ menu:
       actions:
         - "[NONE]"
     glass_7:
-      slot: 45
+      slot: 9
       material: "CYAN_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
     glass_8:
+      slot: 17
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_9:
+      slot: 45
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_10:
       slot: 53
       material: "CYAN_STAINED_GLASS_PANE"
       name: "&7"
@@ -62,11 +74,11 @@ menu:
         - "&7Vos performances globales"
         - "&7sur le serveur."
         - "&r"
-        - "&8▸ &7Parties jouées: &e%player_games_total%"
-        - "&8▸ &7Victoires: &a%player_wins_total%"
-        - "&8▸ &7Défaites: &c%player_losses_total%"
-        - "&8▸ &7Ratio V/D: &6%player_ratio%"
-        - "&8▸ &7Expérience: &d%player_experience%"
+        - "&8▸ &7Parties jouées: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Défaites: &c0"
+        - "&8▸ &7Ratio V/D: &60.0"
+        - "&8▸ &7Expérience: &d0"
         - "&r"
         - "&7Cliquez pour plus de détails"
       actions:
@@ -80,11 +92,11 @@ menu:
       lore:
         - "&7Vos statistiques BedWars"
         - "&r"
-        - "&8▸ &7Parties: &e%bedwars_games%"
-        - "&8▸ &7Victoires: &a%bedwars_wins%"
-        - "&8▸ &7Kills: &c%bedwars_kills%"
-        - "&8▸ &7Morts: &7%bedwars_deaths%"
-        - "&8▸ &7Lits cassés: &6%bedwars_beds_broken%"
+        - "&8▸ &7Parties: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Kills: &c0"
+        - "&8▸ &7Morts: &70"
+        - "&8▸ &7Lits cassés: &60"
         - "&r"
         - "&a▶ Cliquez pour détails !"
       actions:
@@ -98,11 +110,11 @@ menu:
       lore:
         - "&7Vos statistiques Nexus"
         - "&r"
-        - "&8▸ &7Parties: &e%nexus_games%"
-        - "&8▸ &7Victoires: &a%nexus_wins%"
-        - "&8▸ &7Kills: &c%nexus_kills%"
-        - "&8▸ &7Morts: &7%nexus_deaths%"
-        - "&8▸ &7Nexus détruits: &6%nexus_destroyed%"
+        - "&8▸ &7Parties: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Kills: &c0"
+        - "&8▸ &7Morts: &70"
+        - "&8▸ &7Nexus détruits: &60"
         - "&r"
         - "&a▶ Cliquez pour détails !"
       actions:
@@ -116,10 +128,10 @@ menu:
       lore:
         - "&7Vos statistiques Zombie"
         - "&r"
-        - "&8▸ &7Parties: &e%zombie_games%"
-        - "&8▸ &7Record: &6%zombie_record% vagues"
-        - "&8▸ &7Zombies tués: &c%zombie_kills%"
-        - "&8▸ &7Temps de survie: &a%zombie_survival_time%"
+        - "&8▸ &7Parties: &e0"
+        - "&8▸ &7Record: &60 vagues"
+        - "&8▸ &7Zombies tués: &c0"
+        - "&8▸ &7Temps de survie: &a0 min"
         - "&r"
         - "&a▶ Cliquez pour détails !"
       actions:
@@ -134,9 +146,9 @@ menu:
         - "&7Vos statistiques dans les"
         - "&7modes de jeu exclusifs."
         - "&r"
-        - "&8▸ &7Parties: &e%custom_games%"
-        - "&8▸ &7Victoires: &a%custom_wins%"
-        - "&8▸ &7Mode favori: &6%custom_favorite%"
+        - "&8▸ &7Parties: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Mode favori: &6Aucun"
         - "&r"
         - "&a▶ Cliquez pour détails !"
       actions:

@@ -23,7 +23,7 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
 
     private static final Map<String, String> MENU_COMMANDS = Map.of(
             "serveurs", "servers_menu",
-            "profil", "profile_menu"
+            "profil", "profil_menu"
     );
 
     private static final Map<String, String> LOBBY_MENU_SUBCOMMANDS = Map.of(

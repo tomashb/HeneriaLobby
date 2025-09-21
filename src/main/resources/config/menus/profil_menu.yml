@@ -41,12 +41,24 @@ menu:
       actions:
         - "[NONE]"
     glass_7:
-      slot: 45
+      slot: 9
       material: "BLUE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
     glass_8:
+      slot: 17
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_9:
+      slot: 45
+      material: "BLUE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_10:
       slot: 53
       material: "BLUE_STAINED_GLASS_PANE"
       name: "&7"
@@ -83,10 +95,10 @@ menu:
         - "&7envoyez des invitations et"
         - "&7voyez qui est en ligne."
         - "&r"
-        - "&8▸ &7Amis en ligne: &a%friends_online%"
-        - "&8▸ &7Total d'amis: &7%friends_total%"
-        - "&8▸ &7Demandes en attente: &e%friend_requests%"
-        - "&8▸ &7Votre statut: %friend_status%"
+        - "&8▸ &7Amis en ligne: &a0"
+        - "&8▸ &7Total d'amis: &70"
+        - "&8▸ &7Demandes en attente: &e0"
+        - "&8▸ &7Votre statut: &aEn ligne"
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
@@ -96,15 +108,15 @@ menu:
       slot: 4
       material: "PLAYER_HEAD"
       head: "hdb:9723"
-      name: "&e&lGroupe %group_status%"
+      name: "&e&lGroupe"
       lore:
         - "&7Créez ou rejoignez un groupe"
         - "&7pour jouer avec vos amis !"
         - "&r"
-        - "&8▸ &7Groupe actuel: %group_name%"
-        - "&8▸ &7Membres: &a%group_members%&8/&7%group_max%"
-        - "&8▸ &7Votre rôle: &6%group_role%"
-        - "&8▸ &7Leader: &6%group_leader%"
+        - "&8▸ &7Groupe actuel: &cAucun"
+        - "&8▸ &7Membres: &a0&8/&78"
+        - "&8▸ &7Votre rôle: &6-"
+        - "&8▸ &7Leader: &6-"
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
@@ -114,17 +126,17 @@ menu:
       slot: 5
       material: "PLAYER_HEAD"
       head: "hdb:8971"
-      name: "&c&lClan %clan_status%"
+      name: "&c&lClan"
       lore:
         - "&7Rejoignez un clan pour participer"
         - "&7à des événements exclusifs et"
         - "&7des guerres de clans !"
         - "&r"
-        - "&8▸ &7Clan: %clan_name%"
-        - "&8▸ &7Votre rang: &6%clan_rank%"
-        - "&8▸ &7Membres: &a%clan_members%&8/&7%clan_max%"
-        - "&8▸ &7Points: &e%clan_points%"
-        - "&8▸ &7Niveau: &d%clan_level%"
+        - "&8▸ &7Clan: &cAucun"
+        - "&8▸ &7Votre rang: &6-"
+        - "&8▸ &7Membres: &a0&8/&750"
+        - "&8▸ &7Points: &e0"
+        - "&8▸ &7Niveau: &d1"
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
@@ -139,10 +151,10 @@ menu:
         - "&7Consultez toutes vos performances"
         - "&7détaillées par mode de jeu."
         - "&r"
-        - "&8▸ &7Parties jouées: &e%player_games_total%"
-        - "&8▸ &7Victoires: &a%player_wins_total%"
-        - "&8▸ &7Ratio V/D: &6%player_ratio%"
-        - "&8▸ &7Expérience: &d%player_experience%"
+        - "&8▸ &7Parties jouées: &e0"
+        - "&8▸ &7Victoires: &a0"
+        - "&8▸ &7Ratio V/D: &60.0"
+        - "&8▸ &7Expérience: &d0"
         - "&r"
         - "&a▶ Cliquez pour voir le détail !"
       actions:
@@ -176,9 +188,9 @@ menu:
         - "&7Personnalisez votre expérience"
         - "&7de jeu selon vos préférences."
         - "&r"
-        - "&8▸ &7Messages privés: %setting_private_messages%"
-        - "&8▸ &7Demandes d'amis: %setting_friend_requests%"
-        - "&8▸ &7Visibilité: %setting_visibility%"
+        - "&8▸ &7Messages privés: &aActivés"
+        - "&8▸ &7Demandes d'amis: &aActivées"
+        - "&8▸ &7Visibilité: &aTous"
         - "&r"
         - "&a▶ Cliquez pour configurer !"
       actions:
@@ -193,10 +205,10 @@ menu:
         - "&7Réclamez votre récompense"
         - "&7quotidienne gratuite !"
         - "&r"
-        - "&8▸ &7Statut: %daily_reward_status%"
-        - "&8▸ &7Série actuelle: &e%daily_streak% jours"
-        - "&8▸ &7Prochaine récompense: %daily_next_reward%"
-        - "&8▸ &7Temps restant: &b%daily_cooldown%"
+        - "&8▸ &7Statut: &aDisponible"
+        - "&8▸ &7Série actuelle: &e1 jour"
+        - "&8▸ &7Prochaine récompense: &e100 coins"
+        - "&8▸ &7Temps restant: &b23h 59m"
         - "&r"
         - "&a▶ Cliquez pour réclamer !"
       actions:
