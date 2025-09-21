@@ -1087,7 +1087,7 @@ public class ClanManager {
         }
         final long delay = Math.max(0L, invitation.getExpiresAt() - System.currentTimeMillis());
         final long ticks = Math.max(1L, delay / 50L);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> updateInvitationStatus(invitation.getId(), "EXPIRED"), ticks);
+        Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> updateInvitationStatus(invitation.getId(), "EXPIRED"), ticks);
     }
 
     /**

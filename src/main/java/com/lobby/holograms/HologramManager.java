@@ -592,7 +592,7 @@ public class HologramManager implements Listener, PluginMessageListener {
 
     @EventHandler
     public void onEconomyTransaction(final EconomyTransactionEvent event) {
-        Bukkit.getScheduler().runTask(plugin, () -> holograms.values().stream()
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> holograms.values().stream()
                 .filter(hologram -> hasEconomyPlaceholder(hologram.getData().lines()))
                 .forEach(Hologram::updateLines));
     }

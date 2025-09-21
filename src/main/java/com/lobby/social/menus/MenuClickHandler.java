@@ -57,7 +57,7 @@ public final class MenuClickHandler implements Listener {
             return;
         }
         clickCooldown.add(playerId);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> clickCooldown.remove(playerId), CLICK_DELAY_TICKS);
+        Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> clickCooldown.remove(playerId), CLICK_DELAY_TICKS);
 
         final String title = event.getView().getTitle();
         final boolean menuTitle = title.contains("»");
@@ -343,7 +343,7 @@ public final class MenuClickHandler implements Listener {
         if (menuManager == null || player == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> {
             if (player.isOnline()) {
                 menuManager.openMenu(player, menuId);
             }
@@ -355,7 +355,7 @@ public final class MenuClickHandler implements Listener {
             return;
         }
         final long ticks = Math.max(0L, delayMs / 50L);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> {
             if (player.isOnline()) {
                 menuManager.openMenu(player, menuId);
             }

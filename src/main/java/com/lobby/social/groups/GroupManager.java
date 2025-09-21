@@ -636,7 +636,7 @@ public class GroupManager {
         }
         final long delay = Math.max(0L, invitation.getExpiresAt() - System.currentTimeMillis());
         final long ticks = Math.max(1L, delay / 50L);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> markInvitationStatus(invitation.getId(), "EXPIRED"), ticks);
+        Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> markInvitationStatus(invitation.getId(), "EXPIRED"), ticks);
     }
 
     private void broadcastGroupMessage(final Group group, final String message) {

@@ -35,7 +35,7 @@ public class ConfirmationManager implements Listener {
             requests.remove(player.getUniqueId());
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, () -> plugin.getMenuManager().openMenu(player, request.templateId()));
+        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> plugin.getMenuManager().openMenu(player, request.templateId()));
     }
 
     public void executeConfirmation(final Player player, final boolean confirmed) {
