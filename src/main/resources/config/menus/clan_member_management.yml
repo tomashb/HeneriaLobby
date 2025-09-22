@@ -16,7 +16,7 @@ menu:
         - "&r"
         - "&a▶ Cliquez pour promouvoir !"
       actions:
-        - "[COMMAND] clan promote %clan_target_name%"
+        - "[CLAN_PROMOTE] %clan_target_name%"
         - "[CLOSE_MENU]"
 
     member_demote:

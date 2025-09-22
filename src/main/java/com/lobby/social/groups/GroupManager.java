@@ -224,6 +224,59 @@ public class GroupManager {
         player.sendMessage("§cInvitation refusée.");
     }
 
+    public void kickMember(final Player executor, final String targetName) {
+        if (executor == null) {
+            return;
+        }
+        final Group group = getPlayerGroup(executor.getUniqueId());
+        if (group == null) {
+            executor.sendMessage("§cVous n'êtes dans aucun groupe.");
+            return;
+        }
+        if (!group.isLeader(executor.getUniqueId()) && !group.isModerator(executor.getUniqueId())) {
+            executor.sendMessage("§cVous n'avez pas la permission d'expulser des membres.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            executor.sendMessage("§cAucun joueur spécifié.");
+            return;
+        }
+
+        final Player onlineTarget = Bukkit.getPlayerExact(targetName);
+        final UUID targetUuid = onlineTarget != null ? onlineTarget.getUniqueId() : getUuidByName(targetName);
+        if (targetUuid == null) {
+            executor.sendMessage("§cJoueur introuvable.");
+            return;
+        }
+        if (!group.getMembers().contains(targetUuid)) {
+            executor.sendMessage("§c" + targetName + " ne fait pas partie de votre groupe.");
+            return;
+        }
+        if (group.isLeader(targetUuid)) {
+            executor.sendMessage("§cVous ne pouvez pas expulser le leader du groupe.");
+            return;
+        }
+        if (!group.isLeader(executor.getUniqueId()) && group.isModerator(targetUuid)) {
+            executor.sendMessage("§cVous ne pouvez pas expulser un autre modérateur.");
+            return;
+        }
+
+        removeMember(group.getId(), targetUuid);
+        group.removeMember(targetUuid);
+        playerGroups.remove(targetUuid);
+
+        final String resolvedName = onlineTarget != null ? onlineTarget.getName() : getNameByUuid(targetUuid);
+        executor.sendMessage("§cVous avez expulsé §6" + (resolvedName != null ? resolvedName : targetName)
+                + " §cdu groupe.");
+        broadcastGroupMessage(group, "§c" + executor.getName() + " a expulsé §6"
+                + (resolvedName != null ? resolvedName : targetName) + " §cdu groupe.");
+
+        if (onlineTarget != null) {
+            onlineTarget.sendMessage("§cVous avez été expulsé du groupe.");
+            onlineTarget.closeInventory();
+        }
+    }
+
     public void leaveGroup(final Player player) {
         final Group group = getPlayerGroup(player.getUniqueId());
         if (group == null) {
@@ -646,6 +699,18 @@ public class GroupManager {
                 player.sendMessage(message);
             }
         }
+    }
+
+    private String getNameByUuid(final UUID uuid) {
+        if (uuid == null) {
+            return null;
+        }
+        final Player player = Bukkit.getPlayer(uuid);
+        if (player != null) {
+            return player.getName();
+        }
+        final org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+        return offlinePlayer.getName();
     }
 
     private UUID getUuidByName(final String name) {

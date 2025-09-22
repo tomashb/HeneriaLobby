@@ -879,6 +879,7 @@ public class DatabaseManager {
     private void createSocialTablesWithoutFK() throws SQLException {
         createFriendSettingsTable();
         createFriendsTable();
+        createFriendRequestsTable();
         createGroupSettingsTable();
         createGroupsTable();
         createGroupMembersTable();
@@ -937,6 +938,39 @@ public class DatabaseManager {
         }
         addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
         addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
+    }
+
+    private void createFriendRequestsTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS friend_requests (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        sender_uuid VARCHAR(36) NOT NULL,
+                        target_uuid VARCHAR(36) NOT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                        UNIQUE KEY unique_request (sender_uuid, target_uuid),
+                        INDEX idx_friend_requests_sender_uuid (sender_uuid),
+                        INDEX idx_friend_requests_target_uuid (target_uuid)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS friend_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sender_uuid VARCHAR(36) NOT NULL,
+                    target_uuid VARCHAR(36) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    UNIQUE (sender_uuid, target_uuid)
+                )
+                """;
+        executeSQL(sql);
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_uuid ON friend_requests(sender_uuid)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_target_uuid ON friend_requests(target_uuid)");
+        }
     }
 
     private void createGroupSettingsTable() throws SQLException {
