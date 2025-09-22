@@ -102,7 +102,7 @@ menu:
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] friends_menu"
 
     groupe:
       slot: 4
@@ -120,7 +120,7 @@ menu:
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] groups_menu"
 
     clan:
       slot: 5
@@ -140,7 +140,7 @@ menu:
         - "&r"
         - "&c⚠ Fonctionnalité en développement"
       actions:
-        - "[MESSAGE] &cCette fonctionnalité n'est pas encore disponible !"
+        - "[MENU] clan_menu"
 
     stats:
       slot: 20

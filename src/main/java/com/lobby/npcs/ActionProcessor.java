@@ -1,6 +1,7 @@
 package com.lobby.npcs;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.core.DatabaseManager;
 import com.lobby.menus.MenuManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.menus.confirmation.ConfirmationRequest;
@@ -11,20 +12,26 @@ import com.lobby.settings.VisibilitySetting;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
+import com.lobby.social.friends.FriendManager;
+import com.lobby.social.groups.GroupManager;
 import com.lobby.social.menus.ClanMenus;
 import com.lobby.social.menus.FriendsMenus;
-import com.lobby.social.friends.FriendManager;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Sound;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 public class ActionProcessor {
 
@@ -72,8 +80,16 @@ public class ActionProcessor {
             FriendsMenus.openFriendRequestsMenu(player);
             return;
         }
-        if (trimmed.equalsIgnoreCase("[FRIEND_ADD]")) {
-            ChatInputManager.startFriendAddFlow(player);
+        if (startsWithIgnoreCase(trimmed, "[FRIEND_ADD]")) {
+            handleFriendAdd(player, extractArgument(processed, "[FRIEND_ADD]"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[FRIEND_ACCEPT]")) {
+            handleFriendAccept(player, extractArgument(processed, "[FRIEND_ACCEPT]"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[FRIEND_REMOVE]")) {
+            handleFriendRemove(player, extractArgument(processed, "[FRIEND_REMOVE]"));
             return;
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_NOTIFICATIONS]")) {
@@ -120,6 +136,14 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[GROUP_CREATE]")) {
             ChatInputManager.startGroupCreateFlow(player);
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[GROUP_INVITE]")) {
+            handleGroupInvite(player, extractArgument(processed, "[GROUP_INVITE]"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[GROUP_KICK]")) {
+            handleGroupKick(player, extractArgument(processed, "[GROUP_KICK]"));
             return;
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_GROUP_AUTO_ACCEPT]")) {
@@ -169,7 +193,15 @@ public class ActionProcessor {
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_INVITE]")) {
-            ChatInputManager.startClanInviteFlow(player);
+            handleClanInvite(player, extractArgument(processed, "[CLAN_INVITE]"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[CLAN_PROMOTE]")) {
+            handleClanPromote(player, extractArgument(processed, "[CLAN_PROMOTE]"));
+            return;
+        }
+        if (startsWithIgnoreCase(trimmed, "[CLAN_KICK]")) {
+            handleClanKick(player, extractArgument(processed, "[CLAN_KICK]"));
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_DELETE_CONFIRM]")) {
@@ -679,6 +711,174 @@ public class ActionProcessor {
                 }
             }
         }
+    }
+
+    private void handleFriendAdd(final Player player, final String targetName) {
+        final FriendManager friendManager = plugin.getFriendManager();
+        if (friendManager == null) {
+            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            ChatInputManager.startFriendAddFlow(player);
+            return;
+        }
+        friendManager.sendFriendRequest(player, targetName);
+    }
+
+    private void handleFriendAccept(final Player player, final String targetName) {
+        final FriendManager friendManager = plugin.getFriendManager();
+        if (friendManager == null) {
+            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun joueur spécifié.");
+            return;
+        }
+        friendManager.acceptFriendRequest(player, targetName);
+    }
+
+    private void handleFriendRemove(final Player player, final String targetName) {
+        final FriendManager friendManager = plugin.getFriendManager();
+        if (friendManager == null) {
+            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun joueur spécifié.");
+            return;
+        }
+        friendManager.removeFriend(player, targetName);
+    }
+
+    private void handleGroupInvite(final Player player, final String targetName) {
+        final GroupManager groupManager = plugin.getGroupManager();
+        if (groupManager == null) {
+            player.sendMessage("§cLe système de groupes est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun joueur spécifié.");
+            return;
+        }
+        groupManager.inviteToGroup(player, targetName);
+    }
+
+    private void handleGroupKick(final Player player, final String targetName) {
+        final GroupManager groupManager = plugin.getGroupManager();
+        if (groupManager == null) {
+            player.sendMessage("§cLe système de groupes est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun joueur spécifié.");
+            return;
+        }
+        groupManager.kickMember(player, targetName);
+    }
+
+    private void handleClanInvite(final Player player, final String targetName) {
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            ChatInputManager.startClanInviteFlow(player);
+            return;
+        }
+        clanManager.inviteToClan(player, targetName, "");
+    }
+
+    private void handleClanPromote(final Player player, final String targetName) {
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun membre sélectionné.");
+            return;
+        }
+        final UUID targetUuid = resolvePlayerUuidByName(targetName);
+        if (targetUuid == null) {
+            player.sendMessage("§cJoueur introuvable.");
+            return;
+        }
+        final boolean success = clanManager.promoteMember(player.getUniqueId(), targetUuid);
+        final String resolved = resolvePlayerName(targetUuid);
+        if (success) {
+            player.sendMessage("§a" + (resolved != null ? resolved : targetName) + " a été promu dans le clan.");
+        } else {
+            player.sendMessage("§cImpossible de promouvoir " + (resolved != null ? resolved : targetName) + ".");
+        }
+    }
+
+    private void handleClanKick(final Player player, final String targetName) {
+        final ClanManager clanManager = plugin.getClanManager();
+        if (clanManager == null) {
+            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
+            return;
+        }
+        if (targetName == null || targetName.isBlank()) {
+            player.sendMessage("§cAucun membre sélectionné.");
+            return;
+        }
+        final UUID targetUuid = resolvePlayerUuidByName(targetName);
+        if (targetUuid == null) {
+            player.sendMessage("§cJoueur introuvable.");
+            return;
+        }
+        if (!clanManager.kickMember(player.getUniqueId(), targetUuid)) {
+            final String resolved = resolvePlayerName(targetUuid);
+            player.sendMessage("§cImpossible d'expulser " + (resolved != null ? resolved : targetName) + ".");
+        }
+    }
+
+    private String extractArgument(final String processed, final String token) {
+        if (processed == null || token == null) {
+            return "";
+        }
+        if (processed.length() <= token.length()) {
+            return "";
+        }
+        final String argument = processed.substring(token.length()).trim();
+        if (argument.startsWith("\"") && argument.endsWith("\"") && argument.length() >= 2) {
+            return argument.substring(1, argument.length() - 1);
+        }
+        return argument;
+    }
+
+    private UUID resolvePlayerUuidByName(final String targetName) {
+        if (targetName == null || targetName.isBlank()) {
+            return null;
+        }
+        final Player online = Bukkit.getPlayerExact(targetName);
+        if (online != null) {
+            return online.getUniqueId();
+        }
+        final DatabaseManager databaseManager = plugin.getDatabaseManager();
+        if (databaseManager != null) {
+            final String query = "SELECT uuid FROM players WHERE LOWER(username) = ?";
+            try (Connection connection = databaseManager.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, targetName.toLowerCase(Locale.ROOT));
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return UUID.fromString(resultSet.getString("uuid"));
+                    }
+                }
+            } catch (final SQLException exception) {
+                plugin.getLogger().log(Level.SEVERE,
+                        "Failed to resolve player '" + targetName + "'", exception);
+            }
+        }
+        final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(targetName);
+        if (offlinePlayer != null && offlinePlayer.hasPlayedBefore()) {
+            return offlinePlayer.getUniqueId();
+        }
+        return null;
     }
 
     private void handleMusicToggle(final Player player, final boolean enabled) {

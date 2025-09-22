@@ -11,7 +11,7 @@ menu:
         - "&7Expulser &f%clan_target_name% &7du clan."
         - "&cCette action est immédiate !"
       actions:
-        - "[COMMAND] clan kick %clan_target_name%"
+        - "[CLAN_KICK] %clan_target_name%"
         - "[CLOSE_MENU]"
 
     cancel:
