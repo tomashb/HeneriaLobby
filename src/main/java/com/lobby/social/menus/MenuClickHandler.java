@@ -55,10 +55,11 @@ public final class MenuClickHandler implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> clickCooldown.remove(playerId), CLICK_DELAY_TICKS);
 
         final String title = event.getView().getTitle();
-        final boolean menuTitle = title.contains("»");
-        if (menuTitle) {
-            event.setCancelled(true);
+        if (!title.contains("»")) {
+            return;
         }
+
+        event.setCancelled(true);
         if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)) {
             handleClanMembersClick(event, player);
             return;

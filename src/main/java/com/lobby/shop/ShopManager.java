@@ -406,11 +406,11 @@ public class ShopManager implements Listener {
         if (context == null) {
             return;
         }
+        event.setCancelled(true);
         final Inventory topInventory = event.getView().getTopInventory();
         if (topInventory == null || !topInventory.equals(context.inventory())) {
             return;
         }
-        event.setCancelled(true);
         final ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() == Material.AIR) {
             return;
