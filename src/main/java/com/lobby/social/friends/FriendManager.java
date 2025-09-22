@@ -5,6 +5,7 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.servers.ServerInfo;
 import com.lobby.servers.ServerManager;
 import com.lobby.velocity.VelocityManager;
+import com.lobby.settings.FriendRequestSetting;
 import com.lobby.settings.PlayerSettingsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -36,13 +37,14 @@ public class FriendManager {
     private final Map<UUID, Set<UUID>> pendingRequests = new ConcurrentHashMap<>();
     private final Map<UUID, FriendSettings> settingsCache = new ConcurrentHashMap<>();
     private final FriendRequestValidator friendRequestValidator;
+    private final PlayerSettingsManager playerSettingsManager;
 
     public FriendManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.databaseManager = plugin.getDatabaseManager();
-        final PlayerSettingsManager playerSettingsManager = plugin.getPlayerSettingsManager();
-        this.friendRequestValidator = playerSettingsManager != null
-                ? new FriendRequestValidator(playerSettingsManager, this)
+        this.playerSettingsManager = plugin.getPlayerSettingsManager();
+        this.friendRequestValidator = this.playerSettingsManager != null
+                ? new FriendRequestValidator(this.playerSettingsManager, this)
                 : null;
     }
 
@@ -537,7 +539,23 @@ public class FriendManager {
                 current.isAllowNotifications(), current.isAutoAcceptFavorites(),
                 current.isAllowPrivateMessages(), current.getMaxFriends());
         updateSettings(playerUuid, updated);
+        syncPlayerSettings(playerUuid, nextMode);
         return formatAcceptMode(nextMode);
+    }
+
+    public void applyFriendRequestSetting(final UUID playerUuid, final FriendRequestSetting setting) {
+        if (playerUuid == null || setting == null) {
+            return;
+        }
+        final AcceptMode desiredMode = mapSettingToAcceptMode(setting);
+        final FriendSettings current = getFriendSettings(playerUuid);
+        if (current.getAcceptRequests() == desiredMode) {
+            return;
+        }
+        final FriendSettings updated = new FriendSettings(desiredMode, current.isShowOnlineStatus(),
+                current.isAllowNotifications(), current.isAutoAcceptFavorites(),
+                current.isAllowPrivateMessages(), current.getMaxFriends());
+        updateSettings(playerUuid, updated);
     }
 
     public boolean toggleNotifications(final UUID playerUuid) {
@@ -600,6 +618,35 @@ public class FriendManager {
             case ALL -> "Tous";
             case FRIENDS_OF_FRIENDS -> "Amis d'amis";
             case NONE -> "Personne";
+        };
+    }
+
+    private void syncPlayerSettings(final UUID playerUuid, final AcceptMode acceptMode) {
+        if (playerSettingsManager == null || playerUuid == null) {
+            return;
+        }
+        playerSettingsManager.updateFriendRequestSetting(playerUuid, mapAcceptModeToSetting(acceptMode));
+    }
+
+    private AcceptMode mapSettingToAcceptMode(final FriendRequestSetting setting) {
+        if (setting == null) {
+            return AcceptMode.ALL;
+        }
+        return switch (setting) {
+            case EVERYONE -> AcceptMode.ALL;
+            case FRIENDS_OF_FRIENDS -> AcceptMode.FRIENDS_OF_FRIENDS;
+            case DISABLED -> AcceptMode.NONE;
+        };
+    }
+
+    private FriendRequestSetting mapAcceptModeToSetting(final AcceptMode acceptMode) {
+        if (acceptMode == null) {
+            return FriendRequestSetting.EVERYONE;
+        }
+        return switch (acceptMode) {
+            case ALL -> FriendRequestSetting.EVERYONE;
+            case FRIENDS_OF_FRIENDS -> FriendRequestSetting.FRIENDS_OF_FRIENDS;
+            case NONE -> FriendRequestSetting.DISABLED;
         };
     }
 
