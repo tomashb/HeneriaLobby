@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -290,6 +291,11 @@ public class FriendManager {
 
     public List<FriendInfo> getFriendsList(final UUID playerUUID) {
         final List<FriendInfo> friends = new ArrayList<>();
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        final boolean velocityEnabled = velocityManager != null && velocityManager.isEnabled();
+        if (velocityEnabled) {
+            velocityManager.requestServerInfo();
+        }
         final String query = "SELECT friend_uuid, accepted_at, is_favorite FROM friends WHERE player_uuid = ? AND status = 'ACCEPTED'";
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
@@ -299,13 +305,15 @@ public class FriendManager {
                     final UUID friendUUID = UUID.fromString(resultSet.getString("friend_uuid"));
                     final String name = getNameByUuid(friendUUID);
                     final Player friendPlayer = Bukkit.getPlayer(friendUUID);
-                    final boolean online = friendPlayer != null && friendPlayer.isOnline();
+                    boolean online = friendPlayer != null && friendPlayer.isOnline();
                     String serverName = null;
                     if (online) {
-                        final ServerManager serverManager = plugin.getServerManager();
-                        if (serverManager != null) {
-                            final ServerInfo info = serverManager.getServer(friendPlayer.getWorld().getName());
-                            serverName = info != null ? info.getDisplayName() : friendPlayer.getWorld().getName();
+                        serverName = resolveLocalServerName(friendPlayer);
+                    } else if (velocityEnabled) {
+                        final Optional<String> proxyServer = velocityManager.findPlayerServerDisplayName(friendUUID, name);
+                        if (proxyServer.isPresent()) {
+                            online = true;
+                            serverName = proxyServer.get();
                         }
                     }
                     final Timestamp acceptedTimestamp = resultSet.getTimestamp("accepted_at");
@@ -721,10 +729,22 @@ public class FriendManager {
 
     public List<UUID> getOnlineFriends(final UUID uuid) {
         final List<UUID> online = new ArrayList<>();
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        final boolean velocityEnabled = velocityManager != null && velocityManager.isEnabled();
+        if (velocityEnabled) {
+            velocityManager.requestServerInfo();
+        }
         for (final UUID friendUUID : friendsCache.computeIfAbsent(uuid, this::loadFriendsFromDatabase)) {
             final Player player = Bukkit.getPlayer(friendUUID);
             if (player != null && player.isOnline()) {
                 online.add(friendUUID);
+                continue;
+            }
+            if (velocityEnabled) {
+                final String friendName = getNameByUuid(friendUUID);
+                if (velocityManager.isPlayerOnlineProxy(friendUUID, friendName)) {
+                    online.add(friendUUID);
+                }
             }
         }
         return online;
@@ -734,8 +754,26 @@ public class FriendManager {
         if (uuid == null) {
             return;
         }
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        if (velocityManager != null && velocityManager.isEnabled()) {
+            velocityManager.requestServerInfo();
+        }
         final Set<UUID> refreshed = loadFriendsFromDatabase(uuid);
         friendsCache.put(uuid, refreshed);
+    }
+
+    private String resolveLocalServerName(final Player player) {
+        if (player == null) {
+            return null;
+        }
+        final ServerManager serverManager = plugin.getServerManager();
+        if (serverManager != null) {
+            final ServerInfo info = serverManager.getServer(player.getWorld().getName());
+            if (info != null) {
+                return info.getDisplayName();
+            }
+        }
+        return player.getWorld().getName();
     }
 
     public List<UUID> getFavoriteFriends(final UUID uuid) {

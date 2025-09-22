@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -30,7 +31,10 @@ public class VelocityManager {
 
     private final LobbyPlugin plugin;
     private final Map<String, VelocityServerInfo> servers = new ConcurrentHashMap<>();
+    private final Map<String, VelocityServerInfo> serversByProxyName = new ConcurrentHashMap<>();
     private final Map<String, Integer> serverPlayerCounts = new ConcurrentHashMap<>();
+    private final Map<String, Set<String>> serverPlayerLists = new ConcurrentHashMap<>();
+    private final Map<String, String> playerServerIndex = new ConcurrentHashMap<>();
     private final VelocityMessageListener velocityMessageListener;
     private final SyncMessageListener syncMessageListener;
     private final String messagingChannel;
@@ -75,6 +79,9 @@ public class VelocityManager {
 
     private void loadServerConfiguration(final ConfigurationSection section) {
         servers.clear();
+        serversByProxyName.clear();
+        serverPlayerLists.clear();
+        playerServerIndex.clear();
         if (section == null) {
             plugin.getLogger().warning("No servers defined in velocity configuration.");
             return;
@@ -86,6 +93,7 @@ public class VelocityManager {
             }
             final VelocityServerInfo info = new VelocityServerInfo(key, serverSection);
             servers.put(info.getId(), info);
+            serversByProxyName.put(normalize(info.getName()), info);
         }
         plugin.getLogger().info("Loaded " + servers.size() + " proxy servers from velocity configuration.");
     }
@@ -187,6 +195,11 @@ public class VelocityManager {
             out.writeUTF("PlayerCount");
             out.writeUTF(info.getName());
             anyPlayer.sendPluginMessage(plugin, LEGACY_CHANNEL, out.toByteArray());
+
+            final ByteArrayDataOutput listRequest = ByteStreams.newDataOutput();
+            listRequest.writeUTF("PlayerList");
+            listRequest.writeUTF(info.getName());
+            anyPlayer.sendPluginMessage(plugin, LEGACY_CHANNEL, listRequest.toByteArray());
         }
     }
 
@@ -211,6 +224,35 @@ public class VelocityManager {
         }
     }
 
+    public void updateServerPlayerList(final String serverName, final String players) {
+        if (serverName == null) {
+            return;
+        }
+        final String normalizedServer = normalize(serverName);
+        final Set<String> parsedPlayers = ConcurrentHashMap.newKeySet();
+        if (players != null && !players.isBlank()) {
+            final String[] split = players.split(",\\s*");
+            for (final String raw : split) {
+                final String trimmed = raw == null ? "" : raw.trim();
+                if (!trimmed.isEmpty()) {
+                    parsedPlayers.add(trimmed.toLowerCase(Locale.ROOT));
+                }
+            }
+        }
+        final Set<String> previous = serverPlayerLists.get(normalizedServer);
+        if (previous != null) {
+            for (final String name : previous) {
+                if (!parsedPlayers.contains(name)) {
+                    playerServerIndex.remove(name, normalizedServer);
+                }
+            }
+        }
+        serverPlayerLists.put(normalizedServer, parsedPlayers);
+        for (final String playerName : parsedPlayers) {
+            playerServerIndex.put(playerName, normalizedServer);
+        }
+    }
+
     public int getServerPlayerCount(final String serverId) {
         return serverPlayerCounts.getOrDefault(normalize(serverId), 0);
     }
@@ -218,6 +260,36 @@ public class VelocityManager {
     public boolean isServerOnline(final String serverId) {
         final VelocityServerInfo info = servers.get(normalize(serverId));
         return info != null && info.isEnabled();
+    }
+
+    public Optional<String> findPlayerServerDisplayName(final UUID playerUuid, final String playerName) {
+        if (!enabled) {
+            return Optional.empty();
+        }
+        final String key = normalizePlayerKey(playerUuid, playerName);
+        if (key == null) {
+            return Optional.empty();
+        }
+        final String serverKey = playerServerIndex.get(key);
+        if (serverKey == null) {
+            return Optional.empty();
+        }
+        final VelocityServerInfo info = resolveServerInfo(serverKey);
+        if (info != null) {
+            return Optional.of(info.getDisplayName());
+        }
+        return Optional.of(serverKey);
+    }
+
+    public boolean isPlayerOnlineProxy(final UUID playerUuid, final String playerName) {
+        if (!enabled) {
+            return false;
+        }
+        final String key = normalizePlayerKey(playerUuid, playerName);
+        if (key == null) {
+            return false;
+        }
+        return playerServerIndex.containsKey(key);
     }
 
     public void broadcastEconomyUpdate(final Player player, final long coins, final long tokens) {
@@ -327,5 +399,37 @@ public class VelocityManager {
 
     private String normalize(final String value) {
         return value == null ? "" : value.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizePlayerKey(final UUID playerUuid, final String playerName) {
+        if (playerName != null && !playerName.isBlank()) {
+            return playerName.trim().toLowerCase(Locale.ROOT);
+        }
+        if (playerUuid != null) {
+            final Player online = Bukkit.getPlayer(playerUuid);
+            if (online != null) {
+                return online.getName().toLowerCase(Locale.ROOT);
+            }
+        }
+        return null;
+    }
+
+    private VelocityServerInfo resolveServerInfo(final String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        final String normalized = normalize(key);
+        VelocityServerInfo info = servers.get(normalized);
+        if (info != null) {
+            return info;
+        }
+        info = serversByProxyName.get(normalized);
+        if (info != null) {
+            return info;
+        }
+        return servers.values().stream()
+                .filter(server -> server.getName().equalsIgnoreCase(key))
+                .findFirst()
+                .orElse(null);
     }
 }

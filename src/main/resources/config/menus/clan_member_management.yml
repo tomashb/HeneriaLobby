@@ -2,6 +2,7 @@ menu:
   id: "clan_member_management_menu"
   title: "&8» &cGestion des Membres"
   size: 54
+  design_template: "social"
   items:
     member_promote:
       slot: 20

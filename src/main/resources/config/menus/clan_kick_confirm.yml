@@ -2,6 +2,7 @@ menu:
   id: "clan_kick_confirm"
   title: "&8» &4Confirmer l'Expulsion"
   size: 27
+  design_template: "social"
   items:
     confirm:
       slot: 11
