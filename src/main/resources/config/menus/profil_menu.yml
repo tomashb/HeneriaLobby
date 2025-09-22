@@ -66,7 +66,7 @@ menu:
         - "[NONE]"
 
     player_head:
-      slot: 13
+      slot: 50
       material: "PLAYER_HEAD"
       head: "%player_name%"
       name: "&6&l%player_name%"
@@ -198,7 +198,7 @@ menu:
         - "[MENU] settings_menu"
 
     daily_reward:
-      slot: 26
+      slot: 30
       material: "PLAYER_HEAD"
       head: "hdb:12654"
       name: "&6&lRécompense Journalière"
@@ -215,15 +215,31 @@ menu:
       actions:
         - "[MESSAGE] &cLes récompenses journalières ne sont pas encore disponibles !"
 
+    menu_jeux:
+      slot: 48
+      material: "PLAYER_HEAD"
+      head: "hdb:35472"
+      name: "&e&lMenu des Jeux"
+      lore:
+        - "&7Retournez au menu principal"
+        - "&7pour choisir un mode de jeu."
+        - "&r"
+        - "&8▸ &7BedWars, Nexus, Zombie..."
+        - "&8▸ &7Boutique et sélecteur de serveurs"
+        - "&r"
+        - "&e▶ Cliquez pour y aller !"
+      actions:
+        - "[MENU] jeux_menu"
+
     retour:
       slot: 49
       material: "PLAYER_HEAD"
       head: "hdb:9334"
-      name: "&c&lRetour"
+      name: "&c&lFermer"
       lore:
-        - "&7Retourner au menu principal"
-        - "&7ou fermer cette interface."
+        - "&7Fermer ce menu et retourner"
+        - "&7au lobby principal."
         - "&r"
-        - "&a▶ Cliquez pour revenir !"
+        - "&c▶ Cliquez pour fermer !"
       actions:
-        - "[MENU] jeux_menu"
+        - "[CLOSE_MENU]"
