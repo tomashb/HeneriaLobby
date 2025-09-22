@@ -1010,7 +1010,7 @@ public class ActionProcessor {
 
             try {
                 final String enumKey = normalized.replace('.', '_');
-                return Enum.valueOf(Sound.class, enumKey);
+                return Sound.valueOf(enumKey);
             } catch (final IllegalArgumentException exception) {
                 LogUtils.warning(plugin, "Unknown sound in NPC action: '" + soundName + "'. "
                         + exception.getMessage());
