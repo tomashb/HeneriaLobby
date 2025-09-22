@@ -638,6 +638,9 @@ public class ActionProcessor {
             case SYSTEM_NOTIFICATIONS -> prefix + "Notifications système " + settings.getSystemNotificationsDisplay() + "&7 !";
         };
         player.sendMessage(MessageUtils.colorize(message));
+        if (type == SettingType.FRIEND_REQUESTS) {
+            player.sendMessage(MessageUtils.colorize("&7Cette restriction est maintenant active pour toutes les futures demandes."));
+        }
     }
 
     private void applyVisibilitySetting(final Player player, final VisibilitySetting setting) {
