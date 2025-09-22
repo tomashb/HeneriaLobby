@@ -29,12 +29,24 @@ menu:
       actions:
         - "[NONE]"
     glass_5:
-      slot: 36
+      slot: 9
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
       actions:
         - "[NONE]"
     glass_6:
+      slot: 17
+      material: "PURPLE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_7:
+      slot: 36
+      material: "PURPLE_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_8:
       slot: 44
       material: "PURPLE_STAINED_GLASS_PANE"
       name: "&7"
@@ -177,30 +189,6 @@ menu:
         - "&a▶ Cliquez pour ajuster !"
       actions:
         - "[MENU] audio_settings_menu"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
-
-    language:
-      slot: 31
-      material: "PLAYER_HEAD"
-      head: "hdb:2736"
-      name: "&f&lLangue &8- &c%setting_language_flag% %setting_language_name%"
-      lore:
-        - "&7Changez la langue d'affichage"
-        - "&7de l'interface et des messages."
-        - "&r"
-        - "&8▸ &7Langue actuelle: %setting_language_display%"
-        - "&8▸ &7Langues disponibles:"
-        - "&8  ▸ &c🇫🇷 Français (complet)"
-        - "&8  ▸ &f🇬🇧 English (complet)"
-        - "&8  ▸ &e🇪🇸 Español (partiel)"
-        - "&r"
-        - "&e⚡ Effet immédiat :"
-        - "&7- Tous les menus traduits"
-        - "&7- Messages du serveur traduits"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[MENU] language_menu"
         - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
 
     back:

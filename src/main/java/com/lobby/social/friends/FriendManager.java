@@ -5,6 +5,7 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.servers.ServerInfo;
 import com.lobby.servers.ServerManager;
 import com.lobby.velocity.VelocityManager;
+import com.lobby.settings.PlayerSettingsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -20,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Collections;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,10 +35,15 @@ public class FriendManager {
     private final Map<UUID, Set<UUID>> favoritesCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> pendingRequests = new ConcurrentHashMap<>();
     private final Map<UUID, FriendSettings> settingsCache = new ConcurrentHashMap<>();
+    private final FriendRequestValidator friendRequestValidator;
 
     public FriendManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.databaseManager = plugin.getDatabaseManager();
+        final PlayerSettingsManager playerSettingsManager = plugin.getPlayerSettingsManager();
+        this.friendRequestValidator = playerSettingsManager != null
+                ? new FriendRequestValidator(playerSettingsManager, this)
+                : null;
     }
 
     public void reload() {
@@ -106,6 +113,14 @@ public class FriendManager {
                     : FriendRequestResult.DATABASE_ERROR;
         }
 
+        if (friendRequestValidator != null) {
+            final FriendRequestValidator.ValidationResult validationResult =
+                    friendRequestValidator.canSendFriendRequest(senderUuid, targetUuid);
+            if (!validationResult.isAllowed()) {
+                return validationResult.getFailureResult();
+            }
+        }
+
         final FriendSettings settings = getFriendSettings(targetUuid);
         final AcceptMode acceptMode = settings.getAcceptRequests();
         if (acceptMode == AcceptMode.NONE) {
@@ -148,12 +163,12 @@ public class FriendManager {
                                                final FriendRequestResult result) {
         switch (result) {
             case SELF_REQUEST -> sender.sendMessage("§cVous ne pouvez pas vous ajouter vous-même !");
-            case ALREADY_FRIENDS -> sender.sendMessage("§cVous êtes déjà amis avec " + targetName + " !");
-            case BLOCKED -> sender.sendMessage("§cImpossible d'envoyer une demande : relation bloquée.");
-            case REQUEST_ALREADY_SENT -> sender.sendMessage("§cVous avez déjà envoyé une demande d'ami à " + targetName + " !");
+            case ALREADY_FRIENDS -> sender.sendMessage("§cVous êtes déjà amis avec ce joueur.");
+            case BLOCKED -> sender.sendMessage("§cCe joueur vous a bloqué.");
+            case REQUEST_ALREADY_SENT -> sender.sendMessage("§cUne demande d'ami est déjà en attente.");
             case INCOMING_REQUEST_PENDING -> sender.sendMessage("§e" + targetName + " §cvous a déjà envoyé une demande. Tapez §a/friend accept " + targetName + " §cpour l'accepter.");
             case SETTINGS_DISABLED -> sender.sendMessage("§c" + targetName + " n'accepte pas les demandes d'amis.");
-            case MUTUAL_FRIENDS_REQUIRED -> sender.sendMessage("§cVous devez avoir des amis en commun avec " + targetName + " pour envoyer une demande.");
+            case MUTUAL_FRIENDS_REQUIRED -> sender.sendMessage("§cCe joueur n'accepte que les demandes d'amis d'amis.");
             case DATABASE_ERROR -> sender.sendMessage("§cImpossible d'envoyer la demande pour le moment. Veuillez réessayer plus tard.");
             default -> {
             }
@@ -351,9 +366,16 @@ public class FriendManager {
         return friends.contains(player2);
     }
 
-    private boolean hasPendingRequest(final UUID sender, final UUID target) {
+    public boolean hasPendingRequest(final UUID sender, final UUID target) {
         final Set<UUID> requests = pendingRequests.computeIfAbsent(target, this::loadPendingRequests);
         return requests.contains(sender);
+    }
+
+    public Set<UUID> getFriends(final UUID playerUUID) {
+        if (playerUUID == null) {
+            return Collections.emptySet();
+        }
+        return Collections.unmodifiableSet(friendsCache.computeIfAbsent(playerUUID, this::loadFriendsFromDatabase));
     }
 
     private void removePendingRequest(final UUID sender, final UUID target) {
