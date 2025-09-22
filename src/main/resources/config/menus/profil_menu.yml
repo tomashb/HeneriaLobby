@@ -2,6 +2,7 @@ menu:
   id: "profil_menu"
   title: "&8» &6Mon Profil"
   size: 54
+  async_preload: true
 
   items:
     glass_1:

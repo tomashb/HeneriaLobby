@@ -17,6 +17,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -53,10 +54,31 @@ public class MenuManager implements Listener {
         }
 
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
-        openMenus.put(player.getUniqueId(), menu);
+        final UUID uuid = player.getUniqueId();
+        if (shouldPreloadAsync(menuSection)) {
+            openMenus.put(uuid, menu);
+            player.closeInventory();
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                preloadMenuData(uuid, menuSection);
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    final Player target = Bukkit.getPlayer(uuid);
+                    if (target == null || !target.isOnline()) {
+                        openMenus.remove(uuid);
+                        return;
+                    }
+                    menu.open(target);
+                    if (menu.getInventory() == null) {
+                        openMenus.remove(uuid);
+                    }
+                });
+            });
+            return true;
+        }
+
+        openMenus.put(uuid, menu);
         menu.open(player);
         if (menu.getInventory() == null) {
-            openMenus.remove(player.getUniqueId());
+            openMenus.remove(uuid);
             return false;
         }
         return true;
@@ -166,6 +188,125 @@ public class MenuManager implements Listener {
             }
             menuDefinitions.put(id.toLowerCase(java.util.Locale.ROOT), menuSection);
         }
+    }
+
+    private boolean shouldPreloadAsync(final ConfigurationSection menuSection) {
+        return menuSection != null && menuSection.getBoolean("async_preload", false);
+    }
+
+    private void preloadMenuData(final UUID uuid, final ConfigurationSection menuSection) {
+        if (uuid == null || menuSection == null) {
+            return;
+        }
+        final Set<String> sources = collectPlaceholderSources(menuSection);
+        if (sources.isEmpty()) {
+            return;
+        }
+        final Set<String> placeholders = extractPlaceholders(sources);
+        if (placeholders.isEmpty()) {
+            return;
+        }
+
+        preloadEconomy(uuid, placeholders);
+        preloadStats(uuid, placeholders);
+        preloadSettings(uuid, placeholders);
+    }
+
+    private void preloadEconomy(final UUID uuid, final Set<String> placeholders) {
+        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%player_")
+                && (placeholder.contains("coins")
+                || placeholder.contains("tokens")
+                || placeholder.contains("playtime")
+                || placeholder.contains("first_join")
+                || placeholder.contains("last_join")))) {
+            return;
+        }
+        if (plugin.getEconomyManager() != null) {
+            plugin.getEconomyManager().getPlayerData(uuid);
+        }
+    }
+
+    private void preloadStats(final UUID uuid, final Set<String> placeholders) {
+        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%stats_"))) {
+            return;
+        }
+        final var statsManager = plugin.getStatsManager();
+        if (statsManager == null) {
+            return;
+        }
+        boolean globalRequested = false;
+        final Set<String> gameTypes = new HashSet<>();
+        for (String placeholder : placeholders) {
+            if (!placeholder.startsWith("%stats_")) {
+                continue;
+            }
+            final String trimmed = placeholder.substring(1, placeholder.length() - 1);
+            final String[] parts = trimmed.split("_");
+            if (parts.length < 3) {
+                continue;
+            }
+            final String scope = parts[1];
+            if ("global".equalsIgnoreCase(scope)) {
+                globalRequested = true;
+            } else {
+                gameTypes.add(scope.toUpperCase(java.util.Locale.ROOT));
+            }
+        }
+        if (globalRequested) {
+            statsManager.getGlobalStats(uuid);
+        }
+        for (String gameType : gameTypes) {
+            statsManager.getPlayerStats(uuid, gameType);
+        }
+    }
+
+    private void preloadSettings(final UUID uuid, final Set<String> placeholders) {
+        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%setting_")
+                || placeholder.startsWith("%lang_"))) {
+            return;
+        }
+        if (plugin.getPlayerSettingsManager() != null) {
+            plugin.getPlayerSettingsManager().getPlayerSettings(uuid);
+        }
+    }
+
+    private Set<String> collectPlaceholderSources(final ConfigurationSection section) {
+        final Set<String> values = new HashSet<>();
+        collectValues(section, values);
+        return values;
+    }
+
+    private void collectValues(final Object value, final Set<String> sink) {
+        if (value == null) {
+            return;
+        }
+        if (value instanceof ConfigurationSection configurationSection) {
+            for (String key : configurationSection.getKeys(false)) {
+                collectValues(configurationSection.get(key), sink);
+            }
+            return;
+        }
+        if (value instanceof Iterable<?> iterable) {
+            for (Object element : iterable) {
+                collectValues(element, sink);
+            }
+            return;
+        }
+        if (value instanceof String string && string.contains("%")) {
+            sink.add(string);
+        }
+    }
+
+    private Set<String> extractPlaceholders(final Set<String> values) {
+        final Set<String> placeholders = new HashSet<>();
+        final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("%([^%]+)%");
+        for (String value : values) {
+            final java.util.regex.Matcher matcher = pattern.matcher(value);
+            while (matcher.find()) {
+                placeholders.add('%' + matcher.group(1) + '%');
+            }
+        }
+        return placeholders;
     }
 
     private File ensureMenusDirectory() {

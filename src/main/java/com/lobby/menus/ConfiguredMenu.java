@@ -54,14 +54,15 @@ public class ConfiguredMenu implements Menu {
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
 
+        final ItemStack[] contents = new ItemStack[size];
         final DesignTemplate designTemplate = resolveDesignTemplate();
 
         final ItemStack filler = createFillerItem(resolveFillMaterial(designTemplate));
         if (filler != null) {
             final List<Integer> fillSlots = resolveFillSlots(designTemplate);
             if (fillSlots == null || fillSlots.isEmpty()) {
-                for (int slot = 0; slot < inventory.getSize(); slot++) {
-                    inventory.setItem(slot, filler.clone());
+                for (int slot = 0; slot < contents.length; slot++) {
+                    contents[slot] = filler.clone();
                 }
             } else {
                 for (Integer slot : fillSlots) {
@@ -69,14 +70,14 @@ public class ConfiguredMenu implements Menu {
                         continue;
                     }
                     final int index = slot;
-                    if (index >= 0 && index < inventory.getSize()) {
-                        inventory.setItem(index, filler.clone());
+                    if (index >= 0 && index < contents.length) {
+                        contents[index] = filler.clone();
                     }
                 }
             }
         }
 
-        applyDesignTemplate(player);
+        applyDesignTemplate(player, contents);
 
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
@@ -85,16 +86,17 @@ public class ConfiguredMenu implements Menu {
                 if (itemSection == null) {
                     continue;
                 }
-                final Optional<Integer> slot = createItem(player, itemSection);
+                final Optional<Integer> slot = createItem(player, itemSection, contents);
                 slot.ifPresent(index -> storeActions(index, itemSection));
             }
         }
 
+        inventory.setContents(contents);
         player.openInventory(inventory);
     }
 
-    private void applyDesignTemplate(final Player player) {
-        if (inventory == null || menuDesignProvider == null) {
+    private void applyDesignTemplate(final Player player, final ItemStack[] contents) {
+        if (contents == null || menuDesignProvider == null) {
             return;
         }
         final String templateName = menuSection.getString("design_template");
@@ -112,8 +114,8 @@ public class ConfiguredMenu implements Menu {
                 continue;
             }
             final int index = slot;
-            if (index >= 0 && index < inventory.getSize()) {
-                inventory.setItem(index, decorative.clone());
+            if (index >= 0 && index < contents.length) {
+                contents[index] = decorative.clone();
             }
         }
         final ItemStack border = design.createBorderItem();
@@ -122,8 +124,8 @@ public class ConfiguredMenu implements Menu {
                 continue;
             }
             final int index = slot;
-            if (index >= 0 && index < inventory.getSize()) {
-                inventory.setItem(index, border.clone());
+            if (index >= 0 && index < contents.length) {
+                contents[index] = border.clone();
             }
         }
     }
@@ -157,7 +159,9 @@ public class ConfiguredMenu implements Menu {
         return inventory;
     }
 
-    private Optional<Integer> createItem(final Player player, final ConfigurationSection itemSection) {
+    private Optional<Integer> createItem(final Player player,
+                                         final ConfigurationSection itemSection,
+                                         final ItemStack[] contents) {
         String materialName = itemSection.getString("material");
         Material material = materialName != null ? Material.matchMaterial(materialName) : null;
         final boolean headDefined = itemSection.contains("head") || itemSection.contains("head_id");
@@ -223,7 +227,7 @@ public class ConfiguredMenu implements Menu {
         }
 
         final int slot = itemSection.getInt("slot", -1);
-        final int targetSlot = resolveSlot(slot, itemStack);
+        final int targetSlot = resolveSlot(slot, itemStack, contents);
         if (targetSlot < 0) {
             return Optional.empty();
         }
@@ -304,8 +308,10 @@ public class ConfiguredMenu implements Menu {
         return processed;
     }
 
-    private void applyBorders(final Player player, final DesignTemplate designTemplate) {
-        if (inventory == null) {
+    private void applyBorders(final Player player,
+                               final DesignTemplate designTemplate,
+                               final ItemStack[] contents) {
+        if (contents == null) {
             return;
         }
         final List<Map<?, ?>> borders = new ArrayList<>();
@@ -333,14 +339,16 @@ public class ConfiguredMenu implements Menu {
                     continue;
                 }
                 final int index = slot;
-                if (index >= 0 && index < inventory.getSize()) {
-                    inventory.setItem(index, borderItem.clone());
+                if (index >= 0 && index < contents.length) {
+                    contents[index] = borderItem.clone();
                 }
             }
         }
     }
 
-    private void applyTemplateItems(final Player player, final DesignTemplate designTemplate) {
+    private void applyTemplateItems(final Player player,
+                                     final DesignTemplate designTemplate,
+                                     final ItemStack[] contents) {
         if (designTemplate == null) {
             return;
         }
@@ -356,7 +364,7 @@ public class ConfiguredMenu implements Menu {
             if (itemSection == null) {
                 continue;
             }
-            final Optional<Integer> slot = createItem(player, itemSection);
+            final Optional<Integer> slot = createItem(player, itemSection, contents);
             slot.ifPresent(index -> storeActions(index, itemSection));
         }
     }
@@ -450,20 +458,25 @@ public class ConfiguredMenu implements Menu {
         return designTemplate != null ? designTemplate.getFillSlots() : List.of();
     }
 
-    private int resolveSlot(final int slot, final ItemStack itemStack) {
-        if (inventory == null) {
+    private int resolveSlot(final int slot, final ItemStack itemStack, final ItemStack[] contents) {
+        if (contents == null || itemStack == null) {
             return -1;
         }
-        if (slot >= 0 && slot < inventory.getSize()) {
-            inventory.setItem(slot, itemStack);
+        if (slot >= 0 && slot < contents.length) {
+            contents[slot] = itemStack;
             return slot;
         }
-        final int firstEmpty = inventory.firstEmpty();
-        if (firstEmpty >= 0) {
-            inventory.setItem(firstEmpty, itemStack);
-            return firstEmpty;
+        for (int index = 0; index < contents.length; index++) {
+            if (isEmpty(contents[index])) {
+                contents[index] = itemStack;
+                return index;
+            }
         }
         return -1;
+    }
+
+    private boolean isEmpty(final ItemStack itemStack) {
+        return itemStack == null || itemStack.getType() == Material.AIR;
     }
 
     private int normalizeSize(final int requested) {
