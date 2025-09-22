@@ -3,6 +3,7 @@ package com.lobby.settings;
 import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.core.DatabaseManager.DatabaseType;
+import com.lobby.social.friends.FriendManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,9 +38,15 @@ public class PlayerSettingsManager {
         }
 
         final PlayerSettings settings = getPlayerSettings(playerUuid);
+        final FriendManager friendManager = plugin.getFriendManager();
         switch (type) {
             case PRIVATE_MESSAGES -> settings.setPrivateMessages(!settings.isPrivateMessages());
-            case FRIEND_REQUESTS -> settings.setFriendRequestSetting(getNextFriendRequestSetting(settings.getFriendRequestSetting()));
+            case FRIEND_REQUESTS -> {
+                settings.setFriendRequestSetting(getNextFriendRequestSetting(settings.getFriendRequestSetting()));
+                if (friendManager != null) {
+                    friendManager.applyFriendRequestSetting(playerUuid, settings.getFriendRequestSetting());
+                }
+            }
             case GROUP_REQUESTS -> settings.setGroupRequestSetting(getNextGroupRequestSetting(settings.getGroupRequestSetting()));
             case PLAYER_VISIBILITY -> settings.setVisibilitySetting(getNextVisibilitySetting(settings.getVisibilitySetting()));
             case UI_SOUNDS -> settings.setUiSounds(!settings.isUiSounds());
@@ -50,6 +57,19 @@ public class PlayerSettingsManager {
             case SYSTEM_NOTIFICATIONS -> settings.setSystemNotifications(!settings.isSystemNotifications());
         }
 
+        saveSettings(playerUuid, settings);
+        cache.put(playerUuid, settings);
+    }
+
+    public void updateFriendRequestSetting(final UUID playerUuid, final FriendRequestSetting setting) {
+        if (playerUuid == null || setting == null) {
+            return;
+        }
+        final PlayerSettings settings = getPlayerSettings(playerUuid);
+        if (settings.getFriendRequestSetting() == setting) {
+            return;
+        }
+        settings.setFriendRequestSetting(setting);
         saveSettings(playerUuid, settings);
         cache.put(playerUuid, settings);
     }
