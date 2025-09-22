@@ -19,8 +19,6 @@ import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
@@ -180,17 +178,7 @@ public class ActionProcessor {
         }
         if (startsWithIgnoreCase(trimmed, "[SOUND]")) {
             final String soundName = processed.substring(7).trim();
-            final Sound sound = resolveSound(soundName);
-            if (sound == null) {
-                LogUtils.warning(plugin, "Unknown sound in NPC action: " + soundName);
-                return;
-            }
-            try {
-                player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
-            } catch (final Exception exception) {
-                LogUtils.warning(plugin, "Failed to play sound '" + soundName + "' for player '"
-                        + player.getName() + "': " + exception.getMessage());
-            }
+            LogUtils.info(plugin, "Sound action ignored temporarily: " + (soundName.isEmpty() ? "<empty>" : soundName));
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[CLOSE]")) {
@@ -968,122 +956,9 @@ public class ActionProcessor {
     }
 
     private Sound resolveSound(final String soundName) {
-        if (soundName == null) {
-            return null;
-        }
-
-        final String trimmed = soundName.trim();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-
-        final String sanitized = sanitizeSoundInput(trimmed);
-        final String normalized = normalizeSoundName(sanitized);
-        boolean fallbackDueToUnknown = false;
-
-        final Sound directMatch = lookupSound(sanitized.toLowerCase(Locale.ROOT));
-        if (directMatch != null) {
-            return directMatch;
-        }
-
-        if (sanitized.indexOf(':') >= 0) {
-            final int separator = sanitized.indexOf(':');
-            final String namespace = sanitized.substring(0, separator);
-            final String value = sanitized.substring(separator + 1).replace('_', '.');
-            final Sound namespacedDotted = lookupSound(namespace + ":" + value);
-            if (namespacedDotted != null) {
-                return namespacedDotted;
-            }
-        }
-
-        final Sound normalizedMatch = lookupSound(normalized.toLowerCase(Locale.ROOT));
-        if (normalizedMatch != null) {
-            return normalizedMatch;
-        }
-
-        if (!normalized.contains(":")) {
-            final String dotted = normalized.toLowerCase(Locale.ROOT).replace('_', '.');
-            final Sound dottedMatch = lookupSound(dotted);
-            if (dottedMatch != null) {
-                return dottedMatch;
-            }
-
-            try {
-                final String enumKey = normalized.replace('.', '_');
-                return Sound.valueOf(enumKey);
-            } catch (final IllegalArgumentException exception) {
-                LogUtils.warning(plugin, "Unknown sound in NPC action: '" + soundName + "'. "
-                        + exception.getMessage());
-                fallbackDueToUnknown = true;
-            } catch (final Exception exception) {
-                LogUtils.severe(plugin, "Unexpected error while resolving sound '" + soundName + "'.",
-                        exception);
-                fallbackDueToUnknown = true;
-            }
-        }
-
-        if (!fallbackDueToUnknown) {
-            LogUtils.warning(plugin, "Unknown sound in NPC action: '" + soundName
-                    + "'. Using default fallback sound.");
-        }
-        return getDefaultSound();
+        LogUtils.info(plugin, "Sound resolution skipped (temporarily disabled): "
+                + (soundName == null || soundName.isBlank() ? "<empty>" : soundName.trim()));
+        return null;
     }
 
-    private Sound lookupSound(final String key) {
-        try {
-            final NamespacedKey directKey = NamespacedKey.fromString(key);
-            if (directKey != null) {
-                final Sound sound = Registry.SOUNDS.get(directKey);
-                if (sound != null) {
-                    return sound;
-                }
-            }
-            if (key.indexOf(':') >= 0) {
-                return null;
-            }
-            return Registry.SOUNDS.get(NamespacedKey.minecraft(key));
-        } catch (final IllegalArgumentException ignored) {
-            return null;
-        }
-    }
-
-    private String sanitizeSoundInput(final String soundName) {
-        final String replaced = soundName.replace(' ', '_').replace('-', '_');
-        final int separatorIndex = replaced.indexOf(':');
-        if (separatorIndex >= 0) {
-            final String namespace = replaced.substring(0, separatorIndex).toLowerCase(Locale.ROOT);
-            final String value = replaced.substring(separatorIndex + 1).toLowerCase(Locale.ROOT);
-            return namespace + ":" + value;
-        }
-        return replaced;
-    }
-
-    private String normalizeSoundName(final String soundName) {
-        final String base = soundName.contains(":")
-                ? soundName.substring(soundName.indexOf(':') + 1)
-                : soundName;
-        final String upper = base.toUpperCase(Locale.ROOT);
-        return switch (upper) {
-            case "CLICK", "BUTTON_CLICK" -> "UI_BUTTON_CLICK";
-            case "PLING", "NOTE_PLING" -> "BLOCK_NOTE_BLOCK_PLING";
-            case "POP" -> "ENTITY_ITEM_PICKUP";
-            case "VILLAGER_YES" -> "ENTITY_VILLAGER_YES";
-            case "VILLAGER_NO" -> "ENTITY_VILLAGER_NO";
-            case "ANVIL_USE" -> "BLOCK_ANVIL_USE";
-            case "CHEST_OPEN" -> "BLOCK_CHEST_OPEN";
-            case "CHEST_CLOSE" -> "BLOCK_CHEST_CLOSE";
-            case "DOOR_OPEN" -> "BLOCK_WOODEN_DOOR_OPEN";
-            case "DOOR_CLOSE" -> "BLOCK_WOODEN_DOOR_CLOSE";
-            default -> upper;
-        };
-    }
-
-    private Sound getDefaultSound() {
-        try {
-            return Sound.UI_BUTTON_CLICK;
-        } catch (final Exception exception) {
-            LogUtils.severe(plugin, "Failed to resolve default fallback sound.", exception);
-            return null;
-        }
-    }
 }
