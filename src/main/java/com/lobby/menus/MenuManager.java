@@ -55,11 +55,12 @@ public class MenuManager implements Listener {
 
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         final UUID uuid = player.getUniqueId();
+        final ConfigurationSection finalMenuSection = menuSection;
         if (shouldPreloadAsync(menuSection)) {
             openMenus.put(uuid, menu);
             player.closeInventory();
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                preloadMenuData(uuid, menuSection);
+                preloadMenuData(uuid, finalMenuSection);
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     final Player target = Bukkit.getPlayer(uuid);
                     if (target == null || !target.isOnline()) {
