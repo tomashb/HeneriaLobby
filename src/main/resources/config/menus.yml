@@ -1639,7 +1639,7 @@ menus:
         actions:
           - "[TOGGLE_FRIEND_MESSAGES]"
       back:
-        slot: 45
+        slot: 48
         material: "PLAYER_HEAD"
         head: "hdb:9334"
         name: "&c&lRetour"
@@ -1656,15 +1656,6 @@ menus:
           - "&7Accédez à la liste complète de vos amis"
         actions:
           - "[MENU] friends_all_menu"
-      close:
-        slot: 53
-        material: PLAYER_HEAD
-        head: "hdb:60776"
-        name: "&cFermer"
-        lore:
-          - "&7Fermer le menu"
-        actions:
-          - "[CLOSE]"
 
   friends_favorites_menu:
     title: "&8» &6Mes Favoris"
@@ -1713,7 +1704,7 @@ menus:
         actions:
           - "[TOGGLE_FRIEND_NOTIFICATIONS]"
       back:
-        slot: 45
+        slot: 48
         material: "PLAYER_HEAD"
         head: "hdb:9334"
         name: "&a&lRetour"
@@ -1730,14 +1721,6 @@ menus:
           - "&7Configurer les préférences d'amis"
         actions:
           - "[MENU] friend_settings_menu"
-      close:
-        slot: 53
-        material: BARRIER
-        name: "&cFermer"
-        lore:
-          - "&7Fermer le menu"
-        actions:
-          - "[CLOSE]"
 
   group_manage_menu:
     title: "&8» &eMon Groupe"

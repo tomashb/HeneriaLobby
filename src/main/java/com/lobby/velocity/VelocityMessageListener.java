@@ -28,6 +28,12 @@ public class VelocityMessageListener implements PluginMessageListener {
             velocityManager.updateServerPlayerCount(serverName, count);
             return;
         }
+        if ("PlayerList".equalsIgnoreCase(subChannel)) {
+            final String serverName = input.readUTF();
+            final String players = input.readUTF();
+            velocityManager.updateServerPlayerList(serverName, players);
+            return;
+        }
         if ("GetServers".equalsIgnoreCase(subChannel)) {
             final String[] servers = input.readUTF().split(", ?");
             velocityManager.updateAvailableServers(Arrays.asList(servers));

@@ -2,6 +2,7 @@ menu:
   id: "clan_transfer_confirm"
   title: "&8» &6Transférer le Leadership"
   size: 27
+  design_template: "social"
   items:
     confirm:
       slot: 11

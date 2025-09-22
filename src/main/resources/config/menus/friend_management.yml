@@ -2,6 +2,7 @@ menu:
   id: "friend_management"
   title: "&8» &aGestion des Amis"
   size: 45
+  design_template: "social"
 
   items:
     friend_remove:

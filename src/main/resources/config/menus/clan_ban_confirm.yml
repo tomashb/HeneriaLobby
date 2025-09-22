@@ -2,6 +2,7 @@ menu:
   id: "clan_ban_confirm"
   title: "&8» &8Bannir un Membre"
   size: 27
+  design_template: "social"
   items:
     confirm:
       slot: 11

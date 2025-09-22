@@ -76,7 +76,7 @@ public class ConfiguredMenu implements Menu {
             }
         }
 
-
+        applyDesignTemplate(player);
 
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
