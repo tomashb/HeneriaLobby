@@ -118,7 +118,7 @@ public class ConfiguredMenu implements Menu {
         cancelDeferredHeadTask();
         deferredHeadUpdates.clear();
         final String rawTitle = menuSection.getString("title", "Menu");
-        final String resolvedTitle = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, rawTitle, player));
+        final String resolvedTitle = resolveWithAsyncPlaceholders(rawTitle, player);
         final String title = MessageUtils.colorize(resolvedTitle != null ? resolvedTitle : "Menu");
         final int size = normalizeSize(menuSection.getInt("size", 27));
         inventory = Bukkit.createInventory(null, size, title);
@@ -222,6 +222,27 @@ public class ConfiguredMenu implements Menu {
             processed.add(applyAsyncPlaceholders(line));
         }
         return processed;
+    }
+
+    private String resolveWithAsyncPlaceholders(final String text, final Player player) {
+        if (text == null) {
+            return null;
+        }
+        final String preProcessed = applyAsyncPlaceholders(text);
+        final String internal = PlaceholderUtils.applyPlaceholders(plugin, preProcessed, player);
+        return applyAsyncPlaceholders(internal);
+    }
+
+    private List<String> resolveWithAsyncPlaceholders(final List<String> lines, final Player player) {
+        if (lines == null || lines.isEmpty()) {
+            return List.of();
+        }
+        final List<String> preProcessed = applyAsyncPlaceholders(lines);
+        if (preProcessed.isEmpty()) {
+            return List.of();
+        }
+        final List<String> internal = PlaceholderUtils.applyPlaceholders(plugin, preProcessed, player);
+        return applyAsyncPlaceholders(internal);
     }
 
     private void applyDesignTemplate(final Player player, final ItemStack[] contents) {
@@ -544,23 +565,20 @@ public class ConfiguredMenu implements Menu {
         }
 
         if (itemSection.isString("name")) {
-            final String processedName = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin,
-                    itemSection.getString("name"), player));
+            final String processedName = resolveWithAsyncPlaceholders(itemSection.getString("name"), player);
             if (processedName != null) {
                 meta.setDisplayName(MessageUtils.colorize(processedName));
             }
         }
 
         if (itemSection.isList("lore")) {
-            final List<String> lore = applyAsyncPlaceholders(
-                    PlaceholderUtils.applyPlaceholders(plugin, itemSection.getStringList("lore"), player))
+            final List<String> lore = resolveWithAsyncPlaceholders(itemSection.getStringList("lore"), player)
                     .stream()
                     .map(MessageUtils::colorize)
                     .toList();
             meta.setLore(lore);
         } else if (itemSection.isString("lore")) {
-            final String processedLore = applyAsyncPlaceholders(
-                    PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player));
+            final String processedLore = resolveWithAsyncPlaceholders(itemSection.getString("lore"), player);
             if (processedLore != null && !processedLore.isBlank()) {
                 final List<String> lore = Arrays.stream(processedLore.split("\\n"))
                         .map(MessageUtils::colorize)
@@ -601,7 +619,7 @@ public class ConfiguredMenu implements Menu {
         }
         final String processed = resolvedHead != null
                 ? resolvedHead
-                : applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, rawHead, player));
+                : resolveWithAsyncPlaceholders(rawHead, player);
         if (processed == null || processed.isBlank()) {
             return;
         }
@@ -698,7 +716,7 @@ public class ConfiguredMenu implements Menu {
         if (head == null || head.isBlank()) {
             return null;
         }
-        final String processed = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, head, player));
+        final String processed = resolveWithAsyncPlaceholders(head, player);
         if (processed == null || processed.isBlank()) {
             return null;
         }
@@ -795,7 +813,7 @@ public class ConfiguredMenu implements Menu {
         if (meta != null) {
             final Object nameObject = definition.get("name");
             final String rawName = nameObject != null
-                    ? applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, nameObject.toString(), player))
+                    ? resolveWithAsyncPlaceholders(nameObject.toString(), player)
                     : " ";
             final String coloredName = rawName != null ? MessageUtils.colorize(rawName) : " ";
             meta.setDisplayName((coloredName == null || coloredName.isBlank()) ? " " : coloredName);

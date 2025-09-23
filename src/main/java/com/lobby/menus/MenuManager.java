@@ -509,9 +509,15 @@ public class MenuManager implements Listener {
 
             preloadMenuData(uuid, placeholders);
 
-            final Map<String, String> asyncPlaceholderValues = placeholderApiEnabled
-                    ? preloadPlaceholderApi(player, placeholders)
-                    : Map.of();
+            final Map<String, String> asyncPlaceholderValues;
+            if (placeholderApiEnabled) {
+                if (debugAsyncMenu && placeholders != null && !placeholders.isEmpty()) {
+                    plugin.getLogger().info("[DEBUG HDB] Pré-chargement PAPI...");
+                }
+                asyncPlaceholderValues = preloadPlaceholderApi(player, placeholders);
+            } else {
+                asyncPlaceholderValues = Map.of();
+            }
 
             Menu.AsyncPreparation asyncPreparation = Menu.AsyncPreparation.EMPTY;
             try {
