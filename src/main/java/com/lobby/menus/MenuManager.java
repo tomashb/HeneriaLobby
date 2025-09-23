@@ -1,7 +1,10 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.npcs.ActionProcessor;
+import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
+import com.lobby.utils.PlaceholderUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -17,7 +20,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -60,8 +65,6 @@ public class MenuManager implements Listener {
         final Set<String> placeholders = Set.copyOf(placeholderValues);
         if (shouldPreloadAsync(menuSection, placeholders)) {
             openMenus.put(uuid, menu);
-            player.closeInventory();
-            player.sendMessage("§7Chargement...");
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 preloadMenuData(uuid, placeholders);
                 Bukkit.getScheduler().runTask(plugin, () -> {
@@ -130,7 +133,7 @@ public class MenuManager implements Listener {
         plugin.getLogger().info("[DEBUG 1] Clic détecté dans le menu: " + menuTitle);
 
         final int slot = event.getSlot();
-        final java.util.List<String> actions = menu.getActionsForSlot(event.getRawSlot());
+        final List<String> actions = menu.getActionsForSlot(event.getRawSlot());
         final String actionDescription;
         if (actions.isEmpty()) {
             actionDescription = "aucune action";
@@ -141,18 +144,45 @@ public class MenuManager implements Listener {
         }
         plugin.getLogger().info("[DEBUG 2] Joueur: " + player.getName() + " | Slot: " + slot + " | Action: '" + actionDescription + "'");
 
-        if (!actions.isEmpty()) {
-            final String primaryAction = actions.get(0);
-            if (primaryAction != null) {
-                final String trimmedAction = primaryAction.trim();
-                if (trimmedAction.startsWith("[MENU]")) {
-                    final String[] parts = trimmedAction.split("\\s+", 2);
-                    final String subMenuId = parts.length > 1 ? parts[1] : "";
-                    plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + subMenuId);
-                }
-            }
+        if (actions.isEmpty()) {
+            return;
         }
-        menu.handleClick(event);
+
+        final var npcManager = plugin.getNpcManager();
+        final ActionProcessor actionProcessor = npcManager != null ? npcManager.getActionProcessor() : null;
+
+        final List<String> nonMenuActions = new ArrayList<>();
+        for (String rawAction : actions) {
+            if (rawAction == null) {
+                continue;
+            }
+            final String trimmedAction = rawAction.trim();
+            if (trimmedAction.isEmpty()) {
+                continue;
+            }
+            if (trimmedAction.regionMatches(true, 0, "[MENU]", 0, 6)) {
+                final String targetArgument = trimmedAction.substring(6).trim();
+                final String resolvedTarget = PlaceholderUtils.applyPlaceholders(plugin, targetArgument, player);
+                final String menuId = resolvedTarget != null ? resolvedTarget.trim() : "";
+                if (menuId.isEmpty()) {
+                    LogUtils.warning(plugin, "Menu action triggered without a valid target for player '" + player.getName() + "'.");
+                    continue;
+                }
+                plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + menuId);
+                Bukkit.getScheduler().runTask(plugin, () -> openMenu(player, menuId));
+                continue;
+            }
+            nonMenuActions.add(trimmedAction);
+        }
+
+        if (nonMenuActions.isEmpty()) {
+            return;
+        }
+        if (actionProcessor == null) {
+            LogUtils.warning(plugin, "Attempted to execute menu actions but no ActionProcessor is available.");
+            return;
+        }
+        actionProcessor.processActions(nonMenuActions, player, null);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
