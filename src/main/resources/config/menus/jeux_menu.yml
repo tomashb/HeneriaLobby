@@ -3,89 +3,15 @@ menu:
   title: '&8» &aMenu des Jeux'
   size: 54
   items:
-    # --- Décorations (Vitres Oranges) ---
     decor_slots: '0,1,2,6,7,8,9,17,45,53'
-    decor_item:
-      material: 'ORANGE_STAINED_GLASS_PANE'
-      name: '&7'
-      action: '[NONE]'
-
-    # --- Items de Jeu ---
+    decor_item: { material: 'ORANGE_STAINED_GLASS_PANE', name: '&7', action: '[NONE]' }
     slot_20:
       material: 'hdb:67957'
-      name: '&c&lBedWars &8- &ePopulaire'
-      lore:
-        - '&7Le mode de jeu le plus apprécié !'
-        - '&7Défendez votre lit et détruisez'
-        - '&7celui de vos adversaires.'
-        - '&r'
-        - '&8▸ &7Joueurs: &a%heneria_server_online_bedwars%'
-        - '&8▸ &7Parties en cours: &e%heneria_bedwars_games_active%'
-        - '&r'
-        - '&a▶ Cliquez pour jouer !'
+      name: '&c&lBedWars'
+      lore: ['&7Le mode de jeu le plus apprécié !', '&r', '&8▸ &7Joueurs: &a%lobby_online_bedwars%']
       action: '[SERVER_SEND] bedwars'
-
-    slot_22:
-      material: 'hdb:38878'
-      name: '&b&lNexus &8- &dNouveauté'
-      lore:
-        - '&7Le tout nouveau mode de jeu !'
-        - '&7Conquérez les nexus ennemis.'
-        - '&r'
-        - '&8▸ &7Joueurs: &a%heneria_server_online_nexus%'
-        - '&8▸ &7Statut: &d✨ BETA'
-        - '&r'
-        - '&a▶ Cliquez pour découvrir !'
-      action: '[SERVER_SEND] nexus'
-
-    slot_24:
-      material: 'hdb:23022'
-      name: '&2&lZombie &8- &cSurvie'
-      lore:
-        - '&7Survivez aux hordes de zombies !'
-        - '&7Travaillez en équipe.'
-        - '&r'
-        - '&8▸ &7Joueurs: &a%heneria_server_online_zombie%'
-        - '&r'
-        - '&a▶ Cliquez pour survivre !'
-      action: '[SERVER_SEND] zombie'
-
-    slot_26:
-      material: 'hdb:60776'
-      name: '&6&lJeux Inédits &8- &5Exclusif'
-      lore:
-        - '&7Des modes de jeu uniques et'
-        - '&7créatifs !'
-        - '&r'
-        - '&8▸ &7Joueurs: &a%heneria_server_online_custom%'
-        - '&r'
-        - '&a▶ Cliquez pour explorer !'
-      action: '[SERVER_SEND] custom'
-
-    # --- Items de Navigation ---
-    slot_46:
-      material: 'hdb:35472'
-      name: '&e&lBoutique'
-      lore:
-        - '&7Achetez des grades et cosmétiques.'
-        - '&r'
-        - '&a▶ Cliquez pour acheter !'
-      action: '[MENU] shop_menu'
-
     slot_49:
       material: 'PLAYER_HEAD'
-      head: '%player_name%'
       name: '&6&lMon Profil'
-      lore:
-        - '&7Consultez vos statistiques,'
-        - '&7gérez vos paramètres et plus !'
-        - '&r'
-        - '&a▶ Cliquez pour voir !'
+      lore: ['&7Consultez vos statistiques.', '&r', '&a▶ Cliquez pour voir !']
       action: '[MENU] profil_menu'
-
-    slot_52:
-      material: 'hdb:9334'
-      name: '&c&lRetour'
-      lore:
-        - '&7Fermer ce menu.'
-      action: '[CLOSE_MENU]'

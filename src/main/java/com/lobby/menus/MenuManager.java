@@ -2,28 +2,28 @@ package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.heads.HeadDatabaseManager;
-import com.lobby.npcs.ActionProcessor;
-import com.lobby.utils.LogUtils;
+import com.lobby.servers.ServerPlaceholderCache;
+import com.lobby.stats.GameStats;
+import com.lobby.stats.GlobalStats;
+import com.lobby.stats.StatsManager;
 import com.lobby.utils.MessageUtils;
-import com.lobby.utils.PlaceholderUtils;
-import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
-import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.io.InputStream;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,743 +34,627 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MenuManager implements Listener {
+public class MenuManager {
+
+    private static final Set<String> SIMPLE_MENUS = Set.of("jeux_menu", "profil_menu");
+    private static final Set<String> HEAVY_MENUS = Set.of("stats_detailed_menu");
+    private static final DecimalFormat RATIO_FORMAT = new DecimalFormat("0.00");
 
     private final LobbyPlugin plugin;
-    private final Map<UUID, Menu> openMenus = new ConcurrentHashMap<>();
-    private final Map<UUID, Long> profileMenuCooldowns = new ConcurrentHashMap<>();
-    private final Set<UUID> notifiedMenuFailures = ConcurrentHashMap.newKeySet();
-    private final Map<String, MenuDefinition> menuDefinitions = new ConcurrentHashMap<>();
-    private final MenuDesignProvider menuDesignProvider;
+    private final LegacyMenuManager legacyMenuManager;
+    private final Map<String, CachedMenu> managedMenus = new ConcurrentHashMap<>();
+    private final Map<String, ItemStack> headCache = new ConcurrentHashMap<>();
+    private final Map<String, String> globalPlaceholderCache = new ConcurrentHashMap<>();
+    private final Map<UUID, SimpleMenuSession> openMenus = new ConcurrentHashMap<>();
+    private final AtomicBoolean headPreloadScheduled = new AtomicBoolean(false);
+
+    private BukkitTask placeholderRefreshTask;
 
     public MenuManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
-        this.menuDesignProvider = new MenuDesignProvider(plugin);
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        this.legacyMenuManager = new LegacyMenuManager(plugin);
+        this.globalPlaceholderCache.put("%lobby_online_bedwars%", "0");
         reloadMenus();
+        preloadAllHeadsAsync();
+        startGlobalPlaceholderTask();
     }
 
-    public boolean openMenu(final Player player, final String menuId) {
-        if (player == null || menuId == null || menuId.isBlank()) {
+    public LegacyMenuManager getLegacyMenuManager() {
+        return legacyMenuManager;
+    }
+
+    public boolean openMenu(final Player player, final String rawMenuId) {
+        if (player == null || rawMenuId == null || rawMenuId.isBlank()) {
             return false;
         }
-        final String normalizedId = menuId.toLowerCase(java.util.Locale.ROOT);
-        final boolean profileMenuRequested = isProfileMenu(normalizedId);
-        long profileCooldownMillis = -1L;
-
-        MenuDefinition definition = menuDefinitions.get(normalizedId);
-        if (definition == null) {
-            reloadMenus();
-            definition = menuDefinitions.get(normalizedId);
-            if (definition == null) {
-                notifyMenuFailure(player, "menus.not_found", Map.of("menu", menuId));
-                return false;
-            }
+        final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
+        openMenus.remove(player.getUniqueId());
+        if (SIMPLE_MENUS.contains(menuId)) {
+            return buildAndOpenSimpleMenu(player, menuId);
         }
-
-        if (profileMenuRequested) {
-            if (!plugin.getConfig().getBoolean("menus.profile.enabled", true)) {
-                notifyMenuFailure(player, "menus.profile_disabled");
-                return false;
-            }
-            if (isServerOverloadedForProfile(player)) {
-                return false;
-            }
-            profileCooldownMillis = Math.max(0L, plugin.getConfig().getLong("menus.profile.cooldown_ms", 5000L));
-            if (profileCooldownMillis > 0 && isProfileMenuOnCooldown(player, profileCooldownMillis)) {
-                return false;
-            }
+        if (HEAVY_MENUS.contains(menuId)) {
+            return buildAndOpenHeavyMenu(player, menuId);
         }
-
-        final ConfigurationSection menuSection = definition.section();
-        final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
-        final UUID uuid = player.getUniqueId();
-        final Set<String> placeholders = definition.placeholders();
-        final boolean debugAsyncMenu = isAsyncDebugMenu(normalizedId);
-        final boolean placeholderApiEnabled = isPlaceholderApiEnabled();
-        if (profileMenuRequested && profileCooldownMillis > 0) {
-            profileMenuCooldowns.put(uuid, System.currentTimeMillis());
-        }
-        openMenuAsync(player, menu, placeholders, normalizedId, debugAsyncMenu, placeholderApiEnabled);
-        return true;
+        return legacyMenuManager.openMenu(player, rawMenuId);
     }
 
     public Optional<Menu> getOpenMenu(final UUID uuid) {
         if (uuid == null) {
             return Optional.empty();
         }
-        return Optional.ofNullable(openMenus.get(uuid));
+        final SimpleMenuSession session = openMenus.get(uuid);
+        if (session != null) {
+            return Optional.of(session);
+        }
+        return legacyMenuManager.getOpenMenu(uuid);
     }
 
     public void closeAll() {
-        final var uuids = openMenus.keySet().stream().toList();
-        uuids.forEach(uuid -> {
-            final Player player = Bukkit.getPlayer(uuid);
+        for (SimpleMenuSession session : new ArrayList<>(openMenus.values())) {
+            final Player player = Bukkit.getPlayer(session.owner());
             if (player != null && player.isOnline()) {
                 player.closeInventory();
             }
-        });
+        }
         openMenus.clear();
-        profileMenuCooldowns.clear();
-        notifiedMenuFailures.clear();
+        legacyMenuManager.closeAll();
     }
 
     public void reloadMenus() {
-        menuDefinitions.clear();
-        loadMenusFromMainConfig();
-        loadMenusFromDirectory();
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryClick(final InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        final Menu menu = openMenus.get(player.getUniqueId());
-        if (menu == null) {
-            return;
-        }
-        event.setCancelled(true);
-        final Inventory topInventory = event.getView().getTopInventory();
-        if (topInventory == null || !topInventory.equals(menu.getInventory())) {
-            return;
-        }
-        final String menuTitle = event.getView().getTitle();
-        plugin.getLogger().info("[DEBUG 1] Clic détecté dans le menu: " + menuTitle);
-
-        final int slot = event.getSlot();
-        final List<String> actions = menu.getActionsForSlot(event.getRawSlot());
-        final String actionDescription;
-        if (actions.isEmpty()) {
-            actionDescription = "aucune action";
-        } else if (actions.size() == 1) {
-            actionDescription = actions.get(0);
-        } else {
-            actionDescription = String.join(", ", actions);
-        }
-        plugin.getLogger().info("[DEBUG 2] Joueur: " + player.getName() + " | Slot: " + slot + " | Action: '" + actionDescription + "'");
-
-        if (actions.isEmpty()) {
-            return;
-        }
-
-        final var npcManager = plugin.getNpcManager();
-        final ActionProcessor actionProcessor = npcManager != null ? npcManager.getActionProcessor() : null;
-
-        final List<String> nonMenuActions = new ArrayList<>();
-        for (String rawAction : actions) {
-            if (rawAction == null) {
-                continue;
-            }
-            final String trimmedAction = rawAction.trim();
-            if (trimmedAction.isEmpty()) {
-                continue;
-            }
-            if (trimmedAction.regionMatches(true, 0, "[MENU]", 0, 6)) {
-                final String targetArgument = trimmedAction.substring(6).trim();
-                final String resolvedTarget = PlaceholderUtils.applyPlaceholders(plugin, targetArgument, player);
-                final String menuId = resolvedTarget != null ? resolvedTarget.trim() : "";
-                if (menuId.isEmpty()) {
-                    LogUtils.warning(plugin, "Menu action triggered without a valid target for player '" + player.getName() + "'.");
-                    continue;
-                }
-        plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + menuId);
-        if (isAsyncDebugMenu(menuId)) {
-            plugin.getLogger().info("[DEBUG A] Clic sur " + menuId + " reçu. Démarrage de la TÂCHE ASYNCHRONE.");
-        }
-        Bukkit.getScheduler().runTask(plugin, () -> openMenu(player, menuId));
-        continue;
-            }
-            nonMenuActions.add(trimmedAction);
-        }
-
-        if (nonMenuActions.isEmpty()) {
-            return;
-        }
-        if (actionProcessor == null) {
-            LogUtils.warning(plugin, "Attempted to execute menu actions but no ActionProcessor is available.");
-            return;
-        }
-        actionProcessor.processActions(nonMenuActions, player, null);
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryDrag(final InventoryDragEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        if (openMenus.containsKey(player.getUniqueId())) {
-            event.setCancelled(true);
-        }
-    }
-
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) {
-            return;
-        }
-        final Menu menu = openMenus.get(player.getUniqueId());
-        if (menu == null) {
-            return;
-        }
-        final Inventory inventory = menu.getInventory();
-        if (inventory == null || inventory.equals(event.getInventory())) {
-            openMenus.remove(player.getUniqueId());
-        }
-    }
-
-    @EventHandler
-    public void onPlayerQuit(final PlayerQuitEvent event) {
-        final UUID uuid = event.getPlayer().getUniqueId();
-        openMenus.remove(uuid);
-        profileMenuCooldowns.remove(uuid);
-        notifiedMenuFailures.remove(uuid);
+        loadManagedMenus();
+        legacyMenuManager.reloadMenus();
+        preloadAllHeadsAsync();
     }
 
     public boolean consumeFailureNotification(final UUID uuid) {
-        if (uuid == null) {
+        return legacyMenuManager.consumeFailureNotification(uuid);
+    }
+
+    public void shutdown() {
+        closeAll();
+        if (placeholderRefreshTask != null) {
+            placeholderRefreshTask.cancel();
+            placeholderRefreshTask = null;
+        }
+        headCache.clear();
+        globalPlaceholderCache.clear();
+    }
+
+    public Map<Integer, String> getActions(final UUID uuid) {
+        final SimpleMenuSession session = openMenus.get(uuid);
+        if (session == null) {
+            return Map.of();
+        }
+        return session.actions();
+    }
+
+    public boolean isManagedMenuTitle(final String title) {
+        if (title == null || title.isBlank()) {
             return false;
         }
-        return notifiedMenuFailures.remove(uuid);
-    }
-
-    private void loadMenusFromMainConfig() {
-        final FileConfiguration menusConfig = plugin.getConfigManager().getMenusConfig();
-        final ConfigurationSection menusSection = menusConfig.getConfigurationSection("menus");
-        if (menusSection == null) {
-            return;
-        }
-        for (String key : menusSection.getKeys(false)) {
-            final ConfigurationSection section = menusSection.getConfigurationSection(key);
-            if (section == null) {
-                continue;
-            }
-            storeMenuDefinition(key, section);
-        }
-    }
-
-    private void loadMenusFromDirectory() {
-        final File menusDirectory = ensureMenusDirectory();
-        final File[] files = menusDirectory.listFiles((dir, name) -> name.endsWith(".yml"));
-        if (files == null || files.length == 0) {
-            return;
-        }
-        for (File file : files) {
-            final YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-            ConfigurationSection menuSection = configuration.getConfigurationSection("menu");
-            if (menuSection == null) {
-                menuSection = configuration;
-            }
-            final String id = menuSection.getString("id", stripExtension(file.getName()));
-            if (id == null || id.isBlank()) {
-                continue;
-            }
-            storeMenuDefinition(id, menuSection);
-        }
-    }
-
-    private void storeMenuDefinition(final String id, final ConfigurationSection section) {
-        if (id == null || id.isBlank() || section == null) {
-            return;
-        }
-        final Set<String> extracted = extractPlaceholders(collectPlaceholderSources(section));
-        final Set<String> placeholders = extracted.isEmpty() ? Set.of() : Set.copyOf(extracted);
-        final boolean asyncPreload = shouldPreloadAsync(section, placeholders);
-        final String normalized = id.toLowerCase(java.util.Locale.ROOT);
-        menuDefinitions.put(normalized, new MenuDefinition(section, placeholders, asyncPreload));
-    }
-
-    private boolean shouldPreloadAsync(final ConfigurationSection menuSection, final Set<String> placeholders) {
-        if (menuSection != null && menuSection.getBoolean("async_preload", false)) {
-            return true;
-        }
-        if (placeholders == null || placeholders.isEmpty()) {
-            return false;
-        }
-        for (String placeholder : placeholders) {
-            if (requiresAsyncPreload(placeholder)) {
+        for (CachedMenu menu : managedMenus.values()) {
+            if (menu.title().equals(title)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean requiresAsyncPreload(final String placeholder) {
-        if (placeholder == null || placeholder.isBlank()) {
+    public boolean isMenuInventory(final UUID uuid, final Inventory inventory) {
+        if (uuid == null || inventory == null) {
             return false;
         }
-        final String normalized = placeholder.toLowerCase(Locale.ROOT);
-        return normalized.startsWith("%player_")
-                || normalized.startsWith("%stats_")
-                || normalized.startsWith("%setting_")
-                || normalized.startsWith("%lang_")
-                || normalized.startsWith("%friend")
-                || normalized.startsWith("%friends")
-                || normalized.startsWith("%group")
-                || normalized.startsWith("%clan");
+        final SimpleMenuSession session = openMenus.get(uuid);
+        return session != null && session.getInventory().equals(inventory);
     }
 
-    private void preloadMenuData(final UUID uuid, final Set<String> placeholders) {
-        if (uuid == null || placeholders == null || placeholders.isEmpty()) {
-            return;
-        }
-
-        preloadEconomy(uuid, placeholders);
-        preloadStats(uuid, placeholders);
-        preloadSettings(uuid, placeholders);
-        preloadSocial(uuid, placeholders);
-    }
-
-    private void preloadEconomy(final UUID uuid, final Set<String> placeholders) {
-        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%player_")
-                && (placeholder.contains("coins")
-                || placeholder.contains("tokens")
-                || placeholder.contains("playtime")
-                || placeholder.contains("first_join")
-                || placeholder.contains("last_join")))) {
-            return;
-        }
-        if (plugin.getEconomyManager() != null) {
-            plugin.getEconomyManager().getPlayerData(uuid);
+    public void clearSession(final UUID uuid) {
+        if (uuid != null) {
+            openMenus.remove(uuid);
         }
     }
 
-    private void preloadStats(final UUID uuid, final Set<String> placeholders) {
-        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%stats_"))) {
-            return;
+    private void loadManagedMenus() {
+        managedMenus.clear();
+        final File dataFolder = plugin.getDataFolder();
+        final File menusFolder = new File(dataFolder, "config/menus");
+        if (!menusFolder.exists()) {
+            menusFolder.mkdirs();
         }
-        final var statsManager = plugin.getStatsManager();
-        if (statsManager == null) {
-            return;
-        }
-        boolean globalRequested = false;
-        final Set<String> gameTypes = new HashSet<>();
-        for (String placeholder : placeholders) {
-            if (!placeholder.startsWith("%stats_")) {
-                continue;
-            }
-            final String trimmed = placeholder.substring(1, placeholder.length() - 1);
-            final String[] parts = trimmed.split("_");
-            if (parts.length < 3) {
-                continue;
-            }
-            final String scope = parts[1];
-            if ("global".equalsIgnoreCase(scope)) {
-                globalRequested = true;
-            } else {
-                gameTypes.add(scope.toUpperCase(java.util.Locale.ROOT));
-            }
-        }
-        if (globalRequested) {
-            statsManager.getGlobalStats(uuid);
-        }
-        for (String gameType : gameTypes) {
-            statsManager.getPlayerStats(uuid, gameType);
-        }
-    }
-
-    private void preloadSettings(final UUID uuid, final Set<String> placeholders) {
-        if (placeholders.stream().noneMatch(placeholder -> placeholder.startsWith("%setting_")
-                || placeholder.startsWith("%lang_"))) {
-            return;
-        }
-        if (plugin.getPlayerSettingsManager() != null) {
-            plugin.getPlayerSettingsManager().getPlayerSettings(uuid);
-        }
-    }
-
-    private void preloadSocial(final UUID uuid, final Set<String> placeholders) {
-        boolean requiresFriends = false;
-        boolean requiresGroups = false;
-        boolean requiresClans = false;
-        for (String placeholder : placeholders) {
-            if (placeholder == null) {
-                continue;
-            }
-            final String normalized = placeholder.toLowerCase(Locale.ROOT);
-            if (!requiresFriends && (normalized.startsWith("%friend") || normalized.startsWith("%friends"))) {
-                requiresFriends = true;
-            }
-            if (!requiresGroups && normalized.startsWith("%group")) {
-                requiresGroups = true;
-            }
-            if (!requiresClans && normalized.startsWith("%clan")) {
-                requiresClans = true;
-            }
-        }
-
-        if (requiresFriends) {
-            final var friendManager = plugin.getFriendManager();
-            if (friendManager != null) {
-                friendManager.getFriendsList(uuid);
-                friendManager.getPendingRequests(uuid);
-                friendManager.countSentRequests(uuid);
-                friendManager.getFriendSettings(uuid);
-            }
-        }
-
-        if (requiresGroups) {
-            final var groupManager = plugin.getGroupManager();
-            if (groupManager != null) {
-                groupManager.getGroupSettings(uuid);
-                groupManager.getPlayerGroup(uuid);
-                groupManager.countPendingInvitations(uuid);
-                groupManager.countSentInvitations(uuid);
-                groupManager.countCachedOpenGroups();
-            }
-        }
-
-        if (requiresClans) {
-            final var clanManager = plugin.getClanManager();
-            if (clanManager != null) {
-                clanManager.getPlayerClan(uuid);
-                clanManager.countPendingInvitations(uuid);
-                clanManager.countCachedOpenClans();
-            }
-        }
-    }
-
-    private Map<String, String> preloadPlaceholderApi(final Player player, final Set<String> placeholders) {
-        if (player == null || placeholders == null || placeholders.isEmpty()) {
-            return Map.of();
-        }
-        final Set<String> papiPlaceholders = extractPlaceholderApiPlaceholders(placeholders);
-        if (papiPlaceholders.isEmpty()) {
-            return Map.of();
-        }
-        final Map<String, String> resolved = new HashMap<>();
-        for (String placeholder : papiPlaceholders) {
-            if (placeholder == null || placeholder.isBlank()) {
-                continue;
-            }
+        for (String menuId : union(SIMPLE_MENUS, HEAVY_MENUS)) {
+            final File file = new File(menusFolder, menuId + ".yml");
+            final YamlConfiguration configuration = new YamlConfiguration();
             try {
-                final String value = PlaceholderAPI.setPlaceholders(player, placeholder);
-                if (value != null) {
-                    resolved.put(placeholder, value);
+                if (file.exists()) {
+                    configuration.load(file);
+                } else {
+                    try (InputStream inputStream = plugin.getResource("config/menus/" + menuId + ".yml")) {
+                        if (inputStream == null) {
+                            continue;
+                        }
+                        configuration.load(new java.io.InputStreamReader(inputStream));
+                    }
                 }
-            } catch (final Throwable throwable) {
-                LogUtils.warning(plugin, "Failed to resolve PlaceholderAPI value for '" + placeholder + "': "
-                        + throwable.getMessage());
-            }
-        }
-        return resolved.isEmpty() ? Map.of() : Map.copyOf(resolved);
-    }
-
-    private Set<String> extractPlaceholderApiPlaceholders(final Set<String> placeholders) {
-        if (placeholders == null || placeholders.isEmpty()) {
-            return Set.of();
-        }
-        final Set<String> papiPlaceholders = new HashSet<>();
-        for (String placeholder : placeholders) {
-            if (placeholder == null) {
+            } catch (final Exception exception) {
+                plugin.getLogger().warning("Impossible de charger le menu " + menuId + ": " + exception.getMessage());
                 continue;
             }
-            if (isInternalPlaceholder(placeholder)) {
+            final ConfigurationSection section = configuration.getConfigurationSection("menu");
+            if (section == null) {
                 continue;
             }
-            papiPlaceholders.add(placeholder);
+            final CachedMenu cachedMenu = parseMenu(section);
+            if (cachedMenu != null) {
+                managedMenus.put(menuId, cachedMenu);
+            }
         }
-        return papiPlaceholders;
     }
 
-    private boolean isInternalPlaceholder(final String placeholder) {
-        if (placeholder == null || placeholder.isBlank()) {
-            return true;
+    private CachedMenu parseMenu(final ConfigurationSection section) {
+        final String id = section.getString("id");
+        final String rawTitle = section.getString("title", "Menu");
+        final String title = MessageUtils.colorize(rawTitle);
+        final int size = Math.max(9, section.getInt("size", 27));
+        final ConfigurationSection itemsSection = section.getConfigurationSection("items");
+        final Map<Integer, MenuItemDefinition> items = new HashMap<>();
+        final Map<Integer, String> actions = new HashMap<>();
+        final List<Integer> decorSlots = new ArrayList<>();
+        MenuItemDefinition decorItem = null;
+
+        if (itemsSection != null) {
+            final Object decorSlotObject = itemsSection.get("decor_slots");
+            decorSlots.addAll(parseSlots(decorSlotObject));
+            final ConfigurationSection decorSection = itemsSection.getConfigurationSection("decor_item");
+            if (decorSection != null) {
+                decorItem = parseItemDefinition(decorSection, decorSlots.stream().findFirst().orElse(-1));
+            }
+
+            for (String key : itemsSection.getKeys(false)) {
+                if (key == null || key.equalsIgnoreCase("decor_slots") || key.equalsIgnoreCase("decor_item")) {
+                    continue;
+                }
+                final ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
+                if (itemSection == null) {
+                    continue;
+                }
+                final int slot = resolveSlot(key, itemSection.getInt("slot", -1));
+                if (slot < 0) {
+                    continue;
+                }
+                final MenuItemDefinition definition = parseItemDefinition(itemSection, slot);
+                if (definition == null) {
+                    continue;
+                }
+                items.put(slot, definition);
+                final String action = resolvePrimaryAction(itemSection.getString("action"), itemSection.getStringList("actions"));
+                if (action != null && !action.equalsIgnoreCase("[NONE]")) {
+                    actions.put(slot, action);
+                }
+            }
         }
-        final String normalized = placeholder.toLowerCase(Locale.ROOT);
-        return normalized.startsWith("%player_")
-                || normalized.startsWith("%stats_")
-                || normalized.startsWith("%setting_")
-                || normalized.startsWith("%lang_")
-                || normalized.startsWith("%friend")
-                || normalized.startsWith("%group")
-                || normalized.startsWith("%clan")
-                || normalized.startsWith("%daily_reward_")
-                || normalized.startsWith("%server_");
+        return new CachedMenu(id, title, size, items, actions, decorSlots, decorItem);
     }
 
-    private void openMenuAsync(final Player player,
-                               final Menu menu,
-                               final Set<String> placeholders,
-                               final String normalizedId,
-                               final boolean debugAsyncMenu,
-                               final boolean placeholderApiEnabled) {
+    private MenuItemDefinition parseItemDefinition(final ConfigurationSection section, final int slot) {
+        final String material = section.getString("material", "STONE");
+        final String head = section.getString("head");
+        final String name = section.getString("name");
+        final List<String> lore = section.getStringList("lore");
+        final String action = resolvePrimaryAction(section.getString("action"), section.getStringList("actions"));
+        final String storedAction = action != null && !action.equalsIgnoreCase("[NONE]") ? action : null;
+        return new MenuItemDefinition(slot, material, head, name, lore, storedAction);
+    }
+
+    private String resolvePrimaryAction(final String single, final List<String> list) {
+        if (single != null && !single.isBlank()) {
+            return single.trim();
+        }
+        if (list != null) {
+            for (String entry : list) {
+                if (entry != null && !entry.isBlank()) {
+                    return entry.trim();
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean buildAndOpenSimpleMenu(final Player player, final String menuId) {
+        final CachedMenu menu = managedMenus.get(menuId);
+        if (menu == null) {
+            return legacyMenuManager.openMenu(player, menuId);
+        }
+        final Inventory inventory = buildInventory(menu, player, Map.of());
+        if (inventory == null) {
+            return false;
+        }
+        player.openInventory(inventory);
+        openMenus.put(player.getUniqueId(), new SimpleMenuSession(player.getUniqueId(), menuId, inventory, menu.actions()));
+        return true;
+    }
+
+    private boolean buildAndOpenHeavyMenu(final Player player, final String menuId) {
+        final CachedMenu menu = managedMenus.get(menuId);
+        if (menu == null) {
+            return legacyMenuManager.openMenu(player, menuId);
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final Map<String, String> playerData = loadPlayerSpecificData(player);
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (player == null || !player.isOnline()) {
+                    return;
+                }
+                final Inventory inventory = buildInventory(menu, player, playerData);
+                if (inventory == null) {
+                    return;
+                }
+                player.openInventory(inventory);
+                openMenus.put(player.getUniqueId(), new SimpleMenuSession(player.getUniqueId(), menuId, inventory, menu.actions()));
+            });
+        });
+        return true;
+    }
+
+    private Inventory buildInventory(final CachedMenu menu,
+                                     final Player player,
+                                     final Map<String, String> extraPlaceholders) {
+        final Inventory inventory = Bukkit.createInventory(null, menu.size(), menu.title());
+        final Map<String, String> placeholders = mergePlaceholders(player, extraPlaceholders);
+        if (menu.decorItem() != null) {
+            final ItemStack decor = resolveItem(menu.decorItem(), player, placeholders);
+            for (Integer slot : menu.decorSlots()) {
+                if (slot == null) {
+                    continue;
+                }
+                if (slot >= 0 && slot < inventory.getSize()) {
+                    inventory.setItem(slot, decor.clone());
+                }
+            }
+        }
+        for (Map.Entry<Integer, MenuItemDefinition> entry : menu.items().entrySet()) {
+            final int slot = entry.getKey();
+            if (slot < 0 || slot >= inventory.getSize()) {
+                continue;
+            }
+            final ItemStack item = resolveItem(entry.getValue(), player, placeholders);
+            inventory.setItem(slot, item);
+        }
+        return inventory;
+    }
+
+    private ItemStack resolveItem(final MenuItemDefinition definition,
+                                  final Player player,
+                                  final Map<String, String> placeholders) {
+        ItemStack item = createBaseItem(definition, player);
+        final ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            if (definition.name() != null) {
+                meta.setDisplayName(applyPlaceholders(definition.name(), placeholders));
+            }
+            if (!definition.lore().isEmpty()) {
+                final List<String> resolved = new ArrayList<>();
+                for (String line : definition.lore()) {
+                    resolved.add(applyPlaceholders(line, placeholders));
+                }
+                meta.setLore(resolved);
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
+    }
+
+    private ItemStack createBaseItem(final MenuItemDefinition definition, final Player player) {
+        final HeadDatabaseManager headManager = plugin.getHeadDatabaseManager();
+        final String material = definition.material();
+        if (definition.head() != null && !definition.head().isBlank()) {
+            return resolveHead(definition.head(), headManager);
+        }
+        if (material != null && material.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+            return resolveHead(material, headManager);
+        }
+        final Material vanilla = Material.matchMaterial(material == null ? "PLAYER_HEAD" : material, true);
+        if (vanilla == null) {
+            return new ItemStack(Material.STONE);
+        }
+        final ItemStack base = new ItemStack(vanilla);
+        if (vanilla == Material.PLAYER_HEAD && player != null) {
+            final ItemMeta meta = base.getItemMeta();
+            if (meta instanceof SkullMeta skullMeta) {
+                skullMeta.setOwningPlayer(player);
+                base.setItemMeta(skullMeta);
+            }
+        }
+        return base;
+    }
+
+    private ItemStack resolveHead(final String rawId, final HeadDatabaseManager headManager) {
+        final String id = rawId.trim();
+        final ItemStack cached = headCache.get(id);
+        if (cached != null) {
+            return cached.clone();
+        }
+        if (headManager != null) {
+            final ItemStack head = headManager.getHead(id);
+            headCache.put(id, head.clone());
+            return head;
+        }
+        return new ItemStack(Material.PLAYER_HEAD);
+    }
+
+    private Map<String, String> mergePlaceholders(final Player player, final Map<String, String> extra) {
+        final Map<String, String> merged = new HashMap<>(globalPlaceholderCache);
+        if (extra != null) {
+            merged.putAll(extra);
+        }
+        if (player != null) {
+            merged.putIfAbsent("%player_name%", player.getName());
+        }
+        return merged;
+    }
+
+    private String applyPlaceholders(final String input, final Map<String, String> placeholders) {
+        if (input == null) {
+            return "";
+        }
+        String result = input;
+        if (placeholders != null) {
+            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                result = result.replace(entry.getKey(), entry.getValue() == null ? "" : entry.getValue());
+            }
+        }
+        result = ChatColor.translateAlternateColorCodes('&', result);
+        return result;
+    }
+
+    private Map<String, String> loadPlayerSpecificData(final Player player) {
+        final Map<String, String> data = new HashMap<>();
         if (player == null) {
-            return;
+            return data;
+        }
+        final StatsManager statsManager = plugin.getStatsManager();
+        if (statsManager == null) {
+            return data;
         }
         final UUID uuid = player.getUniqueId();
-        notifiedMenuFailures.remove(uuid);
-        openMenus.put(uuid, menu);
+        final GlobalStats global = statsManager.getGlobalStats(uuid);
+        data.put("%stats_global_games%", Integer.toString(global.getTotalGames()));
+        data.put("%stats_global_wins%", Integer.toString(global.getTotalWins()));
+        data.put("%stats_global_losses%", Integer.toString(global.getTotalLosses()));
+        data.put("%stats_global_kills%", Integer.toString(global.getTotalKills()));
+        data.put("%stats_global_deaths%", Integer.toString(global.getTotalDeaths()));
+        data.put("%stats_global_ratio%", RATIO_FORMAT.format(global.getRatio()));
+        data.put("%stats_global_playtime%", global.getFormattedPlaytime());
+
+        loadGameData(statsManager, uuid, "BEDWARS", data, "%stats_bedwars_");
+        loadGameData(statsManager, uuid, "NEXUS", data, "%stats_nexus_");
+        loadGameData(statsManager, uuid, "ZOMBIE", data, "%stats_zombie_");
+        loadGameData(statsManager, uuid, "CUSTOM", data, "%stats_custom_");
+
+        return data;
+    }
+
+    private void loadGameData(final StatsManager statsManager,
+                              final UUID uuid,
+                              final String gameType,
+                              final Map<String, String> output,
+                              final String placeholderPrefix) {
+        final GameStats stats = statsManager.getPlayerStats(uuid, gameType);
+        output.put(placeholderPrefix + "games%", Integer.toString(stats.getGamesPlayed()));
+        output.put(placeholderPrefix + "wins%", Integer.toString(stats.getWins()));
+        output.put(placeholderPrefix + "losses%", Integer.toString(stats.getLosses()));
+        output.put(placeholderPrefix + "kills%", Integer.toString(stats.getKills()));
+        output.put(placeholderPrefix + "deaths%", Integer.toString(stats.getDeaths()));
+        output.put(placeholderPrefix + "ratio%", RATIO_FORMAT.format(stats.getRatio()));
+        output.put(placeholderPrefix + "playtime%", stats.getFormattedPlaytime());
+        output.put(placeholderPrefix + "beds%", Integer.toString(stats.getSpecialStat1()));
+        output.put(placeholderPrefix + "record%", Integer.toString(stats.getSpecialStat1()));
+        if (placeholderPrefix.contains("nexus")) {
+            output.put("%stats_nexus_destroyed%", Integer.toString(stats.getSpecialStat1()));
+        }
+        if (placeholderPrefix.contains("zombie")) {
+            output.put("%stats_zombie_record%", Integer.toString(stats.getSpecialStat1()));
+        }
+    }
+
+    private void preloadAllHeadsAsync() {
+        if (!headPreloadScheduled.compareAndSet(false, true)) {
+            return;
+        }
+        headCache.clear();
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            if (debugAsyncMenu) {
-                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Préchargement des données et têtes pour '" + normalizedId + "'...");
-            }
-
-            preloadMenuData(uuid, placeholders);
-
-            final Map<String, String> asyncPlaceholderValues;
-            if (placeholderApiEnabled) {
-                if (debugAsyncMenu && placeholders != null && !placeholders.isEmpty()) {
-                    plugin.getLogger().info("[DEBUG HDB] Pré-chargement PAPI...");
-                }
-                asyncPlaceholderValues = preloadPlaceholderApi(player, placeholders);
-            } else {
-                asyncPlaceholderValues = Map.of();
-            }
-
-            Menu.AsyncPreparation asyncPreparation = Menu.AsyncPreparation.EMPTY;
             try {
-                final java.util.concurrent.Future<Menu.AsyncPreparation> future = Bukkit.getScheduler().callSyncMethod(plugin, () -> {
-                    final Player target = Bukkit.getPlayer(uuid);
-                    if (target == null || !target.isOnline()) {
-                        return Menu.AsyncPreparation.EMPTY;
+                final Set<String> ids = collectHeadIds();
+                final HeadDatabaseManager headManager = plugin.getHeadDatabaseManager();
+                if (headManager == null || ids.isEmpty()) {
+                    return;
+                }
+                int count = 0;
+                for (String id : ids) {
+                    if (id == null || id.isBlank()) {
+                        continue;
                     }
-                    return menu.prepareAsync(target);
-                });
-                asyncPreparation = future.get();
-            } catch (final InterruptedException interruptedException) {
-                Thread.currentThread().interrupt();
-                openMenus.remove(uuid);
-                return;
-            } catch (final java.util.concurrent.ExecutionException executionException) {
-                LogUtils.warning(plugin, "Unable to collect head preload requests for menu '" + normalizedId + "': "
-                        + executionException.getMessage());
+                    final ItemStack head = headManager.getHead(id);
+                    if (head != null) {
+                        headCache.put(id.trim(), head.clone());
+                        count++;
+                    }
+                }
+                plugin.getLogger().info(count + " têtes HeadDatabase pré-chargées.");
+            } finally {
+                headPreloadScheduled.set(false);
             }
-
-            final Map<Menu.HeadRequest, ItemStack> preloadedHeads;
-            if (asyncPreparation == null || asyncPreparation.headRequests().isEmpty()) {
-                preloadedHeads = Map.of();
-            } else {
-                preloadedHeads = preloadHeadItems(asyncPreparation);
-            }
-
-            if (debugAsyncMenu) {
-                plugin.getLogger().info("[DEBUG C] Données BDD et têtes préchargées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
-            }
-
-            Bukkit.getScheduler().runTask(plugin, () -> completeMenuOpen(uuid, normalizedId, menu, preloadedHeads, asyncPlaceholderValues, debugAsyncMenu));
         });
     }
 
-    private Map<Menu.HeadRequest, ItemStack> preloadHeadItems(final Menu.AsyncPreparation preparation) {
-        if (preparation == null || preparation.headRequests().isEmpty()) {
-            return Map.of();
-        }
-        final HeadDatabaseManager headDatabaseManager = plugin.getHeadDatabaseManager();
-        if (headDatabaseManager == null) {
-            return Map.of();
-        }
-        final Map<Menu.HeadRequest, ItemStack> resolved = new HashMap<>();
-        for (Menu.HeadRequest request : preparation.headRequests()) {
-            if (request == null || !request.isValid()) {
-                continue;
+    private Set<String> collectHeadIds() {
+        final Set<String> ids = new HashSet<>();
+        for (CachedMenu menu : managedMenus.values()) {
+            if (menu.decorItem() != null) {
+                final String head = menu.decorItem().head();
+                if (head != null && !head.isBlank()) {
+                    ids.add(head.trim());
+                }
+                final String material = menu.decorItem().material();
+                if (material != null && material.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+                    ids.add(material.trim());
+                }
             }
-            final ItemStack head = headDatabaseManager.getHead(request.headId(), request.fallback());
-            if (head == null) {
-                continue;
-            }
-            resolved.put(request, head.clone());
-        }
-        return resolved.isEmpty() ? Map.of() : Map.copyOf(resolved);
-    }
-
-    private void completeMenuOpen(final UUID uuid,
-                                   final String normalizedId,
-                                   final Menu menu,
-                                   final Map<Menu.HeadRequest, ItemStack> preloadedHeads,
-                                   final Map<String, String> asyncPlaceholderValues,
-                                   final boolean debugAsyncMenu) {
-        if (debugAsyncMenu) {
-            plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
-        }
-        final Player target = Bukkit.getPlayer(uuid);
-        if (target == null || !target.isOnline()) {
-            openMenus.remove(uuid);
-            return;
-        }
-        menu.applyAsyncPreparation(new Menu.AsyncPreparationResult(preloadedHeads, asyncPlaceholderValues));
-        menu.open(target);
-        if (menu.getInventory() == null) {
-            openMenus.remove(uuid);
-        }
-    }
-
-    private boolean isAsyncDebugMenu(final String menuId) {
-        if (menuId == null) {
-            return false;
-        }
-        final String normalized = menuId.toLowerCase(Locale.ROOT);
-        return "stats_menu".equals(normalized)
-                || "stats_detailed_menu".equals(normalized)
-                || "profil_menu".equals(normalized);
-    }
-
-    private boolean isProfileMenu(final String normalizedId) {
-        return normalizedId != null && normalizedId.equals("profil_menu");
-    }
-
-    private boolean isProfileMenuOnCooldown(final Player player, final long cooldownMillis) {
-        if (player == null || cooldownMillis <= 0L) {
-            return false;
-        }
-        final UUID uuid = player.getUniqueId();
-        final long lastOpen = profileMenuCooldowns.getOrDefault(uuid, 0L);
-        final long elapsed = System.currentTimeMillis() - lastOpen;
-        if (elapsed >= cooldownMillis) {
-            return false;
-        }
-        final long remainingMillis = Math.max(0L, cooldownMillis - elapsed);
-        final long seconds = Math.max(1L, (long) Math.ceil(remainingMillis / 1000.0D));
-        notifyMenuFailure(player, "menus.profile_cooldown", Map.of("seconds", seconds));
-        return true;
-    }
-
-    private boolean isServerOverloadedForProfile(final Player player) {
-        if (player == null) {
-            return false;
-        }
-        if (!plugin.getConfig().getBoolean("menus.profile.tps_protection_enabled", true)) {
-            return false;
-        }
-        final double minTps = plugin.getConfig().getDouble("menus.profile.min_tps", 18.0D);
-        if (minTps <= 0D) {
-            return false;
-        }
-        final double currentTps = fetchCurrentTps();
-        if (currentTps >= minTps) {
-            return false;
-        }
-        notifyMenuFailure(player, "menus.profile_tps_protection", Map.of(
-                "tps", formatTps(currentTps),
-                "min_tps", formatTps(minTps)
-        ));
-        return true;
-    }
-
-    private double fetchCurrentTps() {
-        try {
-            final double[] tps = Bukkit.getServer().getTPS();
-            if (tps != null && tps.length > 0) {
-                return tps[0];
-            }
-        } catch (final NoSuchMethodError ignored) {
-            return 20.0D;
-        } catch (final Throwable throwable) {
-            LogUtils.warning(plugin, "Unable to read server TPS: " + throwable.getMessage());
-        }
-        return 20.0D;
-    }
-
-    private String formatTps(final double value) {
-        return String.format(java.util.Locale.US, "%.1f", value);
-    }
-
-    private void notifyMenuFailure(final Player player, final String messagePath) {
-        notifyMenuFailure(player, messagePath, Collections.emptyMap());
-    }
-
-    private void notifyMenuFailure(final Player player,
-                                   final String messagePath,
-                                   final Map<String, ?> placeholders) {
-        if (player == null) {
-            return;
-        }
-        if (messagePath != null && !messagePath.isBlank()) {
-            if (placeholders == null || placeholders.isEmpty()) {
-                MessageUtils.sendConfigMessage(player, messagePath);
-            } else {
-                MessageUtils.sendConfigMessage(player, messagePath, placeholders);
+            for (MenuItemDefinition definition : menu.items().values()) {
+                if (definition.head() != null && !definition.head().isBlank()) {
+                    ids.add(definition.head().trim());
+                }
+                if (definition.material() != null && definition.material().toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+                    ids.add(definition.material().trim());
+                }
             }
         }
-        notifiedMenuFailures.add(player.getUniqueId());
+        return ids;
     }
 
-    private boolean isPlaceholderApiEnabled() {
-        final var pluginManager = Bukkit.getPluginManager();
-        return pluginManager != null && pluginManager.isPluginEnabled("PlaceholderAPI");
-    }
-
-    private Set<String> collectPlaceholderSources(final ConfigurationSection section) {
-        final Set<String> values = new HashSet<>();
-        collectValues(section, values);
-        return values;
-    }
-
-    private void collectValues(final Object value, final Set<String> sink) {
-        if (value == null) {
-            return;
+    private void startGlobalPlaceholderTask() {
+        if (placeholderRefreshTask != null) {
+            placeholderRefreshTask.cancel();
         }
-        if (value instanceof ConfigurationSection configurationSection) {
-            for (String key : configurationSection.getKeys(false)) {
-                collectValues(configurationSection.get(key), sink);
+        placeholderRefreshTask = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            final ServerPlaceholderCache cache = plugin.getServerPlaceholderCache();
+            if (cache == null) {
+                globalPlaceholderCache.put("%lobby_online_bedwars%", "0");
+                return;
             }
-            return;
-        }
-        if (value instanceof Iterable<?> iterable) {
-            for (Object element : iterable) {
-                collectValues(element, sink);
-            }
-            return;
-        }
-        if (value instanceof String string && string.contains("%")) {
-            sink.add(string);
-        }
+            final int bedwars = cache.getServerPlayerCount("bedwars");
+            globalPlaceholderCache.put("%lobby_online_bedwars%", Integer.toString(bedwars));
+        }, 20L, 20L * 5);
     }
 
-    private Set<String> extractPlaceholders(final Set<String> values) {
-        final Set<String> placeholders = new HashSet<>();
-        final java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("%([^%]+)%");
-        for (String value : values) {
-            final java.util.regex.Matcher matcher = pattern.matcher(value);
-            while (matcher.find()) {
-                placeholders.add('%' + matcher.group(1) + '%');
+    private List<Integer> parseSlots(final Object object) {
+        if (object == null) {
+            return Collections.emptyList();
+        }
+        final List<Integer> slots = new ArrayList<>();
+        if (object instanceof String string) {
+            final String[] parts = string.split(",");
+            for (String part : parts) {
+                try {
+                    slots.add(Integer.parseInt(part.trim()));
+                } catch (NumberFormatException ignored) {
+                }
             }
-        }
-        return placeholders;
-    }
-
-    private File ensureMenusDirectory() {
-        final File directory = new File(plugin.getDataFolder(), "config/menus");
-        if (!directory.exists() && !directory.mkdirs()) {
-            plugin.getLogger().severe("Unable to create config/menus directory for menu definitions.");
-        }
-        final Set<String> defaults = Set.of(
-                "jeux_menu.yml",
-                "profil_menu.yml",
-                "shop_menu.yml",
-                "cosmetiques_menu.yml",
-                "hub_menu.yml",
-                "settings_menu.yml",
-                "language_menu.yml",
-                "friends_menu.yml",
-                "friend_management.yml",
-                "groups_menu.yml",
-                "clan_menu.yml",
-                "stats_menu.yml",
-                "stats_detailed_menu.yml",
-                "notifications_menu.yml",
-                "audio_settings_menu.yml"
-        );
-        for (String fileName : defaults) {
-            final File target = new File(directory, fileName);
-            if (!target.exists()) {
-                plugin.saveResource("config/menus/" + fileName, false);
+        } else if (object instanceof Collection<?> collection) {
+            for (Object value : collection) {
+                if (value == null) {
+                    continue;
+                }
+                if (value instanceof Number number) {
+                    slots.add(number.intValue());
+                } else {
+                    try {
+                        slots.add(Integer.parseInt(value.toString()));
+                    } catch (NumberFormatException ignored) {
+                    }
+                }
             }
         }
-        return directory;
+        return slots;
     }
 
-    private String stripExtension(final String fileName) {
-        final int index = fileName.lastIndexOf('.');
-        if (index <= 0) {
-            return fileName;
+    private int resolveSlot(final String key, final int explicitSlot) {
+        if (explicitSlot >= 0) {
+            return explicitSlot;
         }
-        return fileName.substring(0, index);
+        if (key == null) {
+            return -1;
+        }
+        final String[] parts = key.split("_");
+        for (String part : parts) {
+            try {
+                return Integer.parseInt(part.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return -1;
     }
 
-    private record MenuDefinition(ConfigurationSection section,
-                                  Set<String> placeholders,
-                                  boolean requiresAsyncPreload) {
+    private Set<String> union(final Set<String> first, final Set<String> second) {
+        final Set<String> merged = new HashSet<>(first);
+        merged.addAll(second);
+        return merged;
+    }
+
+    private record CachedMenu(String id,
+                              String title,
+                              int size,
+                              Map<Integer, MenuItemDefinition> items,
+                              Map<Integer, String> actions,
+                              List<Integer> decorSlots,
+                              MenuItemDefinition decorItem) {
+    }
+
+    private record MenuItemDefinition(int slot,
+                                      String material,
+                                      String head,
+                                      String name,
+                                      List<String> lore,
+                                      String action) {
+        private MenuItemDefinition {
+            lore = lore == null ? List.of() : List.copyOf(lore);
+        }
+    }
+
+    private static final class SimpleMenuSession implements Menu {
+
+        private final UUID owner;
+        private final String menuId;
+        private final Inventory inventory;
+        private final Map<Integer, String> actions;
+
+        private SimpleMenuSession(final UUID owner,
+                                  final String menuId,
+                                  final Inventory inventory,
+                                  final Map<Integer, String> actions) {
+            this.owner = owner;
+            this.menuId = menuId;
+            this.inventory = inventory;
+            this.actions = new HashMap<>(actions);
+        }
+
+        @Override
+        public void open(final Player player) {
+            if (player != null) {
+                player.openInventory(inventory);
+            }
+        }
+
+        @Override
+        public void handleClick(final org.bukkit.event.inventory.InventoryClickEvent event) {
+            // No-op. Actions are handled by MenuListener.
+        }
+
+        @Override
+        public Inventory getInventory() {
+            return inventory;
+        }
+
+        @Override
+        public List<String> getActionsForSlot(final int slot) {
+            final String action = actions.get(slot);
+            if (action == null || action.isBlank()) {
+                return List.of();
+            }
+            return List.of(action);
+        }
+
+        public UUID owner() {
+            return owner;
+        }
+
+        public String menuId() {
+            return menuId;
+        }
+
+        public Map<Integer, String> actions() {
+            return Collections.unmodifiableMap(actions);
+        }
     }
 }
