@@ -22,10 +22,12 @@ import org.bukkit.inventory.meta.SkullMeta;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public class ConfiguredMenu implements Menu {
 
@@ -35,6 +37,7 @@ public class ConfiguredMenu implements Menu {
     private final MenuDesignProvider menuDesignProvider;
     private Inventory inventory;
     private final Map<Integer, List<String>> actionsBySlot = new HashMap<>();
+    private Map<Menu.HeadRequest, ItemStack> asyncPreloadedHeads = Map.of();
 
     public ConfiguredMenu(final LobbyPlugin plugin,
                           final String menuId,
@@ -44,6 +47,38 @@ public class ConfiguredMenu implements Menu {
         this.menuId = menuId;
         this.menuSection = menuSection;
         this.menuDesignProvider = menuDesignProvider;
+    }
+
+    @Override
+    public AsyncPreparation prepareAsync(final Player player) {
+        final Set<Menu.HeadRequest> headRequests = new HashSet<>();
+        collectHeadRequests(menuSection.getConfigurationSection("items"), player, headRequests);
+
+        final DesignTemplate designTemplate = resolveDesignTemplate();
+        if (designTemplate != null) {
+            collectHeadRequests(designTemplate.getItemsSection(), player, headRequests);
+        }
+
+        if (headRequests.isEmpty()) {
+            return Menu.AsyncPreparation.EMPTY;
+        }
+        return new Menu.AsyncPreparation(headRequests);
+    }
+
+    @Override
+    public void applyAsyncPreparation(final AsyncPreparationResult result) {
+        if (result == null || result.preloadedHeads().isEmpty()) {
+            asyncPreloadedHeads = Map.of();
+            return;
+        }
+        final Map<Menu.HeadRequest, ItemStack> stored = new HashMap<>();
+        result.preloadedHeads().forEach((request, itemStack) -> {
+            if (request == null || itemStack == null) {
+                return;
+            }
+            stored.put(request, itemStack.clone());
+        });
+        asyncPreloadedHeads = stored.isEmpty() ? Map.of() : Map.copyOf(stored);
     }
 
     @Override
@@ -104,6 +139,7 @@ public class ConfiguredMenu implements Menu {
         if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG G] 'openInventory' appelé. Tâche terminée.");
         }
+        asyncPreloadedHeads = Map.of();
     }
 
     private void applyDesignTemplate(final Player player, final ItemStack[] contents) {
@@ -202,7 +238,13 @@ public class ConfiguredMenu implements Menu {
         final ItemStack itemStack;
         if (material == Material.PLAYER_HEAD && resolvedHead != null
                 && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
-            itemStack = createHeadItem(amount, resolvedHead, itemSection);
+            final Material fallbackMaterial = resolveHeadFallbackMaterial(itemSection.getString("head_fallback_material"));
+            final ItemStack preloaded = getPreloadedHead(resolvedHead, fallbackMaterial, amount);
+            if (preloaded != null) {
+                itemStack = preloaded;
+            } else {
+                itemStack = createHeadItem(amount, resolvedHead, fallbackMaterial);
+            }
         } else {
             itemStack = new ItemStack(material, amount);
         }
@@ -277,8 +319,61 @@ public class ConfiguredMenu implements Menu {
         skullMeta.setOwningPlayer(offlinePlayer);
     }
 
-    private ItemStack createHeadItem(final int amount, final String headId, final ConfigurationSection itemSection) {
-        final Material fallbackMaterial = resolveHeadFallbackMaterial(itemSection.getString("head_fallback_material"));
+    private void collectHeadRequests(final ConfigurationSection section,
+                                     final Player player,
+                                     final Set<Menu.HeadRequest> sink) {
+        if (section == null || sink == null) {
+            return;
+        }
+        for (String key : section.getKeys(false)) {
+            if (key == null) {
+                continue;
+            }
+            final ConfigurationSection itemSection = section.getConfigurationSection(key);
+            if (itemSection == null) {
+                continue;
+            }
+            String rawHead = itemSection.getString("head");
+            if (rawHead == null) {
+                rawHead = itemSection.getString("head_id");
+            }
+            if (rawHead == null || rawHead.isBlank()) {
+                continue;
+            }
+            final String resolvedHead = resolveHeadValue(rawHead, player);
+            if (resolvedHead == null) {
+                continue;
+            }
+            final String normalized = resolvedHead.toLowerCase(Locale.ROOT);
+            if (!normalized.startsWith("hdb:")) {
+                continue;
+            }
+            final Material fallback = resolveHeadFallbackMaterial(itemSection.getString("head_fallback_material"));
+            sink.add(new Menu.HeadRequest(resolvedHead, fallback));
+        }
+    }
+
+    private ItemStack getPreloadedHead(final String headId,
+                                       final Material fallbackMaterial,
+                                       final int amount) {
+        if (headId == null) {
+            return null;
+        }
+        final Map<Menu.HeadRequest, ItemStack> cache = asyncPreloadedHeads;
+        if (cache == null || cache.isEmpty()) {
+            return null;
+        }
+        final Menu.HeadRequest key = new Menu.HeadRequest(headId, fallbackMaterial);
+        final ItemStack preloaded = cache.get(key);
+        if (preloaded == null) {
+            return null;
+        }
+        final ItemStack clone = preloaded.clone();
+        clone.setAmount(Math.max(1, amount));
+        return clone;
+    }
+
+    private ItemStack createHeadItem(final int amount, final String headId, final Material fallbackMaterial) {
         final HeadDatabaseManager manager = plugin.getHeadDatabaseManager();
         ItemStack headItem = null;
         if (manager != null) {

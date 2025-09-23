@@ -1,6 +1,7 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
@@ -18,9 +19,11 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -64,19 +67,7 @@ public class MenuManager implements Listener {
         final UUID uuid = player.getUniqueId();
         final Set<String> placeholders = definition.placeholders();
         final boolean debugAsyncMenu = isAsyncDebugMenu(normalizedId);
-        final boolean requiresAsync = definition.requiresAsyncPreload() || "profil_menu".equals(normalizedId);
-
-        if (requiresAsync) {
-            openMenuAsync(menu, uuid, placeholders, normalizedId, debugAsyncMenu);
-            return true;
-        }
-
-        openMenus.put(uuid, menu);
-        menu.open(player);
-        if (menu.getInventory() == null) {
-            openMenus.remove(uuid);
-            return false;
-        }
+        openMenuAsync(player, menu, placeholders, normalizedId, debugAsyncMenu);
         return true;
     }
 
@@ -403,11 +394,15 @@ public class MenuManager implements Listener {
         }
     }
 
-    private void openMenuAsync(final Menu menu,
-                               final UUID uuid,
+    private void openMenuAsync(final Player player,
+                               final Menu menu,
                                final Set<String> placeholders,
                                final String normalizedId,
                                final boolean debugAsyncMenu) {
+        if (player == null) {
+            return;
+        }
+        final UUID uuid = player.getUniqueId();
         openMenus.put(uuid, menu);
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             if (debugAsyncMenu) {
@@ -417,21 +412,70 @@ public class MenuManager implements Listener {
             if (debugAsyncMenu) {
                 plugin.getLogger().info("[DEBUG C] Données BDD récupérées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
             }
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (debugAsyncMenu) {
-                    plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
-                }
-                final Player target = Bukkit.getPlayer(uuid);
-                if (target == null || !target.isOnline()) {
-                    openMenus.remove(uuid);
-                    return;
-                }
-                menu.open(target);
-                if (menu.getInventory() == null) {
-                    openMenus.remove(uuid);
-                }
-            });
+            Bukkit.getScheduler().runTask(plugin, () -> handleAsyncPreparation(uuid, normalizedId, menu, debugAsyncMenu));
         });
+    }
+
+    private void handleAsyncPreparation(final UUID uuid,
+                                         final String normalizedId,
+                                         final Menu menu,
+                                         final boolean debugAsyncMenu) {
+        final Player target = Bukkit.getPlayer(uuid);
+        if (target == null || !target.isOnline()) {
+            openMenus.remove(uuid);
+            return;
+        }
+        final Menu.AsyncPreparation asyncPreparation = menu.prepareAsync(target);
+        if (asyncPreparation == null || asyncPreparation.headRequests().isEmpty()) {
+            completeMenuOpen(uuid, normalizedId, menu, Map.of(), debugAsyncMenu);
+            return;
+        }
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final Map<Menu.HeadRequest, ItemStack> preloadedHeads = preloadHeadItems(asyncPreparation);
+            Bukkit.getScheduler().runTask(plugin, () -> completeMenuOpen(uuid, normalizedId, menu, preloadedHeads, debugAsyncMenu));
+        });
+    }
+
+    private Map<Menu.HeadRequest, ItemStack> preloadHeadItems(final Menu.AsyncPreparation preparation) {
+        if (preparation == null || preparation.headRequests().isEmpty()) {
+            return Map.of();
+        }
+        final HeadDatabaseManager headDatabaseManager = plugin.getHeadDatabaseManager();
+        if (headDatabaseManager == null) {
+            return Map.of();
+        }
+        final Map<Menu.HeadRequest, ItemStack> resolved = new HashMap<>();
+        for (Menu.HeadRequest request : preparation.headRequests()) {
+            if (request == null || !request.isValid()) {
+                continue;
+            }
+            final ItemStack head = headDatabaseManager.getHead(request.headId(), request.fallback());
+            if (head == null) {
+                continue;
+            }
+            resolved.put(request, head.clone());
+        }
+        return resolved.isEmpty() ? Map.of() : Map.copyOf(resolved);
+    }
+
+    private void completeMenuOpen(final UUID uuid,
+                                   final String normalizedId,
+                                   final Menu menu,
+                                   final Map<Menu.HeadRequest, ItemStack> preloadedHeads,
+                                   final boolean debugAsyncMenu) {
+        if (debugAsyncMenu) {
+            plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
+        }
+        final Player target = Bukkit.getPlayer(uuid);
+        if (target == null || !target.isOnline()) {
+            openMenus.remove(uuid);
+            return;
+        }
+        menu.applyAsyncPreparation(new Menu.AsyncPreparationResult(preloadedHeads));
+        menu.open(target);
+        if (menu.getInventory() == null) {
+            openMenus.remove(uuid);
+        }
     }
 
     private boolean isAsyncDebugMenu(final String menuId) {
