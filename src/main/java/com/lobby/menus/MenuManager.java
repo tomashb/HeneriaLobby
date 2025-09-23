@@ -87,7 +87,7 @@ public class MenuManager {
     private Menu createMenu(final String rawMenuId) {
         final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
         return switch (menuId) {
-            case "jeux_menu" -> new JeuxMenu(assetManager);
+            case "jeux_menu" -> new JeuxMenu(plugin, this, assetManager);
             default -> null;
         };
     }
