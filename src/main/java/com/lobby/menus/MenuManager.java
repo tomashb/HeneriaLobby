@@ -6,6 +6,7 @@ import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
+import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -67,7 +68,8 @@ public class MenuManager implements Listener {
         final UUID uuid = player.getUniqueId();
         final Set<String> placeholders = definition.placeholders();
         final boolean debugAsyncMenu = isAsyncDebugMenu(normalizedId);
-        openMenuAsync(player, menu, placeholders, normalizedId, debugAsyncMenu);
+        final boolean placeholderApiEnabled = isPlaceholderApiEnabled();
+        openMenuAsync(player, menu, placeholders, normalizedId, debugAsyncMenu, placeholderApiEnabled);
         return true;
     }
 
@@ -394,11 +396,71 @@ public class MenuManager implements Listener {
         }
     }
 
+    private Map<String, String> preloadPlaceholderApi(final Player player, final Set<String> placeholders) {
+        if (player == null || placeholders == null || placeholders.isEmpty()) {
+            return Map.of();
+        }
+        final Set<String> papiPlaceholders = extractPlaceholderApiPlaceholders(placeholders);
+        if (papiPlaceholders.isEmpty()) {
+            return Map.of();
+        }
+        final Map<String, String> resolved = new HashMap<>();
+        for (String placeholder : papiPlaceholders) {
+            if (placeholder == null || placeholder.isBlank()) {
+                continue;
+            }
+            try {
+                final String value = PlaceholderAPI.setPlaceholders(player, placeholder);
+                if (value != null) {
+                    resolved.put(placeholder, value);
+                }
+            } catch (final Throwable throwable) {
+                LogUtils.warning(plugin, "Failed to resolve PlaceholderAPI value for '" + placeholder + "': "
+                        + throwable.getMessage());
+            }
+        }
+        return resolved.isEmpty() ? Map.of() : Map.copyOf(resolved);
+    }
+
+    private Set<String> extractPlaceholderApiPlaceholders(final Set<String> placeholders) {
+        if (placeholders == null || placeholders.isEmpty()) {
+            return Set.of();
+        }
+        final Set<String> papiPlaceholders = new HashSet<>();
+        for (String placeholder : placeholders) {
+            if (placeholder == null) {
+                continue;
+            }
+            if (isInternalPlaceholder(placeholder)) {
+                continue;
+            }
+            papiPlaceholders.add(placeholder);
+        }
+        return papiPlaceholders;
+    }
+
+    private boolean isInternalPlaceholder(final String placeholder) {
+        if (placeholder == null || placeholder.isBlank()) {
+            return true;
+        }
+        final String normalized = placeholder.toLowerCase(Locale.ROOT);
+        return normalized.startsWith("%player_")
+                || normalized.startsWith("%stats_")
+                || normalized.startsWith("%setting_")
+                || normalized.startsWith("%lang_")
+                || normalized.startsWith("%friend")
+                || normalized.startsWith("%group")
+                || normalized.startsWith("%clan")
+                || normalized.startsWith("%daily_reward_")
+                || normalized.startsWith("%server_");
+    }
+
     private void openMenuAsync(final Player player,
                                final Menu menu,
                                final Set<String> placeholders,
                                final String normalizedId,
-                               final boolean debugAsyncMenu) {
+                               final boolean debugAsyncMenu,
+                               final boolean placeholderApiEnabled) {
         if (player == null) {
             return;
         }
@@ -410,6 +472,10 @@ public class MenuManager implements Listener {
             }
 
             preloadMenuData(uuid, placeholders);
+
+            final Map<String, String> asyncPlaceholderValues = placeholderApiEnabled
+                    ? preloadPlaceholderApi(player, placeholders)
+                    : Map.of();
 
             Menu.AsyncPreparation asyncPreparation = Menu.AsyncPreparation.EMPTY;
             try {
@@ -441,7 +507,7 @@ public class MenuManager implements Listener {
                 plugin.getLogger().info("[DEBUG C] Données BDD et têtes préchargées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
             }
 
-            Bukkit.getScheduler().runTask(plugin, () -> completeMenuOpen(uuid, normalizedId, menu, preloadedHeads, debugAsyncMenu));
+            Bukkit.getScheduler().runTask(plugin, () -> completeMenuOpen(uuid, normalizedId, menu, preloadedHeads, asyncPlaceholderValues, debugAsyncMenu));
         });
     }
 
@@ -471,6 +537,7 @@ public class MenuManager implements Listener {
                                    final String normalizedId,
                                    final Menu menu,
                                    final Map<Menu.HeadRequest, ItemStack> preloadedHeads,
+                                   final Map<String, String> asyncPlaceholderValues,
                                    final boolean debugAsyncMenu) {
         if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
@@ -480,7 +547,7 @@ public class MenuManager implements Listener {
             openMenus.remove(uuid);
             return;
         }
-        menu.applyAsyncPreparation(new Menu.AsyncPreparationResult(preloadedHeads));
+        menu.applyAsyncPreparation(new Menu.AsyncPreparationResult(preloadedHeads, asyncPlaceholderValues));
         menu.open(target);
         if (menu.getInventory() == null) {
             openMenus.remove(uuid);
@@ -493,6 +560,11 @@ public class MenuManager implements Listener {
         }
         final String normalized = menuId.toLowerCase(Locale.ROOT);
         return "stats_menu".equals(normalized) || "profil_menu".equals(normalized);
+    }
+
+    private boolean isPlaceholderApiEnabled() {
+        final var pluginManager = Bukkit.getPluginManager();
+        return pluginManager != null && pluginManager.isPluginEnabled("PlaceholderAPI");
     }
 
     private Set<String> collectPlaceholderSources(final ConfigurationSection section) {

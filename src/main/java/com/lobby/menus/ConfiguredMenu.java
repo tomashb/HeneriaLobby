@@ -37,6 +37,7 @@ public class ConfiguredMenu implements Menu {
     private Inventory inventory;
     private final Map<Integer, List<String>> actionsBySlot = new HashMap<>();
     private Map<Menu.HeadRequest, ItemStack> asyncPreloadedHeads = Map.of();
+    private Map<String, String> asyncPreloadedPlaceholders = Map.of();
 
     public ConfiguredMenu(final LobbyPlugin plugin,
                           final String menuId,
@@ -66,24 +67,41 @@ public class ConfiguredMenu implements Menu {
 
     @Override
     public void applyAsyncPreparation(final AsyncPreparationResult result) {
-        if (result == null || result.preloadedHeads().isEmpty()) {
+        if (result == null) {
             asyncPreloadedHeads = Map.of();
+            asyncPreloadedPlaceholders = Map.of();
             return;
         }
-        final Map<Menu.HeadRequest, ItemStack> stored = new HashMap<>();
+
+        final Map<Menu.HeadRequest, ItemStack> storedHeads = new HashMap<>();
         result.preloadedHeads().forEach((request, itemStack) -> {
             if (request == null || itemStack == null) {
                 return;
             }
-            stored.put(request, itemStack.clone());
+            storedHeads.put(request, itemStack.clone());
         });
-        asyncPreloadedHeads = stored.isEmpty() ? Map.of() : Map.copyOf(stored);
+        asyncPreloadedHeads = storedHeads.isEmpty() ? Map.of() : Map.copyOf(storedHeads);
+
+        final Map<String, String> placeholders = result.placeholderValues();
+        if (placeholders == null || placeholders.isEmpty()) {
+            asyncPreloadedPlaceholders = Map.of();
+        } else {
+            final Map<String, String> storedPlaceholders = new HashMap<>();
+            placeholders.forEach((key, value) -> {
+                if (key == null || key.isBlank()) {
+                    return;
+                }
+                storedPlaceholders.put(key, value != null ? value : "");
+            });
+            asyncPreloadedPlaceholders = storedPlaceholders.isEmpty() ? Map.of() : Map.copyOf(storedPlaceholders);
+        }
     }
 
     @Override
     public void open(final Player player) {
         final String rawTitle = menuSection.getString("title", "Menu");
-        final String title = MessageUtils.colorize(PlaceholderUtils.applyPlaceholders(plugin, rawTitle, player));
+        final String resolvedTitle = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, rawTitle, player));
+        final String title = MessageUtils.colorize(resolvedTitle != null ? resolvedTitle : "Menu");
         final int size = normalizeSize(menuSection.getInt("size", 27));
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
@@ -139,6 +157,38 @@ public class ConfiguredMenu implements Menu {
             plugin.getLogger().info("[DEBUG G] 'openInventory' appelé. Tâche terminée.");
         }
         asyncPreloadedHeads = Map.of();
+        asyncPreloadedPlaceholders = Map.of();
+    }
+
+    private String applyAsyncPlaceholders(final String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+        final Map<String, String> replacements = asyncPreloadedPlaceholders;
+        if (replacements == null || replacements.isEmpty()) {
+            return text;
+        }
+        String result = text;
+        for (Map.Entry<String, String> entry : replacements.entrySet()) {
+            final String placeholder = entry.getKey();
+            if (placeholder == null || placeholder.isEmpty()) {
+                continue;
+            }
+            final String value = entry.getValue();
+            result = result.replace(placeholder, value != null ? value : "");
+        }
+        return result;
+    }
+
+    private List<String> applyAsyncPlaceholders(final List<String> lines) {
+        if (lines == null || lines.isEmpty()) {
+            return List.of();
+        }
+        final List<String> processed = new ArrayList<>(lines.size());
+        for (String line : lines) {
+            processed.add(applyAsyncPlaceholders(line));
+        }
+        return processed;
     }
 
     private void applyDesignTemplate(final Player player, final ItemStack[] contents) {
@@ -252,19 +302,23 @@ public class ConfiguredMenu implements Menu {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
             if (itemSection.isString("name")) {
-                final String name = MessageUtils.colorize(PlaceholderUtils.applyPlaceholders(plugin,
+                final String processedName = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin,
                         itemSection.getString("name"), player));
-                meta.setDisplayName(name);
+                if (processedName != null) {
+                    meta.setDisplayName(MessageUtils.colorize(processedName));
+                }
             }
 
             if (itemSection.isList("lore")) {
-                final List<String> lore = PlaceholderUtils.applyPlaceholders(plugin, itemSection.getStringList("lore"), player)
+                final List<String> lore = applyAsyncPlaceholders(
+                        PlaceholderUtils.applyPlaceholders(plugin, itemSection.getStringList("lore"), player))
                         .stream()
                         .map(MessageUtils::colorize)
                         .toList();
                 meta.setLore(lore);
             } else if (itemSection.isString("lore")) {
-                final String processedLore = PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player);
+                final String processedLore = applyAsyncPlaceholders(
+                        PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player));
                 if (processedLore != null && !processedLore.isBlank()) {
                     final List<String> lore = Arrays.stream(processedLore.split("\\n"))
                             .map(MessageUtils::colorize)
@@ -308,7 +362,9 @@ public class ConfiguredMenu implements Menu {
             skullMeta.setOwningPlayer(player);
             return;
         }
-        final String processed = resolvedHead != null ? resolvedHead : PlaceholderUtils.applyPlaceholders(plugin, rawHead, player);
+        final String processed = resolvedHead != null
+                ? resolvedHead
+                : applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, rawHead, player));
         if (processed == null || processed.isBlank()) {
             return;
         }
@@ -397,7 +453,7 @@ public class ConfiguredMenu implements Menu {
         if (head == null || head.isBlank()) {
             return null;
         }
-        final String processed = PlaceholderUtils.applyPlaceholders(plugin, head, player);
+        final String processed = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, head, player));
         if (processed == null || processed.isBlank()) {
             return null;
         }
@@ -493,10 +549,11 @@ public class ConfiguredMenu implements Menu {
         final ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
             final Object nameObject = definition.get("name");
-            final String name = nameObject != null
-                    ? MessageUtils.colorize(PlaceholderUtils.applyPlaceholders(plugin, nameObject.toString(), player))
+            final String rawName = nameObject != null
+                    ? applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, nameObject.toString(), player))
                     : " ";
-            meta.setDisplayName((name == null || name.isBlank()) ? " " : name);
+            final String coloredName = rawName != null ? MessageUtils.colorize(rawName) : " ";
+            meta.setDisplayName((coloredName == null || coloredName.isBlank()) ? " " : coloredName);
             meta.addItemFlags(ItemFlag.values());
             itemStack.setItemMeta(meta);
         }
