@@ -34,13 +34,17 @@ public class MenuManager {
         if (player == null || rawMenuId == null || rawMenuId.isBlank()) {
             return false;
         }
-        final Menu menu = createMenu(rawMenuId);
-        if (menu == null) {
-            return false;
+        final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
+
+        if (isSimpleMenu(menuId)) {
+            return buildAndOpenSimpleMenu(player, menuId);
         }
-        menu.open(player);
-        openMenus.put(player.getUniqueId(), menu);
-        return true;
+
+        if (isHeavyMenu(menuId)) {
+            return buildAndOpenHeavyMenu(player, menuId);
+        }
+
+        return false;
     }
 
     public Optional<Menu> getOpenMenu(final UUID uuid) {
@@ -84,8 +88,41 @@ public class MenuManager {
         assetManager.shutdown();
     }
 
-    private Menu createMenu(final String rawMenuId) {
-        final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
+    private boolean isSimpleMenu(final String menuId) {
+        return switch (menuId) {
+            case "jeux_menu", "profil_menu" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean isHeavyMenu(final String menuId) {
+        return switch (menuId) {
+            case "stats_detailed_menu" -> true;
+            default -> false;
+        };
+    }
+
+    private boolean buildAndOpenSimpleMenu(final Player player, final String menuId) {
+        final Menu menu = createMenu(menuId);
+        if (menu == null) {
+            return false;
+        }
+        menu.open(player);
+        openMenus.put(player.getUniqueId(), menu);
+        return true;
+    }
+
+    private boolean buildAndOpenHeavyMenu(final Player player, final String menuId) {
+        final Menu menu = createMenu(menuId);
+        if (menu == null) {
+            return false;
+        }
+        menu.open(player);
+        openMenus.put(player.getUniqueId(), menu);
+        return true;
+    }
+
+    private Menu createMenu(final String menuId) {
         return switch (menuId) {
             case "jeux_menu" -> new JeuxMenu(plugin, this, assetManager);
             default -> null;
