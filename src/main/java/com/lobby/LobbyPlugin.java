@@ -38,6 +38,7 @@ import com.lobby.social.groups.GroupManager;
 import com.lobby.stats.StatsManager;
 import com.lobby.velocity.VelocityManager;
 import com.lobby.utils.LogUtils;
+import org.bukkit.Material;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
@@ -129,6 +130,8 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
         getServer().getPluginManager().registerEvents(new MenuClickHandler(this), this);
+
+        Material.matchMaterial("STONE");
 
         LogUtils.info(this, "LobbyCore activé !");
     }
