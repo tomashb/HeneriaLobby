@@ -54,7 +54,7 @@ public class ConfiguredMenu implements Menu {
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
 
-        final boolean debugStatsMenu = "stats_menu".equalsIgnoreCase(menuId);
+        final boolean debugAsyncMenu = "stats_menu".equalsIgnoreCase(menuId) || "profil_menu".equalsIgnoreCase(menuId);
 
         final ItemStack[] contents = new ItemStack[size];
         final DesignTemplate designTemplate = resolveDesignTemplate();
@@ -93,15 +93,15 @@ public class ConfiguredMenu implements Menu {
             }
         }
 
-        if (debugStatsMenu) {
+        if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG E] Menu '" + menuId + "' construit. Appel de setContents().");
         }
         inventory.setContents(contents);
-        if (debugStatsMenu) {
+        if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG F] 'setContents' terminé. Appel de player.openInventory().");
         }
         player.openInventory(inventory);
-        if (debugStatsMenu) {
+        if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG G] 'openInventory' appelé. Tâche terminée.");
         }
     }

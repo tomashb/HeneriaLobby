@@ -63,44 +63,11 @@ public class MenuManager implements Listener {
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         final UUID uuid = player.getUniqueId();
         final Set<String> placeholders = definition.placeholders();
-        if ("stats_menu".equals(normalizedId)) {
-            openMenus.put(uuid, menu);
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Récupération des données BDD...");
-                preloadMenuData(uuid, placeholders);
-                plugin.getLogger().info("[DEBUG C] Données BDD récupérées. Retour au THREAD PRINCIPAL.");
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
-                    final Player target = Bukkit.getPlayer(uuid);
-                    if (target == null || !target.isOnline()) {
-                        openMenus.remove(uuid);
-                        return;
-                    }
-                    menu.open(target);
-                    if (menu.getInventory() == null) {
-                        openMenus.remove(uuid);
-                    }
-                });
-            });
-            return true;
-        }
+        final boolean debugAsyncMenu = isAsyncDebugMenu(normalizedId);
+        final boolean requiresAsync = definition.requiresAsyncPreload() || "profil_menu".equals(normalizedId);
 
-        if (definition.requiresAsyncPreload()) {
-            openMenus.put(uuid, menu);
-            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                preloadMenuData(uuid, placeholders);
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    final Player target = Bukkit.getPlayer(uuid);
-                    if (target == null || !target.isOnline()) {
-                        openMenus.remove(uuid);
-                        return;
-                    }
-                    menu.open(target);
-                    if (menu.getInventory() == null) {
-                        openMenus.remove(uuid);
-                    }
-                });
-            });
+        if (requiresAsync) {
+            openMenuAsync(menu, uuid, placeholders, normalizedId, debugAsyncMenu);
             return true;
         }
 
@@ -190,12 +157,12 @@ public class MenuManager implements Listener {
                     LogUtils.warning(plugin, "Menu action triggered without a valid target for player '" + player.getName() + "'.");
                     continue;
                 }
-                plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + menuId);
-                if ("stats_menu".equalsIgnoreCase(menuId)) {
-                    plugin.getLogger().info("[DEBUG A] Clic sur " + menuId + " reçu. Démarrage de la TÂCHE ASYNCHRONE.");
-                }
-                Bukkit.getScheduler().runTask(plugin, () -> openMenu(player, menuId));
-                continue;
+        plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + menuId);
+        if (isAsyncDebugMenu(menuId)) {
+            plugin.getLogger().info("[DEBUG A] Clic sur " + menuId + " reçu. Démarrage de la TÂCHE ASYNCHRONE.");
+        }
+        Bukkit.getScheduler().runTask(plugin, () -> openMenu(player, menuId));
+        continue;
             }
             nonMenuActions.add(trimmedAction);
         }
@@ -434,6 +401,45 @@ public class MenuManager implements Listener {
                 clanManager.countCachedOpenClans();
             }
         }
+    }
+
+    private void openMenuAsync(final Menu menu,
+                               final UUID uuid,
+                               final Set<String> placeholders,
+                               final String normalizedId,
+                               final boolean debugAsyncMenu) {
+        openMenus.put(uuid, menu);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            if (debugAsyncMenu) {
+                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Récupération des données BDD pour '" + normalizedId + "'...");
+            }
+            preloadMenuData(uuid, placeholders);
+            if (debugAsyncMenu) {
+                plugin.getLogger().info("[DEBUG C] Données BDD récupérées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (debugAsyncMenu) {
+                    plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
+                }
+                final Player target = Bukkit.getPlayer(uuid);
+                if (target == null || !target.isOnline()) {
+                    openMenus.remove(uuid);
+                    return;
+                }
+                menu.open(target);
+                if (menu.getInventory() == null) {
+                    openMenus.remove(uuid);
+                }
+            });
+        });
+    }
+
+    private boolean isAsyncDebugMenu(final String menuId) {
+        if (menuId == null) {
+            return false;
+        }
+        final String normalized = menuId.toLowerCase(Locale.ROOT);
+        return "stats_menu".equals(normalized) || "profil_menu".equals(normalized);
     }
 
     private Set<String> collectPlaceholderSources(final ConfigurationSection section) {
