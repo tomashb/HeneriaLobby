@@ -130,7 +130,7 @@ public class ConfirmationRequest {
 
         public Builder addConfirmActions(final List<String> actions) {
             if (actions != null) {
-                actions.stream().filter(Objects::nonNull).forEach(action -> addConfirmAction(action));
+                actions.stream().filter(Objects::nonNull).forEach(this::addConfirmAction);
             }
             return this;
         }
@@ -144,7 +144,7 @@ public class ConfirmationRequest {
 
         public Builder addCancelActions(final List<String> actions) {
             if (actions != null) {
-                actions.stream().filter(Objects::nonNull).forEach(action -> addCancelAction(action));
+                actions.stream().filter(Objects::nonNull).forEach(this::addCancelAction);
             }
             return this;
         }
