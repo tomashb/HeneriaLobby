@@ -1,7 +1,6 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
-import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.menus.templates.DesignTemplate;
 import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
@@ -243,7 +242,9 @@ public class ConfiguredMenu implements Menu {
             if (preloaded != null) {
                 itemStack = preloaded;
             } else {
-                itemStack = createHeadItem(amount, resolvedHead, fallbackMaterial);
+                itemStack = createFallbackHead(amount, fallbackMaterial);
+                LogUtils.warning(plugin, "Async head preload missing for '" + resolvedHead + "' in menu '" + menuId
+                        + "'. Using fallback material " + itemStack.getType() + '.');
             }
         } else {
             itemStack = new ItemStack(material, amount);
@@ -373,17 +374,11 @@ public class ConfiguredMenu implements Menu {
         return clone;
     }
 
-    private ItemStack createHeadItem(final int amount, final String headId, final Material fallbackMaterial) {
-        final HeadDatabaseManager manager = plugin.getHeadDatabaseManager();
-        ItemStack headItem = null;
-        if (manager != null) {
-            headItem = manager.getHead(headId, fallbackMaterial);
-        }
-        if (headItem == null) {
-            headItem = new ItemStack(fallbackMaterial != null ? fallbackMaterial : Material.PLAYER_HEAD);
-        }
-        headItem.setAmount(amount);
-        return headItem;
+    private ItemStack createFallbackHead(final int amount, final Material fallbackMaterial) {
+        final Material material = fallbackMaterial != null ? fallbackMaterial : Material.PLAYER_HEAD;
+        final ItemStack fallback = new ItemStack(material);
+        fallback.setAmount(amount);
+        return fallback;
     }
 
     private Material resolveHeadFallbackMaterial(final String fallbackName) {
