@@ -7,7 +7,7 @@ menu:
     francais:
       slot: 11
       material: "PLAYER_HEAD"
-      head: "hdb:2736"
+      head: "hdb:1455"
       name: "&c&l🇫🇷 Français"
       lore:
         - "&7Langue française"

@@ -632,7 +632,15 @@ public class ConfiguredMenu implements Menu {
                 rawHead = itemSection.getString("head_id");
             }
             if (rawHead == null || rawHead.isBlank()) {
-                continue;
+                final String materialName = itemSection.getString("material");
+                if (materialName == null || materialName.isBlank()) {
+                    continue;
+                }
+                final String trimmedMaterial = materialName.trim();
+                if (!trimmedMaterial.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+                    continue;
+                }
+                rawHead = trimmedMaterial;
             }
             final String resolvedHead = resolveHeadValue(rawHead, player);
             if (resolvedHead == null) {
