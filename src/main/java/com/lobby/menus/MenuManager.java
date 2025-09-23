@@ -63,6 +63,28 @@ public class MenuManager implements Listener {
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         final UUID uuid = player.getUniqueId();
         final Set<String> placeholders = definition.placeholders();
+        if ("stats_menu".equals(normalizedId)) {
+            openMenus.put(uuid, menu);
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Récupération des données BDD...");
+                preloadMenuData(uuid, placeholders);
+                plugin.getLogger().info("[DEBUG C] Données BDD récupérées. Retour au THREAD PRINCIPAL.");
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    plugin.getLogger().info("[DEBUG D] Tâche SYNC démarrée. Construction du menu '" + normalizedId + "'...");
+                    final Player target = Bukkit.getPlayer(uuid);
+                    if (target == null || !target.isOnline()) {
+                        openMenus.remove(uuid);
+                        return;
+                    }
+                    menu.open(target);
+                    if (menu.getInventory() == null) {
+                        openMenus.remove(uuid);
+                    }
+                });
+            });
+            return true;
+        }
+
         if (definition.requiresAsyncPreload()) {
             openMenus.put(uuid, menu);
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -169,6 +191,9 @@ public class MenuManager implements Listener {
                     continue;
                 }
                 plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + menuId);
+                if ("stats_menu".equalsIgnoreCase(menuId)) {
+                    plugin.getLogger().info("[DEBUG A] Clic sur " + menuId + " reçu. Démarrage de la TÂCHE ASYNCHRONE.");
+                }
                 Bukkit.getScheduler().runTask(plugin, () -> openMenu(player, menuId));
                 continue;
             }
