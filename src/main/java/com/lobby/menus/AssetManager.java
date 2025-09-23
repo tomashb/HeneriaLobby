@@ -23,12 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public class AssetManager {
 
     private static final Set<String> PRELOADED_HEADS = Set.of(
-            "hdb:67957",
-            "hdb:38878",
-            "hdb:23022",
-            "hdb:60776",
-            "hdb:52000",
-            "hdb:31408"
+            "hdb:14138",
+            "hdb:12822",
+            "hdb:32038",
+            "hdb:23959",
+            "hdb:35472",
+            "hdb:9334"
     );
     private static final Map<String, String> SERVER_PLACEHOLDER_KEYS = Map.of(
             "%lobby_online_bedwars%", "bedwars",

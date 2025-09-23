@@ -13,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
+import java.util.Set;
 
 public class JeuxMenu implements Menu, InventoryHolder {
 
@@ -26,6 +27,12 @@ public class JeuxMenu implements Menu, InventoryHolder {
     private static final int SLOT_PROFILE = 48;
     private static final int SLOT_SHOP = 49;
     private static final int SLOT_CLOSE = 50;
+    private static final Set<Integer> DECORATION_SLOTS = Set.of(
+            0, 1, 2, 6, 7, 8,
+            9, 17, 35,
+            44, 45, 46,
+            52, 53
+    );
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
@@ -71,14 +78,9 @@ public class JeuxMenu implements Menu, InventoryHolder {
     private void buildItems(final Player player) {
         final ItemStack[] contents = new ItemStack[INVENTORY_SIZE];
 
-        fillRow(contents, 0, createGlassPane(Material.BLACK_STAINED_GLASS_PANE));
-        fillRow(contents, 5, createGlassPane(Material.BLACK_STAINED_GLASS_PANE));
-
-        final ItemStack grayPane = createGlassPane(Material.GRAY_STAINED_GLASS_PANE);
-        for (int row = 1; row <= 4; row++) {
-            final int startSlot = row * 9;
-            contents[startSlot] = grayPane.clone();
-            contents[startSlot + 8] = grayPane.clone();
+        final ItemStack decoration = createDecorationPane();
+        for (int slot : DECORATION_SLOTS) {
+            contents[slot] = decoration.clone();
         }
 
         contents[SLOT_BEDWARS] = createBedwarsItem();
@@ -92,8 +94,8 @@ public class JeuxMenu implements Menu, InventoryHolder {
         inventory.setContents(contents);
     }
 
-    private ItemStack createGlassPane(final Material material) {
-        final ItemStack pane = new ItemStack(material);
+    private ItemStack createDecorationPane() {
+        final ItemStack pane = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
         final ItemMeta meta = pane.getItemMeta();
         if (meta != null) {
             meta.setDisplayName("     ");
@@ -103,20 +105,19 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createBedwarsItem() {
-        final ItemStack item = assetManager.getHead("hdb:67957");
+        final ItemStack item = assetManager.getHead("hdb:14138");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_bedwars%");
             meta.setDisplayName("§c§lBedWars");
             meta.setLore(List.of(
-                    "§7Protégez votre lit, la source de votre",
-                    "§7renaissance, et anéantissez celui de",
-                    "§7vos adversaires.",
+                    "§d§lDescription",
+                    "§7Protégez votre lit et soyez la",
+                    "§7dernière équipe en vie.",
                     "§r",
-                    "§7Améliorez votre équipement et soyez la",
-                    "§7dernière équipe en vie dans cette arène céleste.",
-                    "§r",
-                    "§8▪ §7Joueurs: §a" + players,
+                    "§c§lInformations",
+                    "§8▪ Version du jeu : §d1.21",
+                    "§8▪ Connecté(s) : §a" + players,
                     "§r",
                     "§a▶ Cliquez pour rejoindre !"
             ));
@@ -126,18 +127,19 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createNexusItem() {
-        final ItemStack item = assetManager.getHead("hdb:38878");
+        final ItemStack item = assetManager.getHead("hdb:12822");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_nexus%");
             meta.setDisplayName("§b§lNexus");
             meta.setLore(List.of(
-                    "§7Chaque équipe possède un Nexus, un cœur",
-                    "§7vital pulsant de pouvoir. Percez les lignes",
-                    "§7ennemies pour détruire leur Nexus avant",
+                    "§d§lDescription",
+                    "§7Détruisez le Nexus ennemi avant",
                     "§7qu'ils n'atteignent le vôtre.",
                     "§r",
-                    "§8▪ §7Joueurs: §a" + players,
+                    "§c§lInformations",
+                    "§8▪ Version du jeu : §d1.21",
+                    "§8▪ Connecté(s) : §a" + players,
                     "§r",
                     "§a▶ Cliquez pour dominer !"
             ));
@@ -147,18 +149,19 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createZombieItem() {
-        final ItemStack item = assetManager.getHead("hdb:23022");
+        final ItemStack item = assetManager.getHead("hdb:32038");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_zombie%");
             meta.setDisplayName("§2§lSurvie Zombie");
             meta.setLore(List.of(
-                    "§7La nuit est tombée, et les morts-vivants",
-                    "§7sont affamés. Seul ou en équipe, repoussez",
-                    "§7des vagues de plus en plus redoutables",
+                    "§d§lDescription",
+                    "§7Repoussez des vagues de zombies",
                     "§7et survivez le plus longtemps possible.",
                     "§r",
-                    "§8▪ §7Joueurs: §a" + players,
+                    "§c§lInformations",
+                    "§8▪ Version du jeu : §d1.21",
+                    "§8▪ Connecté(s) : §a" + players,
                     "§r",
                     "§a▶ Cliquez pour survivre !"
             ));
@@ -168,20 +171,19 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createCustomItem() {
-        final ItemStack item = assetManager.getHead("hdb:60776");
+        final ItemStack item = assetManager.getHead("hdb:23959");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_custom%");
             meta.setDisplayName("§6§lJeux Inédits");
             meta.setLore(List.of(
-                    "§7Osez l'inconnu ! Découvrez nos créations",
-                    "§7originales et uniques dans des modes",
-                    "§7de jeu en rotation constante.",
+                    "§d§lDescription",
+                    "§7Découvrez nos créations originales",
+                    "§7en rotation constante.",
                     "§r",
-                    "§7Du Build Battle à des courses d'énigmes,",
-                    "§7une nouvelle aventure vous attend.",
-                    "§r",
-                    "§8▪ §7Joueurs: §a" + players,
+                    "§c§lInformations",
+                    "§8▪ Version du jeu : §d1.21",
+                    "§8▪ Connecté(s) : §a" + players,
                     "§r",
                     "§a▶ Cliquez pour explorer !"
             ));
@@ -209,7 +211,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createShopItem() {
-        final ItemStack item = assetManager.getHead("hdb:52000");
+        final ItemStack item = assetManager.getHead("hdb:35472");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName("§e§lBoutique");
@@ -226,7 +228,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
     }
 
     private ItemStack createCloseItem() {
-        final ItemStack item = assetManager.getHead("hdb:31408");
+        final ItemStack item = assetManager.getHead("hdb:9334");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName("§c§lFermer le Menu");
@@ -238,13 +240,6 @@ public class JeuxMenu implements Menu, InventoryHolder {
             item.setItemMeta(meta);
         }
         return item;
-    }
-
-    private void fillRow(final ItemStack[] contents, final int rowIndex, final ItemStack template) {
-        final int startSlot = rowIndex * 9;
-        for (int slot = startSlot; slot < startSlot + 9; slot++) {
-            contents[slot] = template.clone();
-        }
     }
 
     private void sendToServer(final Player player, final String serverId) {
