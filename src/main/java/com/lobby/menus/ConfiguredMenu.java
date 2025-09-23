@@ -17,6 +17,8 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.inventory.InventoryView;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +29,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.AbstractMap;
 
 public class ConfiguredMenu implements Menu {
 
@@ -38,6 +44,12 @@ public class ConfiguredMenu implements Menu {
     private final Map<Integer, List<String>> actionsBySlot = new HashMap<>();
     private Map<Menu.HeadRequest, ItemStack> asyncPreloadedHeads = Map.of();
     private Map<String, String> asyncPreloadedPlaceholders = Map.of();
+    private final Map<Integer, ItemStack> deferredHeadUpdates = new LinkedHashMap<>();
+    private BukkitTask deferredHeadTask;
+
+    private static final int MAX_HEAD_UPDATES_PER_TICK = 4;
+    private static final long HEAD_UPDATE_INITIAL_DELAY = 2L;
+    private static final long HEAD_UPDATE_INTERVAL = 2L;
 
     public ConfiguredMenu(final LobbyPlugin plugin,
                           final String menuId,
@@ -67,6 +79,8 @@ public class ConfiguredMenu implements Menu {
 
     @Override
     public void applyAsyncPreparation(final AsyncPreparationResult result) {
+        cancelDeferredHeadTask();
+        deferredHeadUpdates.clear();
         if (result == null) {
             asyncPreloadedHeads = Map.of();
             asyncPreloadedPlaceholders = Map.of();
@@ -99,6 +113,8 @@ public class ConfiguredMenu implements Menu {
 
     @Override
     public void open(final Player player) {
+        cancelDeferredHeadTask();
+        deferredHeadUpdates.clear();
         final String rawTitle = menuSection.getString("title", "Menu");
         final String resolvedTitle = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin, rawTitle, player));
         final String title = MessageUtils.colorize(resolvedTitle != null ? resolvedTitle : "Menu");
@@ -153,6 +169,7 @@ public class ConfiguredMenu implements Menu {
             plugin.getLogger().info("[DEBUG F] 'setContents' terminé. Appel de player.openInventory().");
         }
         player.openInventory(inventory);
+        scheduleDeferredHeadUpdates(player);
         if (debugAsyncMenu) {
             plugin.getLogger().info("[DEBUG G] 'openInventory' appelé. Tâche terminée.");
         }
@@ -284,13 +301,18 @@ public class ConfiguredMenu implements Menu {
         }
         final String resolvedHead = resolveHeadValue(rawHead, player);
 
-        final ItemStack itemStack;
-        if (material == Material.PLAYER_HEAD && resolvedHead != null
-                && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
+        final boolean requestHeadFromDatabase = material == Material.PLAYER_HEAD && resolvedHead != null
+                && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:");
+
+        ItemStack itemStack;
+        ItemStack deferredHeadItem = null;
+
+        if (requestHeadFromDatabase) {
             final Material fallbackMaterial = resolveHeadFallbackMaterial(itemSection.getString("head_fallback_material"));
             final ItemStack preloaded = getPreloadedHead(resolvedHead, fallbackMaterial, amount);
             if (preloaded != null) {
-                itemStack = preloaded;
+                deferredHeadItem = preloaded;
+                itemStack = createFallbackHead(amount, fallbackMaterial);
             } else {
                 itemStack = createFallbackHead(amount, fallbackMaterial);
                 LogUtils.warning(plugin, "Async head preload missing for '" + resolvedHead + "' in menu '" + menuId
@@ -299,48 +321,11 @@ public class ConfiguredMenu implements Menu {
         } else {
             itemStack = new ItemStack(material, amount);
         }
-        final ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null) {
-            if (itemSection.isString("name")) {
-                final String processedName = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin,
-                        itemSection.getString("name"), player));
-                if (processedName != null) {
-                    meta.setDisplayName(MessageUtils.colorize(processedName));
-                }
-            }
 
-            if (itemSection.isList("lore")) {
-                final List<String> lore = applyAsyncPlaceholders(
-                        PlaceholderUtils.applyPlaceholders(plugin, itemSection.getStringList("lore"), player))
-                        .stream()
-                        .map(MessageUtils::colorize)
-                        .toList();
-                meta.setLore(lore);
-            } else if (itemSection.isString("lore")) {
-                final String processedLore = applyAsyncPlaceholders(
-                        PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player));
-                if (processedLore != null && !processedLore.isBlank()) {
-                    final List<String> lore = Arrays.stream(processedLore.split("\\n"))
-                            .map(MessageUtils::colorize)
-                            .toList();
-                    meta.setLore(lore);
-                }
-            }
+        configureItemMeta(player, itemSection, rawHead, resolvedHead, itemStack, !requestHeadFromDatabase);
 
-            if (itemSection.contains("custom_model_data")) {
-                meta.setCustomModelData(itemSection.getInt("custom_model_data"));
-            }
-
-            if (itemSection.getBoolean("glow", false)) {
-                meta.addItemFlags(ItemFlag.values());
-                meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
-            }
-
-            if (meta instanceof SkullMeta skullMeta) {
-                applyHead(rawHead, resolvedHead, player, skullMeta);
-            }
-
-            itemStack.setItemMeta(meta);
+        if (deferredHeadItem != null) {
+            configureItemMeta(player, itemSection, rawHead, resolvedHead, deferredHeadItem, false);
         }
 
         final int slot = itemSection.getInt("slot", -1);
@@ -348,7 +333,132 @@ public class ConfiguredMenu implements Menu {
         if (targetSlot < 0) {
             return Optional.empty();
         }
+        if (deferredHeadItem != null) {
+            deferredHeadUpdates.put(targetSlot, deferredHeadItem);
+        }
         return Optional.of(targetSlot);
+    }
+
+    private void scheduleDeferredHeadUpdates(final Player player) {
+        if (deferredHeadUpdates.isEmpty() || inventory == null || player == null) {
+            return;
+        }
+        final Deque<Map.Entry<Integer, ItemStack>> queue = new ArrayDeque<>();
+        deferredHeadUpdates.forEach((slot, item) -> {
+            if (item != null) {
+                queue.add(new AbstractMap.SimpleEntry<>(slot, item));
+            }
+        });
+        if (queue.isEmpty()) {
+            deferredHeadUpdates.clear();
+            return;
+        }
+        cancelDeferredHeadTask();
+        deferredHeadTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            if (queue.isEmpty()) {
+                cleanupDeferredHeadUpdates();
+                return;
+            }
+            if (!player.isOnline() || !isInventoryOpenFor(player)) {
+                queue.clear();
+                cleanupDeferredHeadUpdates();
+                return;
+            }
+            int processed = 0;
+            while (processed < MAX_HEAD_UPDATES_PER_TICK && !queue.isEmpty()) {
+                final Map.Entry<Integer, ItemStack> entry = queue.poll();
+                if (entry == null) {
+                    continue;
+                }
+                final int slot = entry.getKey();
+                final ItemStack headItem = entry.getValue();
+                if (inventory != null && slot >= 0 && slot < inventory.getSize() && headItem != null) {
+                    inventory.setItem(slot, headItem);
+                }
+                deferredHeadUpdates.remove(slot);
+                processed++;
+            }
+            if (queue.isEmpty() || deferredHeadUpdates.isEmpty()) {
+                queue.clear();
+                cleanupDeferredHeadUpdates();
+            }
+        }, HEAD_UPDATE_INITIAL_DELAY, HEAD_UPDATE_INTERVAL);
+    }
+
+    private boolean isInventoryOpenFor(final Player player) {
+        if (player == null || inventory == null) {
+            return false;
+        }
+        final InventoryView view = player.getOpenInventory();
+        return view != null && inventory.equals(view.getTopInventory());
+    }
+
+    private void cleanupDeferredHeadUpdates() {
+        deferredHeadUpdates.clear();
+        cancelDeferredHeadTask();
+    }
+
+    private void cancelDeferredHeadTask() {
+        if (deferredHeadTask != null) {
+            deferredHeadTask.cancel();
+            deferredHeadTask = null;
+        }
+    }
+
+    private void configureItemMeta(final Player player,
+                                    final ConfigurationSection itemSection,
+                                    final String rawHead,
+                                    final String resolvedHead,
+                                    final ItemStack itemStack,
+                                    final boolean applyHeadOwner) {
+        if (itemSection == null || itemStack == null) {
+            return;
+        }
+        final ItemMeta meta = itemStack.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+
+        if (itemSection.isString("name")) {
+            final String processedName = applyAsyncPlaceholders(PlaceholderUtils.applyPlaceholders(plugin,
+                    itemSection.getString("name"), player));
+            if (processedName != null) {
+                meta.setDisplayName(MessageUtils.colorize(processedName));
+            }
+        }
+
+        if (itemSection.isList("lore")) {
+            final List<String> lore = applyAsyncPlaceholders(
+                    PlaceholderUtils.applyPlaceholders(plugin, itemSection.getStringList("lore"), player))
+                    .stream()
+                    .map(MessageUtils::colorize)
+                    .toList();
+            meta.setLore(lore);
+        } else if (itemSection.isString("lore")) {
+            final String processedLore = applyAsyncPlaceholders(
+                    PlaceholderUtils.applyPlaceholders(plugin, itemSection.getString("lore"), player));
+            if (processedLore != null && !processedLore.isBlank()) {
+                final List<String> lore = Arrays.stream(processedLore.split("\\n"))
+                        .map(MessageUtils::colorize)
+                        .toList();
+                meta.setLore(lore);
+            }
+        }
+
+        if (itemSection.contains("custom_model_data")) {
+            meta.setCustomModelData(itemSection.getInt("custom_model_data"));
+        }
+
+        if (itemSection.getBoolean("glow", false)) {
+            meta.addItemFlags(ItemFlag.values());
+            meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+        }
+
+        if (applyHeadOwner && meta instanceof SkullMeta skullMeta) {
+            applyHead(rawHead, resolvedHead, player, skullMeta);
+        }
+
+        itemStack.setItemMeta(meta);
     }
 
     private void applyHead(final String rawHead, final String resolvedHead, final Player player, final SkullMeta skullMeta) {
