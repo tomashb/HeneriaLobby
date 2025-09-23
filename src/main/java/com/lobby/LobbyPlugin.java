@@ -14,10 +14,10 @@ import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.holograms.HologramManager;
-import com.lobby.menus.MenuListener;
+import com.lobby.menus.AssetManager;
+import com.lobby.menus.GlobalListener;
 import com.lobby.menus.MenuManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
-import com.lobby.menus.templates.UITemplateManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -31,7 +31,6 @@ import com.lobby.settings.PlayerSettingsManager;
 import com.lobby.shop.ShopManager;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.SocialPlaceholderManager;
-import com.lobby.social.menus.MenuClickHandler;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
@@ -54,8 +53,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private HologramManager hologramManager;
     private NPCManager npcManager;
     private LobbyManager lobbyManager;
+    private AssetManager assetManager;
     private MenuManager menuManager;
-    private UITemplateManager uiTemplateManager;
     private ConfirmationManager confirmationManager;
     private HeadDatabaseManager headDatabaseManager;
     private ShopManager shopManager;
@@ -113,9 +112,9 @@ public final class LobbyPlugin extends JavaPlugin {
         npcManager.initialize();
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
-        uiTemplateManager = new UITemplateManager(this);
-        menuManager = new MenuManager(this);
-        getServer().getPluginManager().registerEvents(new MenuListener(this, menuManager), this);
+        assetManager = new AssetManager(this);
+        menuManager = new MenuManager(this, assetManager);
+        getServer().getPluginManager().registerEvents(new GlobalListener(menuManager), this);
         confirmationManager = new ConfirmationManager(this);
         shopManager = new ShopManager(this);
         shopManager.initialize();
@@ -129,7 +128,6 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new LobbyItemListener(lobbyManager, lobbyManager.getItemManager()), this);
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new NPCInteractionHandler(npcManager), this);
-        getServer().getPluginManager().registerEvents(new MenuClickHandler(this), this);
 
         Material.matchMaterial("STONE");
 
@@ -175,6 +173,9 @@ public final class LobbyPlugin extends JavaPlugin {
         if (menuManager != null) {
             menuManager.shutdown();
         }
+        if (assetManager != null) {
+            assetManager.shutdown();
+        }
         if (confirmationManager != null) {
             confirmationManager.clearAll();
         }
@@ -209,16 +210,16 @@ public final class LobbyPlugin extends JavaPlugin {
         return menuManager;
     }
 
-    public UITemplateManager getUiTemplateManager() {
-        return uiTemplateManager;
-    }
-
-    public HeadDatabaseManager getHeadDatabaseManager() {
-        return headDatabaseManager;
+    public AssetManager getAssetManager() {
+        return assetManager;
     }
 
     public ConfirmationManager getConfirmationManager() {
         return confirmationManager;
+    }
+
+    public HeadDatabaseManager getHeadDatabaseManager() {
+        return headDatabaseManager;
     }
 
     public ShopManager getShopManager() {
@@ -317,6 +318,7 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("serveurs", playerCommands);
         registerCommand("profil", playerCommands);
         registerCommand("discord", playerCommands);
+        registerCommand("jeux", playerCommands);
 
         if (shopCommands != null) {
             registerCommand("shop", shopCommands);

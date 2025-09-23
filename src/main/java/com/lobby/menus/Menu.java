@@ -1,67 +1,27 @@
 package com.lobby.menus;
 
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
+/**
+ * Minimal contract for all inventory based menus used by the lobby plugin.
+ * Implementations are responsible for building their inventory contents and
+ * reacting to click events originating from the inventory that they own.
+ */
 public interface Menu {
 
+    /**
+     * Opens the menu for the given player. Implementations should build the
+     * inventory contents before calling {@link Player#openInventory}.
+     *
+     * @param player the player that should see the menu
+     */
     void open(Player player);
 
+    /**
+     * Handles a click inside the menu inventory.
+     *
+     * @param event the inventory click event to process
+     */
     void handleClick(InventoryClickEvent event);
-
-    Inventory getInventory();
-
-    default List<String> getActionsForSlot(final int slot) {
-        return Collections.emptyList();
-    }
-
-    default AsyncPreparation prepareAsync(final Player player) {
-        return AsyncPreparation.EMPTY;
-    }
-
-    default void applyAsyncPreparation(final AsyncPreparationResult result) {
-        // No-op by default.
-    }
-
-    record HeadRequest(String headId, Material fallback) {
-        public HeadRequest {
-            headId = headId == null ? "" : headId.trim();
-            fallback = Objects.requireNonNullElse(fallback, Material.PLAYER_HEAD);
-        }
-
-        public boolean isValid() {
-            return !headId.isEmpty();
-        }
-    }
-
-    record AsyncPreparation(Set<HeadRequest> headRequests) {
-        static final AsyncPreparation EMPTY = new AsyncPreparation(Set.of());
-
-        public AsyncPreparation {
-            headRequests = headRequests == null || headRequests.isEmpty() ? Set.of() : Set.copyOf(headRequests);
-        }
-    }
-
-    record AsyncPreparationResult(Map<HeadRequest, ItemStack> preloadedHeads,
-                                  Map<String, String> placeholderValues) {
-        static final AsyncPreparationResult EMPTY = new AsyncPreparationResult(Map.of(), Map.of());
-
-        public AsyncPreparationResult {
-            preloadedHeads = preloadedHeads == null || preloadedHeads.isEmpty()
-                    ? Map.of()
-                    : Map.copyOf(preloadedHeads);
-            placeholderValues = placeholderValues == null || placeholderValues.isEmpty()
-                    ? Map.of()
-                    : Map.copyOf(placeholderValues);
-        }
-    }
 }

@@ -18,18 +18,8 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
 
     private static final Map<String, String> COMMAND_MESSAGES = Map.of(
             "profil", "commands.profile_unavailable",
-            "discord", "commands.discord_unavailable"
-    );
-
-    private static final Map<String, String> MENU_COMMANDS = Map.of(
-            "serveurs", "servers_menu",
-            "profil", "profil_menu"
-    );
-
-    private static final Map<String, String> LOBBY_MENU_SUBCOMMANDS = Map.of(
-            "clan", "clan_menu",
-            "friends", "friends_menu",
-            "groups", "groups_menu"
+            "discord", "commands.discord_unavailable",
+            "serveurs", "commands.servers_unavailable"
     );
 
     private final LobbyManager lobbyManager;
@@ -53,15 +43,10 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             handleLobbyCommand(player, args);
             return true;
         }
-        if (MENU_COMMANDS.containsKey(commandName)) {
-            final String menuId = MENU_COMMANDS.get(commandName);
-            final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
+        if (commandName.equals("jeux")) {
+            final boolean opened = menuManager != null && menuManager.openMenu(player, "jeux_menu");
             if (!opened) {
-                final boolean handled = menuManager != null && menuManager.consumeFailureNotification(player.getUniqueId());
-                if (!handled) {
-                    final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
-                    MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
-                }
+                MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", "jeux"));
             }
             return true;
         }
@@ -78,15 +63,8 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
     private void handleLobbyCommand(final Player player, final String[] args) {
         if (args != null && args.length > 0) {
             final String argument = args[0].toLowerCase(Locale.ROOT);
-            final String menuId = LOBBY_MENU_SUBCOMMANDS.get(argument);
-            if (menuId != null) {
-                final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
-                if (!opened) {
-                    final boolean handled = menuManager != null && menuManager.consumeFailureNotification(player.getUniqueId());
-                    if (!handled) {
-                        MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", argument));
-                    }
-                }
+            if (argument.equals("clan") || argument.equals("friends") || argument.equals("groups")) {
+                MessageUtils.sendConfigMessage(player, "commands.unavailable", Map.of("command", "/lobby " + argument));
                 return;
             }
         }

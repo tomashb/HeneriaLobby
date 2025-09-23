@@ -5,9 +5,6 @@ import com.lobby.npcs.ActionProcessor;
 import com.lobby.utils.LogUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 
 import java.util.HashMap;
 import java.util.List;
@@ -15,14 +12,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ConfirmationManager implements Listener {
+public class ConfirmationManager {
 
     private final LobbyPlugin plugin;
     private final Map<UUID, ConfirmationRequest> requests = new ConcurrentHashMap<>();
 
     public ConfirmationManager(final LobbyPlugin plugin) {
         this.plugin = plugin;
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     public void openConfirmation(final Player player, final ConfirmationRequest request) {
@@ -30,12 +26,17 @@ public class ConfirmationManager implements Listener {
             return;
         }
         requests.put(player.getUniqueId(), request);
-        if (plugin.getMenuManager() == null) {
-            LogUtils.warning(plugin, "Attempted to open confirmation menu without MenuManager available.");
-            requests.remove(player.getUniqueId());
-            return;
+        player.sendMessage("§c§lConfirmation requise");
+        if (request.actionTitle() != null && !request.actionTitle().isBlank()) {
+            player.sendMessage("§7Action: §f" + request.actionTitle());
         }
-        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> plugin.getMenuManager().openMenu(player, request.templateId()));
+        if (request.actionDescription() != null && !request.actionDescription().isBlank()) {
+            player.sendMessage("§7" + request.actionDescription());
+        }
+        if (!request.actionDetails().isEmpty()) {
+            request.actionDetails().forEach(line -> player.sendMessage("§8» §7" + line));
+        }
+        player.sendMessage("§7Tapez §aconfirm §7ou §ccancel §7dans le chat.");
     }
 
     public void executeConfirmation(final Player player, final boolean confirmed) {
@@ -47,7 +48,6 @@ public class ConfirmationManager implements Listener {
         if (request == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, (Runnable) player::closeInventory);
         final ActionProcessor processor = resolveActionProcessor();
         if (processor == null) {
             return;
@@ -56,7 +56,7 @@ public class ConfirmationManager implements Listener {
         if (actions.isEmpty()) {
             return;
         }
-        processor.processActions(actions, player, null);
+        Bukkit.getScheduler().runTask(plugin, () -> processor.processActions(actions, player, null));
     }
 
     public ConfirmationRequest getRequest(final UUID uuid) {
@@ -67,10 +67,9 @@ public class ConfirmationManager implements Listener {
     }
 
     public void clearRequest(final UUID uuid) {
-        if (uuid == null) {
-            return;
+        if (uuid != null) {
+            requests.remove(uuid);
         }
-        requests.remove(uuid);
     }
 
     public void clearAll() {
@@ -92,36 +91,26 @@ public class ConfirmationManager implements Listener {
         replacements.put("%action_details%", defaultString(request.joinedDetails(), ""));
         replacements.put("%previous_menu%", defaultString(request.previousMenuId(), ""));
         replacements.put("%confirmation_action%", "[CONFIRM_EXECUTE]");
-        String replaced = text;
+        String processed = text;
         for (Map.Entry<String, String> entry : replacements.entrySet()) {
-            replaced = replaced.replace(entry.getKey(), entry.getValue());
+            processed = processed.replace(entry.getKey(), entry.getValue());
         }
-        return replaced;
+        return processed;
     }
 
     public List<String> applyPlaceholders(final Player player, final List<String> lines) {
         if (lines == null || lines.isEmpty()) {
             return List.of();
         }
-        return lines.stream()
-                .map(line -> applyPlaceholders(player, line))
-                .toList();
-    }
-
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player player)) {
-            return;
-        }
-        final UUID uuid = player.getUniqueId();
-        if (!requests.containsKey(uuid)) {
-            return;
-        }
-        requests.remove(uuid);
+        return lines.stream().map(line -> applyPlaceholders(player, line)).toList();
     }
 
     private ActionProcessor resolveActionProcessor() {
-        return plugin.getNpcManager() != null ? plugin.getNpcManager().getActionProcessor() : null;
+        if (plugin.getNpcManager() == null) {
+            LogUtils.warning(plugin, "NPC manager unavailable for confirmation execution.");
+            return null;
+        }
+        return plugin.getNpcManager().getActionProcessor();
     }
 
     private String defaultString(final String value, final String fallback) {

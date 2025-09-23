@@ -24,6 +24,9 @@ commands:
   shop:
     description: Ouvre la boutique du lobby
     permission: lobby.shop.use
+  jeux:
+    description: Ouvre le menu des jeux
+    permission: lobby.use
   serveurs:
     description: Ouvre le sélecteur de serveurs
     aliases: [server]
