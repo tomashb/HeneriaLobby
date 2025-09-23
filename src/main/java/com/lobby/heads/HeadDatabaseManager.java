@@ -12,9 +12,11 @@ import org.bukkit.plugin.Plugin;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -31,6 +33,8 @@ public class HeadDatabaseManager {
 
     private final LobbyPlugin plugin;
     private final Map<String, ItemStack> headCache = new ConcurrentHashMap<>();
+    private final Set<String> headBlacklist = ConcurrentHashMap.newKeySet();
+    private final Set<String> warnedBlacklistedHeads = ConcurrentHashMap.newKeySet();
 
     private volatile Object apiInstance;
     private volatile Method getItemHeadMethod;
@@ -52,6 +56,7 @@ public class HeadDatabaseManager {
         getItemHeadMethod = null;
         headDatabaseEnabled = false;
         missingPluginLogged = false;
+        loadConfigurationOptions();
         initializeHeadDatabase();
     }
 
@@ -97,7 +102,11 @@ public class HeadDatabaseManager {
         ItemStack resolved = null;
 
         if (!trimmedId.isEmpty() && trimmedId.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
-            resolved = getHeadFromDatabase(trimmedId.substring(4));
+            if (isHeadBlacklisted(trimmedId)) {
+                handleBlacklistedHead(trimmedId);
+            } else {
+                resolved = getHeadFromDatabase(trimmedId.substring(4));
+            }
         } else if (!trimmedId.isEmpty()) {
             resolved = resolveVanillaMaterial(trimmedId);
         }
@@ -183,6 +192,66 @@ public class HeadDatabaseManager {
         headCache.clear();
     }
 
+    private void loadConfigurationOptions() {
+        headBlacklist.clear();
+        warnedBlacklistedHeads.clear();
+        debugLogging = false;
+        if (plugin == null) {
+            return;
+        }
+        try {
+            final var config = plugin.getConfig();
+            if (config != null) {
+                debugLogging = config.getBoolean("head_database.debug", false);
+                final List<String> blacklistEntries = config.getStringList("head_database.blacklist");
+                for (String entry : blacklistEntries) {
+                    final String normalized = normalizeHeadId(entry);
+                    if (!normalized.isEmpty()) {
+                        headBlacklist.add(normalized);
+                    }
+                }
+            }
+        } catch (final Exception exception) {
+            LogUtils.warning(plugin, "Unable to load HeadDatabase settings: " + exception.getMessage());
+        }
+    }
+
+    private boolean isHeadBlacklisted(final String headId) {
+        final String normalized = normalizeHeadId(headId);
+        return !normalized.isEmpty() && headBlacklist.contains(normalized);
+    }
+
+    private void handleBlacklistedHead(final String headId) {
+        final String normalized = normalizeHeadId(headId);
+        if (normalized.isEmpty()) {
+            return;
+        }
+        if (warnedBlacklistedHeads.add(normalized)) {
+            LogUtils.warning(plugin, "HeadDatabase id '" + normalized + "' is blacklisted. Using fallback head.");
+        }
+    }
+
+    private void addRuntimeBlacklist(final String headId) {
+        final String normalized = normalizeHeadId(headId);
+        if (normalized.isEmpty()) {
+            return;
+        }
+        if (headBlacklist.add(normalized)) {
+            debug("Runtime blacklisted head " + normalized);
+        }
+    }
+
+    private String normalizeHeadId(final String headId) {
+        if (headId == null) {
+            return "";
+        }
+        final String normalized = headId.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        return normalized.startsWith("hdb:") ? normalized.substring(4) : normalized;
+    }
+
     private String createCacheKey(final String headId, final Material fallbackMaterial) {
         return headId.toLowerCase(Locale.ROOT) + '|' + fallbackMaterial.name();
     }
@@ -206,6 +275,11 @@ public class HeadDatabaseManager {
             return null;
         }
 
+        if (isHeadBlacklisted(rawId)) {
+            handleBlacklistedHead(rawId);
+            return null;
+        }
+
         try {
             final Object result = getItemHeadMethod.invoke(apiInstance, rawId);
             if (result instanceof ItemStack itemStack) {
@@ -213,8 +287,12 @@ public class HeadDatabaseManager {
                 return itemStack;
             }
             LogUtils.warning(plugin, "HeadDatabase returned an unexpected result type for id " + rawId + '.');
+            addRuntimeBlacklist(rawId);
+            handleBlacklistedHead(rawId);
         } catch (final Exception exception) {
             LogUtils.warning(plugin, "Failed to fetch head '" + rawId + "' from HeadDatabase: " + exception.getMessage());
+            addRuntimeBlacklist(rawId);
+            handleBlacklistedHead(rawId);
         }
 
         return null;

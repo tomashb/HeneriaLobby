@@ -24,6 +24,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,6 +39,8 @@ public class MenuManager implements Listener {
 
     private final LobbyPlugin plugin;
     private final Map<UUID, Menu> openMenus = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> profileMenuCooldowns = new ConcurrentHashMap<>();
+    private final Set<UUID> notifiedMenuFailures = ConcurrentHashMap.newKeySet();
     private final Map<String, MenuDefinition> menuDefinitions = new ConcurrentHashMap<>();
     private final MenuDesignProvider menuDesignProvider;
 
@@ -53,12 +56,29 @@ public class MenuManager implements Listener {
             return false;
         }
         final String normalizedId = menuId.toLowerCase(java.util.Locale.ROOT);
+        final boolean profileMenuRequested = isProfileMenu(normalizedId);
+        long profileCooldownMillis = -1L;
+
         MenuDefinition definition = menuDefinitions.get(normalizedId);
         if (definition == null) {
             reloadMenus();
             definition = menuDefinitions.get(normalizedId);
             if (definition == null) {
-                MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", menuId));
+                notifyMenuFailure(player, "menus.not_found", Map.of("menu", menuId));
+                return false;
+            }
+        }
+
+        if (profileMenuRequested) {
+            if (!plugin.getConfig().getBoolean("menus.profile.enabled", true)) {
+                notifyMenuFailure(player, "menus.profile_disabled");
+                return false;
+            }
+            if (isServerOverloadedForProfile(player)) {
+                return false;
+            }
+            profileCooldownMillis = Math.max(0L, plugin.getConfig().getLong("menus.profile.cooldown_ms", 5000L));
+            if (profileCooldownMillis > 0 && isProfileMenuOnCooldown(player, profileCooldownMillis)) {
                 return false;
             }
         }
@@ -69,6 +89,9 @@ public class MenuManager implements Listener {
         final Set<String> placeholders = definition.placeholders();
         final boolean debugAsyncMenu = isAsyncDebugMenu(normalizedId);
         final boolean placeholderApiEnabled = isPlaceholderApiEnabled();
+        if (profileMenuRequested && profileCooldownMillis > 0) {
+            profileMenuCooldowns.put(uuid, System.currentTimeMillis());
+        }
         openMenuAsync(player, menu, placeholders, normalizedId, debugAsyncMenu, placeholderApiEnabled);
         return true;
     }
@@ -89,6 +112,8 @@ public class MenuManager implements Listener {
             }
         });
         openMenus.clear();
+        profileMenuCooldowns.clear();
+        notifiedMenuFailures.clear();
     }
 
     public void reloadMenus() {
@@ -197,7 +222,17 @@ public class MenuManager implements Listener {
 
     @EventHandler
     public void onPlayerQuit(final PlayerQuitEvent event) {
-        openMenus.remove(event.getPlayer().getUniqueId());
+        final UUID uuid = event.getPlayer().getUniqueId();
+        openMenus.remove(uuid);
+        profileMenuCooldowns.remove(uuid);
+        notifiedMenuFailures.remove(uuid);
+    }
+
+    public boolean consumeFailureNotification(final UUID uuid) {
+        if (uuid == null) {
+            return false;
+        }
+        return notifiedMenuFailures.remove(uuid);
     }
 
     private void loadMenusFromMainConfig() {
@@ -465,6 +500,7 @@ public class MenuManager implements Listener {
             return;
         }
         final UUID uuid = player.getUniqueId();
+        notifiedMenuFailures.remove(uuid);
         openMenus.put(uuid, menu);
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             if (debugAsyncMenu) {
@@ -560,6 +596,86 @@ public class MenuManager implements Listener {
         }
         final String normalized = menuId.toLowerCase(Locale.ROOT);
         return "stats_menu".equals(normalized) || "profil_menu".equals(normalized);
+    }
+
+    private boolean isProfileMenu(final String normalizedId) {
+        return normalizedId != null && normalizedId.equals("profil_menu");
+    }
+
+    private boolean isProfileMenuOnCooldown(final Player player, final long cooldownMillis) {
+        if (player == null || cooldownMillis <= 0L) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        final long lastOpen = profileMenuCooldowns.getOrDefault(uuid, 0L);
+        final long elapsed = System.currentTimeMillis() - lastOpen;
+        if (elapsed >= cooldownMillis) {
+            return false;
+        }
+        final long remainingMillis = Math.max(0L, cooldownMillis - elapsed);
+        final long seconds = Math.max(1L, (long) Math.ceil(remainingMillis / 1000.0D));
+        notifyMenuFailure(player, "menus.profile_cooldown", Map.of("seconds", seconds));
+        return true;
+    }
+
+    private boolean isServerOverloadedForProfile(final Player player) {
+        if (player == null) {
+            return false;
+        }
+        if (!plugin.getConfig().getBoolean("menus.profile.tps_protection_enabled", true)) {
+            return false;
+        }
+        final double minTps = plugin.getConfig().getDouble("menus.profile.min_tps", 18.0D);
+        if (minTps <= 0D) {
+            return false;
+        }
+        final double currentTps = fetchCurrentTps();
+        if (currentTps >= minTps) {
+            return false;
+        }
+        notifyMenuFailure(player, "menus.profile_tps_protection", Map.of(
+                "tps", formatTps(currentTps),
+                "min_tps", formatTps(minTps)
+        ));
+        return true;
+    }
+
+    private double fetchCurrentTps() {
+        try {
+            final double[] tps = Bukkit.getServer().getTPS();
+            if (tps != null && tps.length > 0) {
+                return tps[0];
+            }
+        } catch (final NoSuchMethodError ignored) {
+            return 20.0D;
+        } catch (final Throwable throwable) {
+            LogUtils.warning(plugin, "Unable to read server TPS: " + throwable.getMessage());
+        }
+        return 20.0D;
+    }
+
+    private String formatTps(final double value) {
+        return String.format(java.util.Locale.US, "%.1f", value);
+    }
+
+    private void notifyMenuFailure(final Player player, final String messagePath) {
+        notifyMenuFailure(player, messagePath, Collections.emptyMap());
+    }
+
+    private void notifyMenuFailure(final Player player,
+                                   final String messagePath,
+                                   final Map<String, ?> placeholders) {
+        if (player == null) {
+            return;
+        }
+        if (messagePath != null && !messagePath.isBlank()) {
+            if (placeholders == null || placeholders.isEmpty()) {
+                MessageUtils.sendConfigMessage(player, messagePath);
+            } else {
+                MessageUtils.sendConfigMessage(player, messagePath, placeholders);
+            }
+        }
+        notifiedMenuFailures.add(player.getUniqueId());
     }
 
     private boolean isPlaceholderApiEnabled() {

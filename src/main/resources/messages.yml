@@ -35,6 +35,9 @@ shop:
     item_error: "&cErreur lors de la création de l'item."
 menus:
   not_found: "&cLe menu &e{menu} &cn'est pas disponible pour le moment."
+  profile_disabled: "&cLe menu profil est temporairement désactivé."
+  profile_tps_protection: "&cLe serveur est en surcharge (&e{tps}&c TPS). Merci de réessayer lorsque les TPS dépasseront &e{min_tps}&c."
+  profile_cooldown: "&eVeuillez patienter &6{seconds}s &eavant de rouvrir votre profil."
 economy:
   player_only: "&cSeuls les joueurs peuvent exécuter cette commande."
   player_not_found: "&cLe joueur &e{player} &cest introuvable."

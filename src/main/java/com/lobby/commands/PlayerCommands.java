@@ -57,8 +57,11 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             final String menuId = MENU_COMMANDS.get(commandName);
             final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
             if (!opened) {
-                final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
-                MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
+                final boolean handled = menuManager != null && menuManager.consumeFailureNotification(player.getUniqueId());
+                if (!handled) {
+                    final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
+                    MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
+                }
             }
             return true;
         }
@@ -79,7 +82,10 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             if (menuId != null) {
                 final boolean opened = menuManager != null && menuManager.openMenu(player, menuId);
                 if (!opened) {
-                    MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", argument));
+                    final boolean handled = menuManager != null && menuManager.consumeFailureNotification(player.getUniqueId());
+                    if (!handled) {
+                        MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", argument));
+                    }
                 }
                 return;
             }
