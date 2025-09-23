@@ -35,6 +35,7 @@ public class SyncMessageListener implements PluginMessageListener {
                 case "ECONOMY_UPDATE" -> handleEconomyUpdate(data);
                 case "FRIEND_UPDATE" -> handleFriendUpdate(data);
                 case "STATS_UPDATE" -> handleStatsUpdate(data);
+                case "SERVER_STATUS" -> handleServerStatusUpdate(data);
                 default -> plugin.getLogger().fine("Unknown sync message type received: " + type);
             }
         } catch (final Exception exception) {
@@ -67,5 +68,39 @@ public class SyncMessageListener implements PluginMessageListener {
         // Stats synchronization is optional and depends on an external implementation.
         // Log the received payload for debugging purposes without further processing.
         plugin.getLogger().fine("Received stats update payload: " + data);
+    }
+
+    private void handleServerStatusUpdate(final String data) {
+        if (data == null || data.isBlank()) {
+            return;
+        }
+        final var placeholderCache = plugin.getServerPlaceholderCache();
+        if (placeholderCache == null) {
+            return;
+        }
+        final String[] segments = data.split(";\\s*");
+        for (final String segment : segments) {
+            if (segment == null || segment.isBlank()) {
+                continue;
+            }
+            final String[] parts = segment.split(":");
+            if (parts.length < 2) {
+                continue;
+            }
+            final String serverId = parts[0];
+            if (serverId == null || serverId.isBlank()) {
+                continue;
+            }
+            try {
+                final int playerCount = Integer.parseInt(parts[1]);
+                placeholderCache.updateServerPlayerCount(serverId, playerCount);
+                if (parts.length >= 3) {
+                    final int activeGames = Integer.parseInt(parts[2]);
+                    placeholderCache.updateActiveGames(serverId, activeGames);
+                }
+            } catch (final NumberFormatException exception) {
+                plugin.getLogger().fine("Ignoring malformed server status entry: " + segment);
+            }
+        }
     }
 }

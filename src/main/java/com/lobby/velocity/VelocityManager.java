@@ -208,6 +208,10 @@ public class VelocityManager {
             return;
         }
         serverPlayerCounts.put(normalize(serverName), Math.max(0, playerCount));
+        final var placeholderCache = plugin.getServerPlaceholderCache();
+        if (placeholderCache != null) {
+            placeholderCache.updateServerPlayerCount(serverName, playerCount);
+        }
     }
 
     public void updateAvailableServers(final Collection<String> availableServers) {

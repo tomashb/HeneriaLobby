@@ -595,7 +595,9 @@ public class MenuManager implements Listener {
             return false;
         }
         final String normalized = menuId.toLowerCase(Locale.ROOT);
-        return "stats_menu".equals(normalized) || "profil_menu".equals(normalized);
+        return "stats_menu".equals(normalized)
+                || "stats_detailed_menu".equals(normalized)
+                || "profil_menu".equals(normalized);
     }
 
     private boolean isProfileMenu(final String normalizedId) {
@@ -740,6 +742,7 @@ public class MenuManager implements Listener {
                 "groups_menu.yml",
                 "clan_menu.yml",
                 "stats_menu.yml",
+                "stats_detailed_menu.yml",
                 "notifications_menu.yml",
                 "audio_settings_menu.yml"
         );

@@ -25,6 +25,7 @@ import com.lobby.lobby.listeners.LobbyItemListener;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
 import com.lobby.servers.ServerManager;
+import com.lobby.servers.ServerPlaceholderCache;
 import com.lobby.settings.PlayerSettingsManager;
 import com.lobby.shop.ShopManager;
 import com.lobby.social.ChatInputManager;
@@ -62,6 +63,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private GroupManager groupManager;
     private ClanManager clanManager;
     private VelocityManager velocityManager;
+    private ServerPlaceholderCache serverPlaceholderCache;
     private SocialPlaceholderManager socialPlaceholderManager;
     private ChatInputManager chatInputManager;
     private StatsManager statsManager;
@@ -97,6 +99,8 @@ public final class LobbyPlugin extends JavaPlugin {
         playerSettingsManager = new PlayerSettingsManager(this);
         economyManager = new EconomyManager(this);
         velocityManager = new VelocityManager(this);
+        serverPlaceholderCache = new ServerPlaceholderCache(this);
+        serverPlaceholderCache.start();
         friendManager = new FriendManager(this);
         groupManager = new GroupManager(this);
         clanManager = new ClanManager(this);
@@ -144,6 +148,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (headDatabaseManager != null) {
             headDatabaseManager.clearCache();
+        }
+        if (serverPlaceholderCache != null) {
+            serverPlaceholderCache.shutdown();
         }
         if (velocityManager != null) {
             velocityManager.shutdown();
@@ -231,6 +238,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public VelocityManager getVelocityManager() {
         return velocityManager;
+    }
+
+    public ServerPlaceholderCache getServerPlaceholderCache() {
+        return serverPlaceholderCache;
     }
 
     public SocialPlaceholderManager getSocialPlaceholderManager() {

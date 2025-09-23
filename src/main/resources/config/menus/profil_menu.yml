@@ -1,246 +1,91 @@
 menu:
-  id: "profil_menu"
-  title: "&8» &6Mon Profil"
+  id: 'profil_menu'
+  title: '&8» &6Mon Profil'
   size: 54
-  async_preload: true
-
   items:
-    glass_1:
-      slot: 0
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_2:
-      slot: 1
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_3:
-      slot: 2
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_4:
-      slot: 6
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_5:
-      slot: 7
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_6:
-      slot: 8
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_7:
-      slot: 9
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_8:
-      slot: 17
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_9:
-      slot: 45
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_10:
-      slot: 53
-      material: "BLUE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
+    # --- Décorations (Vitres Bleues) ---
+    decor_slots: '0,1,2,6,7,8,9,17,45,53'
+    decor_item:
+      material: 'BLUE_STAINED_GLASS_PANE'
+      name: '&7'
+      action: '[NONE]'
 
-    player_head:
-      slot: 50
-      material: "PLAYER_HEAD"
-      head: "%player_name%"
-      name: "&6&l%player_name%"
+    # --- Fonctionnalités Sociales (Non-bloquant) ---
+    slot_3:
+      material: 'hdb:9945'
+      name: '&a&lAmis'
       lore:
-        - "&r"
-        - "&8▸ &7Grade: %luckperms_prefix%"
-        - "&8▸ &7Niveau: &e%player_level%"
-        - "&8▸ &7Expérience: &d%player_experience%"
-        - "&8▸ &7Temps de jeu: &f%player_playtime_total%"
-        - "&8▸ &7Première connexion: &f%player_first_join%"
-        - "&r"
-        - "&8▸ &7Coins: &e%player_coins%"
-        - "&8▸ &7Tokens: &b%player_tokens%"
-        - "&r"
-        - "&7Vos informations personnelles"
-      actions:
-        - "[NONE]"
+        - '&7Gérez votre liste d''amis.'
+        - '&r'
+        - '&c⚠ Fonctionnalité en développement'
+      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
 
-    amis:
-      slot: 3
-      material: "PLAYER_HEAD"
-      head: "hdb:9945"
-      name: "&a&lAmis &8(&e%friends_online%&8/&7%friends_total%&8)"
+    slot_4:
+      material: 'hdb:9723'
+      name: '&e&lGroupe'
       lore:
-        - "&7Gérez votre liste d'amis,"
-        - "&7envoyez des invitations et"
-        - "&7voyez qui est en ligne."
-        - "&r"
-        - "&8▸ &7Amis en ligne: &a0"
-        - "&8▸ &7Total d'amis: &70"
-        - "&8▸ &7Demandes en attente: &e0"
-        - "&8▸ &7Votre statut: &aEn ligne"
-        - "&r"
-        - "&c⚠ Fonctionnalité en développement"
-      actions:
-        - "[MENU] friends_menu"
+        - '&7Créez ou rejoignez un groupe.'
+        - '&r'
+        - '&c⚠ Fonctionnalité en développement'
+      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
 
-    groupe:
-      slot: 4
-      material: "PLAYER_HEAD"
-      head: "hdb:9723"
-      name: "&e&lGroupe"
+    slot_5:
+      material: 'hdb:8971'
+      name: '&c&lClan'
       lore:
-        - "&7Créez ou rejoignez un groupe"
-        - "&7pour jouer avec vos amis !"
-        - "&r"
-        - "&8▸ &7Groupe actuel: &cAucun"
-        - "&8▸ &7Membres: &a0&8/&78"
-        - "&8▸ &7Votre rôle: &6-"
-        - "&8▸ &7Leader: &6-"
-        - "&r"
-        - "&c⚠ Fonctionnalité en développement"
-      actions:
-        - "[MENU] groups_menu"
+        - '&7Rejoignez un clan pour participer'
+        - '&7à des événements exclusifs.'
+        - '&r'
+        - '&c⚠ Fonctionnalité en développement'
+      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
 
-    clan:
-      slot: 5
-      material: "PLAYER_HEAD"
-      head: "hdb:8971"
-      name: "&c&lClan"
+    # --- Fonctionnalités Profil (Simplifiées) ---
+    slot_20:
+      material: 'PLAYER_HEAD'
+      head: '%player_name%'
+      name: '&b&lMes Statistiques'
       lore:
-        - "&7Rejoignez un clan pour participer"
-        - "&7à des événements exclusifs et"
-        - "&7des guerres de clans !"
-        - "&r"
-        - "&8▸ &7Clan: &cAucun"
-        - "&8▸ &7Votre rang: &6-"
-        - "&8▸ &7Membres: &a0&8/&750"
-        - "&8▸ &7Points: &e0"
-        - "&8▸ &7Niveau: &d1"
-        - "&r"
-        - "&c⚠ Fonctionnalité en développement"
-      actions:
-        - "[MENU] clan_menu"
+        - '&7Consultez toutes vos performances'
+        - '&7détaillées par mode de jeu.'
+        - '&r'
+        - '&a▶ Cliquez pour voir le détail !'
+      action: '[MENU] stats_detailed_menu'
 
-    stats:
-      slot: 20
-      material: "PLAYER_HEAD"
-      head: "hdb:2736"
-      name: "&b&lMes Statistiques"
+    slot_22:
+      material: 'hdb:2736'
+      name: '&f&lLangue'
       lore:
-        - "&7Consultez toutes vos performances"
-        - "&7détaillées par mode de jeu."
-        - "&r"
-        - "&8▸ &7Parties jouées: &e%stats_global_games%"
-        - "&8▸ &7Victoires: &a%stats_global_wins%"
-        - "&8▸ &7Défaites: &c%stats_global_losses%"
-        - "&8▸ &7Ratio V/D: &6%stats_global_ratio%"
-        - "&8▸ &7Temps de jeu: &b%stats_global_playtime%"
-        - "&r"
-        - "&a▶ Cliquez pour voir le détail !"
-      actions:
-        - "[MENU] stats_menu"
+        - '&7Changez la langue d''affichage.'
+        - '&r'
+        - '&8▸ &7Langue actuelle: &c🇫🇷 Français'
+        - '&r'
+        - '&a▶ Cliquez pour changer !'
+      action: '[MENU] language_menu'
 
-    langue:
-      slot: 22
-      material: "PLAYER_HEAD"
-      head: "hdb:2736"
-      name: "&f&lLangue &8- &cFrançais"
+    slot_24:
+      material: 'hdb:1218'
+      name: '&d&lParamètres'
       lore:
-        - "&7Changez la langue d'affichage"
-        - "&7de l'interface et des messages."
-        - "&r"
-        - "&8▸ &7Langue actuelle: &c🇫🇷 Français"
-        - "&8▸ &7Langues disponibles:"
-        - "&8  ▸ &c🇫🇷 Français"
-        - "&8  ▸ &f🇬🇧 English"
-        - "&8  ▸ &e🇪🇸 Español"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[MENU] language_menu"
+        - '&7Personnalisez votre expérience'
+        - '&7de jeu.'
+        - '&r'
+        - '&a▶ Cliquez pour configurer !'
+      action: '[MENU] settings_menu'
 
-    parametres:
-      slot: 24
-      material: "PLAYER_HEAD"
-      head: "hdb:1218"
-      name: "&d&lParamètres"
+    slot_26:
+      material: 'hdb:12654'
+      name: '&6&lRécompense Journalière'
       lore:
-        - "&7Personnalisez votre expérience"
-        - "&7de jeu selon vos préférences."
-        - "&r"
-        - "&8▸ &7Messages privés: %setting_private_messages_display%"
-        - "&8▸ &7Demandes d'amis: %setting_friend_requests_display%"
-        - "&8▸ &7Visibilité: %setting_visibility_display%"
-        - "&r"
-        - "&a▶ Cliquez pour configurer !"
-      actions:
-        - "[MENU] settings_menu"
+        - '&7Réclamez votre récompense'
+        - '&7quotidienne gratuite !'
+        - '&r'
+        - '&a▶ Cliquez pour réclamer !'
+      action: '[MENU] daily_reward_menu'
 
-    daily_reward:
-      slot: 30
-      material: "PLAYER_HEAD"
-      head: "hdb:12654"
-      name: "&6&lRécompense Journalière"
+    # --- Navigation ---
+    slot_49:
+      material: 'hdb:9334'
+      name: '&c&lRetour'
       lore:
-        - "&7Réclamez votre récompense"
-        - "&7quotidienne gratuite !"
-        - "&r"
-        - "&8▸ &7Statut: &aDisponible"
-        - "&8▸ &7Série actuelle: &e1 jour"
-        - "&8▸ &7Prochaine récompense: &e100 coins"
-        - "&8▸ &7Temps restant: &b23h 59m"
-        - "&r"
-        - "&a▶ Cliquez pour réclamer !"
-      actions:
-        - "[MESSAGE] &cLes récompenses journalières ne sont pas encore disponibles !"
-
-    menu_jeux:
-      slot: 48
-      material: "PLAYER_HEAD"
-      head: "hdb:35472"
-      name: "&e&lMenu des Jeux"
-      lore:
-        - "&7Retournez au menu principal"
-        - "&7pour choisir un mode de jeu."
-        - "&r"
-        - "&8▸ &7BedWars, Nexus, Zombie..."
-        - "&8▸ &7Boutique et sélecteur de serveurs"
-        - "&r"
-        - "&e▶ Cliquez pour y aller !"
-      actions:
-        - "[MENU] jeux_menu"
-
-    retour:
-      slot: 49
-      material: "PLAYER_HEAD"
-      head: "hdb:9334"
-      name: "&c&lFermer"
-      lore:
-        - "&7Fermer ce menu et retourner"
-        - "&7au lobby principal."
-        - "&r"
-        - "&c▶ Cliquez pour fermer !"
-      actions:
-        - "[CLOSE_MENU]"
+        - '&7Retourner au menu des jeux.'
+      action: '[MENU] jeux_menu'
