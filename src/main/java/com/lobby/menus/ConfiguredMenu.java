@@ -198,15 +198,16 @@ public class ConfiguredMenu implements Menu {
             return text;
         }
         final Map<String, String> replacements = asyncPreloadedPlaceholders;
-        if (replacements == null || replacements.isEmpty()) {
+        if (replacements == null || replacements.isEmpty() || text.indexOf('%') < 0) {
             return text;
         }
         String result = text;
         for (Map.Entry<String, String> entry : replacements.entrySet()) {
             final String placeholder = entry.getKey();
-            if (placeholder == null || placeholder.isEmpty()) {
+            if (placeholder == null || placeholder.isEmpty() || !result.contains(placeholder)) {
                 continue;
             }
+            // Apply the value collected asynchronously; avoid calling PlaceholderAPI on the main thread.
             final String value = entry.getValue();
             result = result.replace(placeholder, value != null ? value : "");
         }
@@ -216,6 +217,20 @@ public class ConfiguredMenu implements Menu {
     private List<String> applyAsyncPlaceholders(final List<String> lines) {
         if (lines == null || lines.isEmpty()) {
             return List.of();
+        }
+        final Map<String, String> replacements = asyncPreloadedPlaceholders;
+        if (replacements == null || replacements.isEmpty()) {
+            return new ArrayList<>(lines);
+        }
+        boolean requiresReplacement = false;
+        for (String line : lines) {
+            if (line != null && line.contains("%")) {
+                requiresReplacement = true;
+                break;
+            }
+        }
+        if (!requiresReplacement) {
+            return new ArrayList<>(lines);
         }
         final List<String> processed = new ArrayList<>(lines.size());
         for (String line : lines) {
