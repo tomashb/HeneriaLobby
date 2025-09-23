@@ -14,6 +14,7 @@ import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.holograms.HologramManager;
+import com.lobby.menus.MenuListener;
 import com.lobby.menus.MenuManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.menus.templates.UITemplateManager;
@@ -113,6 +114,7 @@ public final class LobbyPlugin extends JavaPlugin {
         lobbyManager.applyWorldSettings();
         uiTemplateManager = new UITemplateManager(this);
         menuManager = new MenuManager(this);
+        getServer().getPluginManager().registerEvents(new MenuListener(this, menuManager), this);
         confirmationManager = new ConfirmationManager(this);
         shopManager = new ShopManager(this);
         shopManager.initialize();
@@ -168,7 +170,7 @@ public final class LobbyPlugin extends JavaPlugin {
             lobbyManager.shutdown();
         }
         if (menuManager != null) {
-            menuManager.closeAll();
+            menuManager.shutdown();
         }
         if (confirmationManager != null) {
             confirmationManager.clearAll();

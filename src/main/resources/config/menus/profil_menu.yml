@@ -3,89 +3,20 @@ menu:
   title: '&8» &6Mon Profil'
   size: 54
   items:
-    # --- Décorations (Vitres Bleues) ---
     decor_slots: '0,1,2,6,7,8,9,17,45,53'
-    decor_item:
-      material: 'BLUE_STAINED_GLASS_PANE'
-      name: '&7'
-      action: '[NONE]'
-
-    # --- Fonctionnalités Sociales (Non-bloquant) ---
-    slot_3:
-      material: 'hdb:9945'
-      name: '&a&lAmis'
-      lore:
-        - '&7Gérez votre liste d''amis.'
-        - '&r'
-        - '&c⚠ Fonctionnalité en développement'
-      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
-
-    slot_4:
-      material: 'hdb:9723'
-      name: '&e&lGroupe'
-      lore:
-        - '&7Créez ou rejoignez un groupe.'
-        - '&r'
-        - '&c⚠ Fonctionnalité en développement'
-      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
-
-    slot_5:
-      material: 'hdb:8971'
-      name: '&c&lClan'
-      lore:
-        - '&7Rejoignez un clan pour participer'
-        - '&7à des événements exclusifs.'
-        - '&r'
-        - '&c⚠ Fonctionnalité en développement'
-      action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible !'
-
-    # --- Fonctionnalités Profil (Simplifiées) ---
+    decor_item: { material: 'BLUE_STAINED_GLASS_PANE', name: '&7', action: '[NONE]' }
     slot_20:
       material: 'PLAYER_HEAD'
-      head: '%player_name%'
       name: '&b&lMes Statistiques'
-      lore:
-        - '&7Consultez toutes vos performances'
-        - '&7détaillées par mode de jeu.'
-        - '&r'
-        - '&a▶ Cliquez pour voir le détail !'
+      lore: ['&7Consultez toutes vos performances.', '&r', '&a▶ Cliquez pour voir le détail !']
       action: '[MENU] stats_detailed_menu'
-
-    slot_22:
-      material: 'hdb:1455'
-      name: '&f&lLangue'
-      lore:
-        - '&7Changez la langue d''affichage.'
-        - '&r'
-        - '&8▸ &7Langue actuelle: &c🇫🇷 Français'
-        - '&r'
-        - '&a▶ Cliquez pour changer !'
-      action: '[MENU] language_menu'
-
     slot_24:
       material: 'hdb:1218'
       name: '&d&lParamètres'
-      lore:
-        - '&7Personnalisez votre expérience'
-        - '&7de jeu.'
-        - '&r'
-        - '&a▶ Cliquez pour configurer !'
+      lore: ['&7Personnalisez votre expérience.', '&r', '&a▶ Cliquez pour configurer !']
       action: '[MENU] settings_menu'
-
-    slot_26:
-      material: 'hdb:12654'
-      name: '&6&lRécompense Journalière'
-      lore:
-        - '&7Réclamez votre récompense'
-        - '&7quotidienne gratuite !'
-        - '&r'
-        - '&a▶ Cliquez pour réclamer !'
-      action: '[MENU] daily_reward_menu'
-
-    # --- Navigation ---
     slot_49:
       material: 'hdb:9334'
       name: '&c&lRetour'
-      lore:
-        - '&7Retourner au menu des jeux.'
+      lore: ['&7Retourner au menu des jeux.']
       action: '[MENU] jeux_menu'
