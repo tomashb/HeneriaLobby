@@ -34,7 +34,7 @@ public class MenuManager implements Listener {
 
     private final LobbyPlugin plugin;
     private final Map<UUID, Menu> openMenus = new ConcurrentHashMap<>();
-    private final Map<String, ConfigurationSection> menuDefinitions = new ConcurrentHashMap<>();
+    private final Map<String, MenuDefinition> menuDefinitions = new ConcurrentHashMap<>();
     private final MenuDesignProvider menuDesignProvider;
 
     public MenuManager(final LobbyPlugin plugin) {
@@ -49,21 +49,21 @@ public class MenuManager implements Listener {
             return false;
         }
         final String normalizedId = menuId.toLowerCase(java.util.Locale.ROOT);
-        ConfigurationSection menuSection = menuDefinitions.get(normalizedId);
-        if (menuSection == null) {
+        MenuDefinition definition = menuDefinitions.get(normalizedId);
+        if (definition == null) {
             reloadMenus();
-            menuSection = menuDefinitions.get(normalizedId);
-            if (menuSection == null) {
+            definition = menuDefinitions.get(normalizedId);
+            if (definition == null) {
                 MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", menuId));
                 return false;
             }
         }
 
+        final ConfigurationSection menuSection = definition.section();
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         final UUID uuid = player.getUniqueId();
-        final Set<String> placeholderValues = extractPlaceholders(collectPlaceholderSources(menuSection));
-        final Set<String> placeholders = Set.copyOf(placeholderValues);
-        if (shouldPreloadAsync(menuSection, placeholders)) {
+        final Set<String> placeholders = definition.placeholders();
+        if (definition.requiresAsyncPreload()) {
             openMenus.put(uuid, menu);
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 preloadMenuData(uuid, placeholders);
@@ -226,7 +226,7 @@ public class MenuManager implements Listener {
             if (section == null) {
                 continue;
             }
-            menuDefinitions.put(key.toLowerCase(java.util.Locale.ROOT), section);
+            storeMenuDefinition(key, section);
         }
     }
 
@@ -246,8 +246,19 @@ public class MenuManager implements Listener {
             if (id == null || id.isBlank()) {
                 continue;
             }
-            menuDefinitions.put(id.toLowerCase(java.util.Locale.ROOT), menuSection);
+            storeMenuDefinition(id, menuSection);
         }
+    }
+
+    private void storeMenuDefinition(final String id, final ConfigurationSection section) {
+        if (id == null || id.isBlank() || section == null) {
+            return;
+        }
+        final Set<String> extracted = extractPlaceholders(collectPlaceholderSources(section));
+        final Set<String> placeholders = extracted.isEmpty() ? Set.of() : Set.copyOf(extracted);
+        final boolean asyncPreload = shouldPreloadAsync(section, placeholders);
+        final String normalized = id.toLowerCase(java.util.Locale.ROOT);
+        menuDefinitions.put(normalized, new MenuDefinition(section, placeholders, asyncPreload));
     }
 
     private boolean shouldPreloadAsync(final ConfigurationSection menuSection, final Set<String> placeholders) {
@@ -475,5 +486,10 @@ public class MenuManager implements Listener {
             return fileName;
         }
         return fileName.substring(0, index);
+    }
+
+    private record MenuDefinition(ConfigurationSection section,
+                                  Set<String> placeholders,
+                                  boolean requiresAsyncPreload) {
     }
 }
