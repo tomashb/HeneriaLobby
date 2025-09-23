@@ -1,0 +1,115 @@
+# =================================================================
+#       FICHIER DE CONFIGURATION FINAL (SIMPLIFIÉ) - JEUX_MENU.YML
+# =================================================================
+menu:
+  id: 'jeux_menu'
+  title: '&8» &3Sélecteur de Jeux'
+  size: 54
+  
+  decorations:
+    purple_panes:
+      material: 'PURPLE_STAINED_GLASS_PANE'
+      name: '&7'
+      slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+    gray_panes:
+      material: 'GRAY_STAINED_GLASS_PANE'
+      name: '&7'
+      slots: [39, 40, 41]
+
+  items:
+    # --- Items de Jeu ---
+    slot_20:
+      material: 'hdb:14138'
+      name: '&c&lBedWars'
+      lore:
+        - '&r'
+        - '&d&lDescription'
+        - '&7Protégez votre lit et soyez la'
+        - '&7dernière équipe en vie.'
+        - '&r'
+        - '&c&lInformations'
+        - '&8▪ Version du jeu : &d1.21'
+        - '&8▪ Connecté(s) : &a%lobby_online_bedwars%'
+        - '&r'
+        - '&a▶ Cliquez pour rejoindre !'
+      action: '[SERVER_SEND] bedwars'
+
+    slot_22:
+      material: 'hdb:12822'
+      name: '&b&lNexus'
+      lore:
+        - '&r'
+        - '&d&lDescription'
+        - '&7Détruisez le Nexus ennemi avant'
+        - '&7qu''ils n''atteignent le vôtre.'
+        - '&r'
+        - '&c&lInformations'
+        - '&8▪ Version du jeu : &d1.21'
+        - '&8▪ Connecté(s) : &a%lobby_online_nexus%'
+        - '&r'
+        - '&a▶ Cliquez pour dominer !'
+      action: '[SERVER_SEND] nexus'
+
+    slot_24:
+      material: 'hdb:32038'
+      name: '&2&lZombie'
+      lore:
+        - '&r'
+        - '&d&lDescription'
+        - '&7Repoussez des vagues de zombies'
+        - '&7et survivez le plus longtemps possible.'
+        - '&r'
+        - '&c&lInformations'
+        - '&8▪ Version du jeu : &d1.21'
+        - '&8▪ Connecté(s) : &a%lobby_online_zombie%'
+        - '&r'
+        - '&a▶ Cliquez pour survivre !'
+      action: '[SERVER_SEND] zombie'
+
+    slot_31:
+      material: 'hdb:23959'
+      name: '&6&lJeux Inédits'
+      lore:
+        - '&r'
+        - '&d&lDescription'
+        - '&7Découvrez nos créations originales'
+        - '&7en rotation constante.'
+        - '&r'
+        - '&c&lInformations'
+        - '&8▪ Version du jeu : &d1.21'
+        - '&8▪ Connecté(s) : &a%lobby_online_custom%'
+        - '&r'
+        - '&a▶ Cliquez pour explorer !'
+      action: '[SERVER_SEND] custom'
+
+    # --- Navigation ---
+    slot_48:
+      material: 'PLAYER_HEAD'
+      name: '&6&lMon Profil'
+      lore:
+        - '&7Accédez à vos statistiques, gérez'
+        - '&7vos amis et personnalisez vos'
+        - '&7paramètres de jeu.'
+        - '&r'
+        - '&a▶ Cliquez pour consulter'
+      action: '[MENU] profil_menu'
+
+    slot_49:
+      material: 'hdb:35472'
+      name: '&e&lBoutique'
+      lore:
+        - '&7Dépensez vos gains pour obtenir'
+        - '&7des grades, cosmétiques et'
+        - '&7avantages exclusifs.'
+        - '&r'
+        - '&a▶ Cliquez pour acheter'
+      action: '[MENU] shop_menu'
+
+    slot_50:
+      material: 'hdb:9334'
+      name: '&c&lFermer'
+      lore:
+        - '&7Retourner au cœur du lobby.'
+        - '&r'
+        - '&a▶ Cliquez pour fermer'
+      action: '[CLOSE_MENU]'
