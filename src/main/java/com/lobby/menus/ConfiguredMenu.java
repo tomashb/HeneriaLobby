@@ -159,6 +159,15 @@ public class ConfiguredMenu implements Menu {
         return inventory;
     }
 
+    @Override
+    public List<String> getActionsForSlot(final int slot) {
+        if (slot < 0) {
+            return List.of();
+        }
+        final List<String> actions = actionsBySlot.get(slot);
+        return actions != null ? actions : List.of();
+    }
+
     private Optional<Integer> createItem(final Player player,
                                          final ConfigurationSection itemSection,
                                          final ItemStack[] contents) {
