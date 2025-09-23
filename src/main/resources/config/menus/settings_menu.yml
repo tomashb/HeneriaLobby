@@ -1,206 +1,42 @@
 menu:
-  id: "settings_menu"
-  title: "&8» &dParamètres"
+  id: 'settings_menu'
+  title: '&8» &dParamètres'
   size: 45
-
   items:
-    glass_1:
-      slot: 0
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_2:
-      slot: 1
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_3:
-      slot: 7
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_4:
-      slot: 8
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_5:
-      slot: 9
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_6:
-      slot: 17
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_7:
-      slot: 36
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
-    glass_8:
-      slot: 44
-      material: "PURPLE_STAINED_GLASS_PANE"
-      name: "&7"
-      actions:
-        - "[NONE]"
+    # --- Décorations (Vitres Violettes) ---
+    decor_slots: '0,1,7,8,9,17,27,35,36,37,43,44'
+    decor_item:
+      material: 'PURPLE_STAINED_GLASS_PANE'
+      name: '&7'
+      action: '[NONE]'
 
-    private_messages:
-      slot: 11
-      material: "PLAYER_HEAD"
-      head: "hdb:3581"
-      name: "&a&lMessages Privés"
+    slot_11:
+      material: 'hdb:3581'
+      name: '&a&lMessages Privés'
       lore:
-        - "&7Autorisez ou bloquez la réception"
-        - "&7de messages privés d'autres joueurs."
-        - "&r"
-        - "&8▸ &7Statut actuel: %setting_private_messages_display%"
-        - "&r"
-        - "&e⚡ Effet immédiat :"
-        - "&7- Bloque les /msg si désactivé"
-        - "&7- Filtre les messages de spam"
-        - "&r"
-        - "&a▶ Cliquez pour basculer !"
-      actions:
-        - "[SETTING_TOGGLE] PRIVATE_MESSAGES"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
+        - '&7Autorisez ou bloquez la réception'
+        - '&7de messages privés.'
+        - '&r'
+        - '&8▸ &7Statut: %setting_private_messages_display%'
+        - '&r'
+        - '&a▶ Cliquez pour basculer !'
+      action: '[COMMAND] settings toggle private_messages'
 
-    friend_requests:
-      slot: 13
-      material: "PLAYER_HEAD"
-      head: "hdb:13389"
-      name: "&e&lDemandes d'Amis"
+    slot_13:
+      material: 'hdb:13389'
+      name: '&e&lDemandes d''Amis'
       lore:
-        - "&7Gérez qui peut vous envoyer"
-        - "&7des demandes d'ajout en ami."
-        - "&r"
-        - "&8▸ &7Statut actuel: %setting_friend_requests_display%"
-        - "&8▸ &7Options disponibles :"
-        - "&8  ▸ &aTous les joueurs"
-        - "&8  ▸ &eAmis d'amis uniquement"
-        - "&8  ▸ &cDésactivé"
-        - "&r"
-        - "&e⚡ Effet immédiat :"
-        - "&7- Filtre automatique des demandes"
-        - "&7- Protection contre le spam"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[SETTING_TOGGLE] FRIEND_REQUESTS"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
+        - '&7Gérez qui peut vous envoyer'
+        - '&7des demandes d''ami.'
+        - '&r'
+        - '&8▸ &7Statut: %setting_friend_requests_display%'
+        - '&r'
+        - '&a▶ Cliquez pour modifier !'
+      action: '[COMMAND] settings toggle friend_requests'
 
-    group_requests:
-      slot: 15
-      material: "PLAYER_HEAD"
-      head: "hdb:8537"
-      name: "&b&lDemandes de Groupe"
+    slot_40:
+      material: 'hdb:9334'
+      name: '&c&lRetour'
       lore:
-        - "&7Contrôlez qui peut vous inviter"
-        - "&7dans des groupes de jeu."
-        - "&r"
-        - "&8▸ &7Statut actuel: %setting_group_requests_display%"
-        - "&8▸ &7Options disponibles :"
-        - "&8  ▸ &aTous les joueurs"
-        - "&8  ▸ &eAmis seulement"
-        - "&8  ▸ &cDésactivé"
-        - "&r"
-        - "&e⚡ Effet immédiat :"
-        - "&7- Bloque les invitations automatiques"
-        - "&7- Évite les interruptions de jeu"
-        - "&r"
-        - "&a▶ Cliquez pour ajuster !"
-      actions:
-        - "[SETTING_TOGGLE] GROUP_REQUESTS"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
-
-    visibility:
-      slot: 20
-      material: "PLAYER_HEAD"
-      head: "hdb:32010"
-      name: "&f&lVisibilité des Joueurs"
-      lore:
-        - "&7Choisissez quels joueurs vous"
-        - "&7voulez voir dans le lobby."
-        - "&r"
-        - "&8▸ &7Mode actuel: %setting_visibility_display%"
-        - "&8▸ &7Options disponibles :"
-        - "&8  ▸ &aTous les joueurs (150+)"
-        - "&8  ▸ &eAmis seulement (performance)"
-        - "&8  ▸ &cPersonne (mode focus)"
-        - "&r"
-        - "&e⚡ Effet immédiat :"
-        - "&7- Masque/affiche les joueurs"
-        - "&7- Améliore les performances"
-        - "&r"
-        - "&a▶ Cliquez pour changer !"
-      actions:
-        - "[SETTING_TOGGLE] PLAYER_VISIBILITY"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
-
-    notifications:
-      slot: 22
-      material: "PLAYER_HEAD"
-      head: "hdb:1455"
-      name: "&c&lNotifications"
-      lore:
-        - "&7Gérez les types de notifications"
-        - "&7que vous souhaitez recevoir."
-        - "&r"
-        - "&8▸ &7Amis: %setting_friend_notifications_display%"
-        - "&8▸ &7Clan: %setting_clan_notifications_display%"
-        - "&8▸ &7Système: %setting_system_notifications_display%"
-        - "&r"
-        - "&e⚡ Types de notifications :"
-        - "&7- Connexion/déconnexion d'amis"
-        - "&7- Invitations de clan"
-        - "&7- Événements et nouveautés"
-        - "&r"
-        - "&a▶ Cliquez pour gérer !"
-      actions:
-        - "[MENU] notifications_menu"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
-
-    audio:
-      slot: 24
-      material: "PLAYER_HEAD"
-      head: "hdb:7439"
-      name: "&6&lSons et Effets"
-      lore:
-        - "&7Activez ou désactivez les sons"
-        - "&7et effets visuels du lobby."
-        - "&r"
-        - "&8▸ &7Sons d'interface: %setting_ui_sounds_display%"
-        - "&8▸ &7Effets de particules: %setting_particles_display%"
-        - "&8▸ &7Musique d'ambiance: %setting_music_display%"
-        - "&r"
-        - "&e⚡ Améliore l'expérience :"
-        - "&7- Sons de clic et validations"
-        - "&7- Particules dans les menus"
-        - "&7- Musique douce en arrière-plan"
-        - "&r"
-        - "&a▶ Cliquez pour ajuster !"
-      actions:
-        - "[MENU] audio_settings_menu"
-        - "[SOUND] BLOCK_NOTE_BLOCK_PLING"
-
-    back:
-      slot: 40
-      material: "PLAYER_HEAD"
-      head: "hdb:9334"
-      name: "&c&lRetour"
-      lore:
-        - "&7Revenir au menu profil."
-        - "&r"
-        - "&7Vos paramètres sont automatiquement"
-        - "&7sauvegardés à chaque modification."
-      actions:
-        - "[MENU] profil_menu"
-        - "[SOUND] BLOCK_STONE_BUTTON_CLICK_OFF"
+        - '&7Revenir au menu profil.'
+      action: '[MENU] profil_menu'

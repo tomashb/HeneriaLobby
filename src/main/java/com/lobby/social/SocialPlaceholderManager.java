@@ -15,6 +15,7 @@ import com.lobby.social.groups.Group;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.social.groups.GroupSettings;
 import com.lobby.social.groups.GroupVisibility;
+import com.lobby.servers.ServerPlaceholderCache;
 import com.lobby.velocity.VelocityManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -500,19 +501,43 @@ public class SocialPlaceholderManager {
     }
 
     private String applyServerPlaceholders(final String text) {
+        final ServerPlaceholderCache cache = plugin.getServerPlaceholderCache();
         final VelocityManager velocityManager = plugin.getVelocityManager();
-        if (velocityManager == null || !velocityManager.isEnabled()) {
+        if (cache == null && (velocityManager == null || !velocityManager.isEnabled())) {
             return text;
         }
         String replaced = text;
-        replaced = replaced.replace("%server_online_bedwars%",
-                String.valueOf(velocityManager.getServerPlayerCount("bedwars")));
-        replaced = replaced.replace("%server_online_nexus%",
-                String.valueOf(velocityManager.getServerPlayerCount("nexus")));
-        replaced = replaced.replace("%server_online_zombie%",
-                String.valueOf(velocityManager.getServerPlayerCount("zombie")));
-        replaced = replaced.replace("%server_online_custom%",
-                String.valueOf(velocityManager.getServerPlayerCount("custom")));
+        replaced = replaceServerPlaceholder(replaced, cache, velocityManager, "bedwars");
+        replaced = replaceServerPlaceholder(replaced, cache, velocityManager, "nexus");
+        replaced = replaceServerPlaceholder(replaced, cache, velocityManager, "zombie");
+        replaced = replaceServerPlaceholder(replaced, cache, velocityManager, "custom");
+        return replaced;
+    }
+
+    private String replaceServerPlaceholder(final String text,
+                                            final ServerPlaceholderCache cache,
+                                            final VelocityManager velocityManager,
+                                            final String serverId) {
+        if (text == null || serverId == null) {
+            return text;
+        }
+        final int playerCount;
+        final int activeGames;
+        if (cache != null) {
+            playerCount = cache.getServerPlayerCount(serverId);
+            activeGames = cache.getActiveGames(serverId);
+        } else if (velocityManager != null) {
+            playerCount = velocityManager.getServerPlayerCount(serverId);
+            activeGames = 0;
+        } else {
+            playerCount = 0;
+            activeGames = 0;
+        }
+        String replaced = text;
+        replaced = replaced.replace("%server_online_" + serverId + "%", String.valueOf(playerCount));
+        replaced = replaced.replace("%heneria_server_online_" + serverId + "%", String.valueOf(playerCount));
+        replaced = replaced.replace("%" + serverId + "_games_active%", String.valueOf(activeGames));
+        replaced = replaced.replace("%heneria_" + serverId + "_games_active%", String.valueOf(activeGames));
         return replaced;
     }
 

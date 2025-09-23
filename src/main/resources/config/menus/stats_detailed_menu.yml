@@ -1,0 +1,180 @@
+menu:
+  id: "stats_detailed_menu"
+  title: "&8» &bMes Statistiques"
+  size: 54
+
+  items:
+    glass_1:
+      slot: 0
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_2:
+      slot: 1
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_3:
+      slot: 2
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_4:
+      slot: 6
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_5:
+      slot: 7
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_6:
+      slot: 8
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_7:
+      slot: 9
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_8:
+      slot: 17
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_9:
+      slot: 45
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+    glass_10:
+      slot: 53
+      material: "CYAN_STAINED_GLASS_PANE"
+      name: "&7"
+      actions:
+        - "[NONE]"
+
+    general_stats:
+      slot: 13
+      material: "PLAYER_HEAD"
+      head: "hdb:2736"
+      name: "&6&lStatistiques Générales"
+      lore:
+        - "&7Vos performances globales"
+        - "&7sur tous les modes de jeu."
+        - "&r"
+        - "&8▸ &7Parties jouées: &e%stats_global_games%"
+        - "&8▸ &7Victoires: &a%stats_global_wins%"
+        - "&8▸ &7Défaites: &c%stats_global_losses%"
+        - "&8▸ &7Ratio V/D: &6%stats_global_ratio%"
+        - "&8▸ &7Kills totaux: &c%stats_global_kills%"
+        - "&8▸ &7Morts totales: &7%stats_global_deaths%"
+        - "&8▸ &7Temps de jeu: &b%stats_global_playtime%"
+        - "&r"
+        - "&7Résumé de toutes vos activités"
+      actions:
+        - "[NONE]"
+
+    bedwars_stats:
+      slot: 20
+      material: "PLAYER_HEAD"
+      head: "hdb:67957"
+      name: "&c&lBedWars"
+      lore:
+        - "&7Vos statistiques BedWars"
+        - "&r"
+        - "&8▸ &7Parties: &e%stats_bedwars_games%"
+        - "&8▸ &7Victoires: &a%stats_bedwars_wins%"
+        - "&8▸ &7Défaites: &c%stats_bedwars_losses%"
+        - "&8▸ &7Ratio K/D: &6%stats_bedwars_ratio%"
+        - "&8▸ &7Kills: &c%stats_bedwars_kills%"
+        - "&8▸ &7Morts: &7%stats_bedwars_deaths%"
+        - "&8▸ &7Lits cassés: &6%stats_bedwars_beds%"
+        - "&8▸ &7Temps de jeu: &b%stats_bedwars_playtime%"
+        - "&r"
+        - "&a▶ Statistiques en temps réel !"
+      actions:
+        - "[NONE]"
+
+    nexus_stats:
+      slot: 22
+      material: "PLAYER_HEAD"
+      head: "hdb:38878"
+      name: "&b&lNexus"
+      lore:
+        - "&7Vos statistiques Nexus"
+        - "&r"
+        - "&8▸ &7Parties: &e%stats_nexus_games%"
+        - "&8▸ &7Victoires: &a%stats_nexus_wins%"
+        - "&8▸ &7Défaites: &c%stats_nexus_losses%"
+        - "&8▸ &7Ratio K/D: &6%stats_nexus_ratio%"
+        - "&8▸ &7Kills: &c%stats_nexus_kills%"
+        - "&8▸ &7Morts: &7%stats_nexus_deaths%"
+        - "&8▸ &7Nexus détruits: &6%stats_nexus_destroyed%"
+        - "&8▸ &7Temps de jeu: &b%stats_nexus_playtime%"
+        - "&r"
+        - "&a▶ Statistiques en temps réel !"
+      actions:
+        - "[NONE]"
+
+    zombie_stats:
+      slot: 24
+      material: "PLAYER_HEAD"
+      head: "hdb:23022"
+      name: "&2&lZombie"
+      lore:
+        - "&7Vos statistiques Zombie"
+        - "&r"
+        - "&8▸ &7Parties: &e%stats_zombie_games%"
+        - "&8▸ &7Victoires: &a%stats_zombie_wins%"
+        - "&8▸ &7Défaites: &c%stats_zombie_losses%"
+        - "&8▸ &7Record: &6%stats_zombie_record% vagues"
+        - "&8▸ &7Zombies tués: &c%stats_zombie_kills%"
+        - "&8▸ &7Morts: &7%stats_zombie_deaths%"
+        - "&8▸ &7Temps de survie: &b%stats_zombie_playtime%"
+        - "&r"
+        - "&a▶ Statistiques en temps réel !"
+      actions:
+        - "[NONE]"
+
+    custom_stats:
+      slot: 26
+      material: "PLAYER_HEAD"
+      head: "hdb:60776"
+      name: "&6&lJeux Inédits"
+      lore:
+        - "&7Vos statistiques dans les"
+        - "&7modes de jeu exclusifs."
+        - "&r"
+        - "&8▸ &7Parties: &e%stats_custom_games%"
+        - "&8▸ &7Victoires: &a%stats_custom_wins%"
+        - "&8▸ &7Défaites: &c%stats_custom_losses%"
+        - "&8▸ &7Ratio K/D: &6%stats_custom_ratio%"
+        - "&8▸ &7Kills: &c%stats_custom_kills%"
+        - "&8▸ &7Morts: &7%stats_custom_deaths%"
+        - "&8▸ &7Temps de jeu: &b%stats_custom_playtime%"
+        - "&r"
+        - "&a▶ Statistiques en temps réel !"
+      actions:
+        - "[NONE]"
+
+    retour:
+      slot: 49
+      material: "PLAYER_HEAD"
+      head: "hdb:9334"
+      name: "&c&lRetour"
+      lore:
+        - "&7Revenir au menu profil."
+      actions:
+        - "[MENU] profil_menu"

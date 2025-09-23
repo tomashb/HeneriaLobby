@@ -33,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.AbstractMap;
+import java.util.regex.Pattern;
 
 public class ConfiguredMenu implements Menu {
 
@@ -50,6 +51,7 @@ public class ConfiguredMenu implements Menu {
     private static final int MAX_HEAD_UPDATES_PER_TICK = 4;
     private static final long HEAD_UPDATE_INITIAL_DELAY = 2L;
     private static final long HEAD_UPDATE_INTERVAL = 2L;
+    private static final Pattern SLOT_KEY_PATTERN = Pattern.compile("(\\d+)$");
 
     public ConfiguredMenu(final LobbyPlugin plugin,
                           final String menuId,
@@ -122,7 +124,9 @@ public class ConfiguredMenu implements Menu {
         inventory = Bukkit.createInventory(null, size, title);
         actionsBySlot.clear();
 
-        final boolean debugAsyncMenu = "stats_menu".equalsIgnoreCase(menuId) || "profil_menu".equalsIgnoreCase(menuId);
+        final boolean debugAsyncMenu = "stats_menu".equalsIgnoreCase(menuId)
+                || "stats_detailed_menu".equalsIgnoreCase(menuId)
+                || "profil_menu".equalsIgnoreCase(menuId);
 
         final ItemStack[] contents = new ItemStack[size];
         final DesignTemplate designTemplate = resolveDesignTemplate();
@@ -151,13 +155,25 @@ public class ConfiguredMenu implements Menu {
 
         final ConfigurationSection itemsSection = menuSection.getConfigurationSection("items");
         if (itemsSection != null) {
+            final List<Integer> decorationSlots = parseSlots(itemsSection.get("decor_slots"));
+            if (!decorationSlots.isEmpty()) {
+                final ConfigurationSection decorSection = itemsSection.getConfigurationSection("decor_item");
+                if (decorSection != null) {
+                    final List<Integer> placedSlots = createItem(player, "decor_item", decorSection, contents, decorationSlots);
+                    placedSlots.forEach(slot -> storeActions(slot, decorSection));
+                }
+            }
             for (String key : itemsSection.getKeys(false)) {
+                if (key == null || key.equalsIgnoreCase("decor_slots") || key.equalsIgnoreCase("decor_item")) {
+                    continue;
+                }
                 final ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
                 if (itemSection == null) {
                     continue;
                 }
-                final Optional<Integer> slot = createItem(player, itemSection, contents);
-                slot.ifPresent(index -> storeActions(index, itemSection));
+                final List<Integer> forcedSlots = parseSlots(itemSection.get("slots"));
+                final List<Integer> placedSlots = createItem(player, key, itemSection, contents, forcedSlots);
+                placedSlots.forEach(slot -> storeActions(slot, itemSection));
             }
         }
 
@@ -281,23 +297,34 @@ public class ConfiguredMenu implements Menu {
         return actions != null ? actions : List.of();
     }
 
-    private Optional<Integer> createItem(final Player player,
-                                         final ConfigurationSection itemSection,
-                                         final ItemStack[] contents) {
+    private List<Integer> createItem(final Player player,
+                                     final String key,
+                                     final ConfigurationSection itemSection,
+                                     final ItemStack[] contents,
+                                     final List<Integer> forcedSlots) {
         String materialName = itemSection.getString("material");
         Material material = materialName != null ? Material.matchMaterial(materialName) : null;
-        final boolean headDefined = itemSection.contains("head") || itemSection.contains("head_id");
+        final boolean materialIsHeadId = materialName != null
+                && materialName.toLowerCase(Locale.ROOT).startsWith("hdb:");
+        boolean headDefined = itemSection.contains("head") || itemSection.contains("head_id") || materialIsHeadId;
         if (material == null) {
-            if (materialName != null && !materialName.isBlank()) {
-                LogUtils.warning(plugin, "Invalid material '" + materialName + "' in menu '" + menuId + "'.");
+            if (materialIsHeadId) {
+                material = Material.PLAYER_HEAD;
+            } else {
+                if (materialName != null && !materialName.isBlank()) {
+                    LogUtils.warning(plugin, "Invalid material '" + materialName + "' in menu '" + menuId + "'.");
+                }
+                material = headDefined ? Material.PLAYER_HEAD : Material.STONE;
             }
-            material = headDefined ? Material.PLAYER_HEAD : Material.STONE;
         }
 
         final int amount = Math.max(1, itemSection.getInt("amount", 1));
         String rawHead = itemSection.getString("head");
         if (rawHead == null) {
             rawHead = itemSection.getString("head_id");
+        }
+        if (rawHead == null && materialIsHeadId) {
+            rawHead = materialName;
         }
         final String resolvedHead = resolveHeadValue(rawHead, player);
 
@@ -328,15 +355,112 @@ public class ConfiguredMenu implements Menu {
             configureItemMeta(player, itemSection, rawHead, resolvedHead, deferredHeadItem, false);
         }
 
-        final int slot = itemSection.getInt("slot", -1);
-        final int targetSlot = resolveSlot(slot, itemStack, contents);
-        if (targetSlot < 0) {
-            return Optional.empty();
+        final List<Integer> slotsToFill = determineTargetSlots(key, itemSection, forcedSlots, contents);
+        final List<Integer> placedSlots = new ArrayList<>();
+        if (!slotsToFill.isEmpty()) {
+            for (Integer slotIndex : slotsToFill) {
+                if (slotIndex == null) {
+                    continue;
+                }
+                final int targetSlot = slotIndex;
+                if (targetSlot < 0 || targetSlot >= contents.length) {
+                    continue;
+                }
+                contents[targetSlot] = itemStack.clone();
+                if (deferredHeadItem != null) {
+                    deferredHeadUpdates.put(targetSlot, deferredHeadItem.clone());
+                }
+                placedSlots.add(targetSlot);
+            }
         }
-        if (deferredHeadItem != null) {
-            deferredHeadUpdates.put(targetSlot, deferredHeadItem);
+        if (placedSlots.isEmpty()) {
+            final int fallbackSlot = findFirstEmptySlot(contents);
+            if (fallbackSlot >= 0) {
+                contents[fallbackSlot] = itemStack.clone();
+                if (deferredHeadItem != null) {
+                    deferredHeadUpdates.put(fallbackSlot, deferredHeadItem.clone());
+                }
+                placedSlots.add(fallbackSlot);
+            }
         }
-        return Optional.of(targetSlot);
+        return placedSlots.isEmpty() ? List.of() : List.copyOf(placedSlots);
+    }
+
+    private List<Integer> determineTargetSlots(final String key,
+                                               final ConfigurationSection itemSection,
+                                               final List<Integer> forcedSlots,
+                                               final ItemStack[] contents) {
+        final int inventorySize = contents != null ? contents.length : 0;
+        final List<Integer> requestedSlots = new ArrayList<>();
+        if (forcedSlots != null && !forcedSlots.isEmpty()) {
+            requestedSlots.addAll(forcedSlots);
+        } else {
+            final List<Integer> configuredSlots = parseSlots(itemSection.get("slots"));
+            if (!configuredSlots.isEmpty()) {
+                requestedSlots.addAll(configuredSlots);
+            } else {
+                final List<Integer> singleSlot = parseSlots(itemSection.get("slot"));
+                if (!singleSlot.isEmpty()) {
+                    requestedSlots.addAll(singleSlot);
+                } else {
+                    final Integer parsedFromKey = parseSlotFromKey(key);
+                    if (parsedFromKey != null) {
+                        requestedSlots.add(parsedFromKey);
+                    }
+                }
+            }
+        }
+        return sanitizeSlots(requestedSlots, inventorySize);
+    }
+
+    private List<Integer> sanitizeSlots(final List<Integer> slots, final int inventorySize) {
+        if (slots == null || slots.isEmpty()) {
+            return List.of();
+        }
+        final List<Integer> sanitized = new ArrayList<>();
+        for (Integer slot : slots) {
+            if (slot == null) {
+                continue;
+            }
+            final int index = slot;
+            if (index < 0) {
+                continue;
+            }
+            if (inventorySize > 0 && index >= inventorySize) {
+                continue;
+            }
+            if (!sanitized.contains(index)) {
+                sanitized.add(index);
+            }
+        }
+        return sanitized.isEmpty() ? List.of() : List.copyOf(sanitized);
+    }
+
+    private Integer parseSlotFromKey(final String key) {
+        if (key == null || key.isBlank()) {
+            return null;
+        }
+        final java.util.regex.Matcher matcher = SLOT_KEY_PATTERN.matcher(key);
+        if (!matcher.find()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (final NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private int findFirstEmptySlot(final ItemStack[] contents) {
+        if (contents == null) {
+            return -1;
+        }
+        for (int index = 0; index < contents.length; index++) {
+            if (isEmpty(contents[index])) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private void scheduleDeferredHeadUpdates(final Player player) {
@@ -463,6 +587,9 @@ public class ConfiguredMenu implements Menu {
 
     private void applyHead(final String rawHead, final String resolvedHead, final Player player, final SkullMeta skullMeta) {
         if (rawHead == null || rawHead.isBlank()) {
+            if (player != null) {
+                skullMeta.setOwningPlayer(player);
+            }
             return;
         }
         if (resolvedHead != null && resolvedHead.toLowerCase(Locale.ROOT).startsWith("hdb:")) {
@@ -640,8 +767,8 @@ public class ConfiguredMenu implements Menu {
             if (itemSection == null) {
                 continue;
             }
-            final Optional<Integer> slot = createItem(player, itemSection, contents);
-            slot.ifPresent(index -> storeActions(index, itemSection));
+            final List<Integer> slots = createItem(player, key, itemSection, contents, parseSlots(itemSection.get("slots")));
+            slots.forEach(index -> storeActions(index, itemSection));
         }
     }
 
@@ -671,17 +798,34 @@ public class ConfiguredMenu implements Menu {
     }
 
     private List<Integer> parseSlots(final Object value) {
+        if (value == null) {
+            return List.of();
+        }
+        final List<Integer> slots = new ArrayList<>();
         if (value instanceof List<?> list) {
-            final List<Integer> slots = new ArrayList<>();
             for (Object element : list) {
-                if (element instanceof Number number) {
-                    slots.add(number.intValue());
-                } else if (element instanceof String string) {
-                    try {
-                        slots.add(Integer.parseInt(string.trim()));
-                    } catch (final NumberFormatException ignored) {
-                        // Ignore invalid entries
-                    }
+                slots.addAll(parseSlots(element));
+            }
+            return slots;
+        }
+        if (value instanceof Number number) {
+            slots.add(number.intValue());
+            return slots;
+        }
+        if (value instanceof String string) {
+            final String trimmed = string.trim();
+            if (trimmed.isEmpty()) {
+                return List.of();
+            }
+            final String[] tokens = trimmed.split("[,;\\s]+");
+            for (String token : tokens) {
+                if (token == null || token.isBlank()) {
+                    continue;
+                }
+                try {
+                    slots.add(Integer.parseInt(token.trim()));
+                } catch (final NumberFormatException ignored) {
+                    // Ignore invalid entries
                 }
             }
             return slots;
