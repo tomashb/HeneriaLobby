@@ -51,13 +51,17 @@ public interface Menu {
         }
     }
 
-    record AsyncPreparationResult(Map<HeadRequest, ItemStack> preloadedHeads) {
-        static final AsyncPreparationResult EMPTY = new AsyncPreparationResult(Map.of());
+    record AsyncPreparationResult(Map<HeadRequest, ItemStack> preloadedHeads,
+                                  Map<String, String> placeholderValues) {
+        static final AsyncPreparationResult EMPTY = new AsyncPreparationResult(Map.of(), Map.of());
 
         public AsyncPreparationResult {
             preloadedHeads = preloadedHeads == null || preloadedHeads.isEmpty()
                     ? Map.of()
                     : Map.copyOf(preloadedHeads);
+            placeholderValues = placeholderValues == null || placeholderValues.isEmpty()
+                    ? Map.of()
+                    : Map.copyOf(placeholderValues);
         }
     }
 }
