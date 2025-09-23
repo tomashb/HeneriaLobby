@@ -18,6 +18,7 @@ import org.bukkit.inventory.Inventory;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -55,12 +56,14 @@ public class MenuManager implements Listener {
 
         final Menu menu = new ConfiguredMenu(plugin, normalizedId, menuSection, menuDesignProvider);
         final UUID uuid = player.getUniqueId();
-        final ConfigurationSection finalMenuSection = menuSection;
-        if (shouldPreloadAsync(menuSection)) {
+        final Set<String> placeholderValues = extractPlaceholders(collectPlaceholderSources(menuSection));
+        final Set<String> placeholders = Set.copyOf(placeholderValues);
+        if (shouldPreloadAsync(menuSection, placeholders)) {
             openMenus.put(uuid, menu);
             player.closeInventory();
+            player.sendMessage("§7Chargement...");
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                preloadMenuData(uuid, finalMenuSection);
+                preloadMenuData(uuid, placeholders);
                 Bukkit.getScheduler().runTask(plugin, () -> {
                     final Player target = Bukkit.getPlayer(uuid);
                     if (target == null || !target.isOnline()) {
@@ -217,26 +220,45 @@ public class MenuManager implements Listener {
         }
     }
 
-    private boolean shouldPreloadAsync(final ConfigurationSection menuSection) {
-        return menuSection != null && menuSection.getBoolean("async_preload", false);
+    private boolean shouldPreloadAsync(final ConfigurationSection menuSection, final Set<String> placeholders) {
+        if (menuSection != null && menuSection.getBoolean("async_preload", false)) {
+            return true;
+        }
+        if (placeholders == null || placeholders.isEmpty()) {
+            return false;
+        }
+        for (String placeholder : placeholders) {
+            if (requiresAsyncPreload(placeholder)) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    private void preloadMenuData(final UUID uuid, final ConfigurationSection menuSection) {
-        if (uuid == null || menuSection == null) {
-            return;
+    private boolean requiresAsyncPreload(final String placeholder) {
+        if (placeholder == null || placeholder.isBlank()) {
+            return false;
         }
-        final Set<String> sources = collectPlaceholderSources(menuSection);
-        if (sources.isEmpty()) {
-            return;
-        }
-        final Set<String> placeholders = extractPlaceholders(sources);
-        if (placeholders.isEmpty()) {
+        final String normalized = placeholder.toLowerCase(Locale.ROOT);
+        return normalized.startsWith("%player_")
+                || normalized.startsWith("%stats_")
+                || normalized.startsWith("%setting_")
+                || normalized.startsWith("%lang_")
+                || normalized.startsWith("%friend")
+                || normalized.startsWith("%friends")
+                || normalized.startsWith("%group")
+                || normalized.startsWith("%clan");
+    }
+
+    private void preloadMenuData(final UUID uuid, final Set<String> placeholders) {
+        if (uuid == null || placeholders == null || placeholders.isEmpty()) {
             return;
         }
 
         preloadEconomy(uuid, placeholders);
         preloadStats(uuid, placeholders);
         preloadSettings(uuid, placeholders);
+        preloadSocial(uuid, placeholders);
     }
 
     private void preloadEconomy(final UUID uuid, final Set<String> placeholders) {
@@ -294,6 +316,57 @@ public class MenuManager implements Listener {
         }
         if (plugin.getPlayerSettingsManager() != null) {
             plugin.getPlayerSettingsManager().getPlayerSettings(uuid);
+        }
+    }
+
+    private void preloadSocial(final UUID uuid, final Set<String> placeholders) {
+        boolean requiresFriends = false;
+        boolean requiresGroups = false;
+        boolean requiresClans = false;
+        for (String placeholder : placeholders) {
+            if (placeholder == null) {
+                continue;
+            }
+            final String normalized = placeholder.toLowerCase(Locale.ROOT);
+            if (!requiresFriends && (normalized.startsWith("%friend") || normalized.startsWith("%friends"))) {
+                requiresFriends = true;
+            }
+            if (!requiresGroups && normalized.startsWith("%group")) {
+                requiresGroups = true;
+            }
+            if (!requiresClans && normalized.startsWith("%clan")) {
+                requiresClans = true;
+            }
+        }
+
+        if (requiresFriends) {
+            final var friendManager = plugin.getFriendManager();
+            if (friendManager != null) {
+                friendManager.getFriendsList(uuid);
+                friendManager.getPendingRequests(uuid);
+                friendManager.countSentRequests(uuid);
+                friendManager.getFriendSettings(uuid);
+            }
+        }
+
+        if (requiresGroups) {
+            final var groupManager = plugin.getGroupManager();
+            if (groupManager != null) {
+                groupManager.getGroupSettings(uuid);
+                groupManager.getPlayerGroup(uuid);
+                groupManager.countPendingInvitations(uuid);
+                groupManager.countSentInvitations(uuid);
+                groupManager.countCachedOpenGroups();
+            }
+        }
+
+        if (requiresClans) {
+            final var clanManager = plugin.getClanManager();
+            if (clanManager != null) {
+                clanManager.getPlayerClan(uuid);
+                clanManager.countPendingInvitations(uuid);
+                clanManager.countCachedOpenClans();
+            }
         }
     }
 

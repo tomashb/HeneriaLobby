@@ -76,8 +76,9 @@ public class ShopManager implements Listener {
             return;
         }
         final Inventory inventory = Bukkit.createInventory(null, 54, MessageUtils.colorize("&6&lBoutique"));
+        final ItemStack[] contents = new ItemStack[inventory.getSize()];
         final ItemStack borderItem = createBorderItem();
-        fillBorder(inventory, borderItem);
+        fillBorder(contents, borderItem);
 
         int slot = 10;
         for (ShopCategory category : categories.values()) {
@@ -88,10 +89,11 @@ public class ShopManager implements Listener {
                 break;
             }
             final ItemStack icon = createCategoryIcon(category);
-            inventory.setItem(slot, icon);
+            contents[slot] = icon;
             slot = nextSlot(slot);
         }
 
+        inventory.setContents(contents);
         openMenus.put(player.getUniqueId(), new MenuContext(MenuType.MAIN, null, inventory));
         player.openInventory(inventory);
     }
@@ -114,8 +116,9 @@ public class ShopManager implements Listener {
 
         final String title = MessageUtils.colorize("&6" + category.getData().displayName());
         final Inventory inventory = Bukkit.createInventory(null, 54, title);
+        final ItemStack[] contents = new ItemStack[inventory.getSize()];
         final ItemStack borderItem = createBorderItem();
-        fillBorder(inventory, borderItem);
+        fillBorder(contents, borderItem);
 
         int slot = 10;
         for (ShopItem item : categoryItems) {
@@ -123,10 +126,11 @@ public class ShopManager implements Listener {
                 break;
             }
             final ItemStack icon = createShopItemIcon(item);
-            inventory.setItem(slot, icon);
+            contents[slot] = icon;
             slot = nextSlot(slot);
         }
 
+        inventory.setContents(contents);
         openMenus.put(player.getUniqueId(), new MenuContext(MenuType.CATEGORY, categoryId, inventory));
         player.openInventory(inventory);
     }
@@ -369,14 +373,17 @@ public class ShopManager implements Listener {
         return itemStack;
     }
 
-    private void fillBorder(final Inventory inventory, final ItemStack itemStack) {
-        final int size = inventory.getSize();
+    private void fillBorder(final ItemStack[] contents, final ItemStack itemStack) {
+        if (contents == null || itemStack == null) {
+            return;
+        }
+        final int size = contents.length;
         final int rows = size / 9;
         for (int slot = 0; slot < size; slot++) {
             final int row = slot / 9;
             final int column = slot % 9;
             if (row == 0 || row == rows - 1 || column == 0 || column == 8) {
-                inventory.setItem(slot, itemStack);
+                contents[slot] = itemStack.clone();
             }
         }
     }
