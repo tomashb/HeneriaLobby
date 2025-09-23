@@ -406,32 +406,41 @@ public class MenuManager implements Listener {
         openMenus.put(uuid, menu);
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             if (debugAsyncMenu) {
-                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Récupération des données BDD pour '" + normalizedId + "'...");
+                plugin.getLogger().info("[DEBUG B] Tâche ASYNC démarrée. Préchargement des données et têtes pour '" + normalizedId + "'...");
             }
-            preloadMenuData(uuid, placeholders);
-            if (debugAsyncMenu) {
-                plugin.getLogger().info("[DEBUG C] Données BDD récupérées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
-            }
-            Bukkit.getScheduler().runTask(plugin, () -> handleAsyncPreparation(uuid, normalizedId, menu, debugAsyncMenu));
-        });
-    }
 
-    private void handleAsyncPreparation(final UUID uuid,
-                                         final String normalizedId,
-                                         final Menu menu,
-                                         final boolean debugAsyncMenu) {
-        final Player target = Bukkit.getPlayer(uuid);
-        if (target == null || !target.isOnline()) {
-            openMenus.remove(uuid);
-            return;
-        }
-        final Menu.AsyncPreparation asyncPreparation = menu.prepareAsync(target);
-        if (asyncPreparation == null || asyncPreparation.headRequests().isEmpty()) {
-            completeMenuOpen(uuid, normalizedId, menu, Map.of(), debugAsyncMenu);
-            return;
-        }
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final Map<Menu.HeadRequest, ItemStack> preloadedHeads = preloadHeadItems(asyncPreparation);
+            preloadMenuData(uuid, placeholders);
+
+            Menu.AsyncPreparation asyncPreparation = Menu.AsyncPreparation.EMPTY;
+            try {
+                final java.util.concurrent.Future<Menu.AsyncPreparation> future = Bukkit.getScheduler().callSyncMethod(plugin, () -> {
+                    final Player target = Bukkit.getPlayer(uuid);
+                    if (target == null || !target.isOnline()) {
+                        return Menu.AsyncPreparation.EMPTY;
+                    }
+                    return menu.prepareAsync(target);
+                });
+                asyncPreparation = future.get();
+            } catch (final InterruptedException interruptedException) {
+                Thread.currentThread().interrupt();
+                openMenus.remove(uuid);
+                return;
+            } catch (final java.util.concurrent.ExecutionException executionException) {
+                LogUtils.warning(plugin, "Unable to collect head preload requests for menu '" + normalizedId + "': "
+                        + executionException.getMessage());
+            }
+
+            final Map<Menu.HeadRequest, ItemStack> preloadedHeads;
+            if (asyncPreparation == null || asyncPreparation.headRequests().isEmpty()) {
+                preloadedHeads = Map.of();
+            } else {
+                preloadedHeads = preloadHeadItems(asyncPreparation);
+            }
+
+            if (debugAsyncMenu) {
+                plugin.getLogger().info("[DEBUG C] Données BDD et têtes préchargées pour '" + normalizedId + "'. Retour au THREAD PRINCIPAL.");
+            }
+
             Bukkit.getScheduler().runTask(plugin, () -> completeMenuOpen(uuid, normalizedId, menu, preloadedHeads, debugAsyncMenu));
         });
     }
