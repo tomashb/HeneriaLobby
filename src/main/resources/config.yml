@@ -43,6 +43,18 @@ npcs:
   look_at_player: false
   max_per_world: 50
 
+menus:
+  profile:
+    enabled: true
+    cooldown_ms: 5000
+    tps_protection_enabled: true
+    min_tps: 18.0
+
+head_database:
+  debug: false
+  blacklist:
+    - "2736"
+
 discord:
   enabled: false
 
