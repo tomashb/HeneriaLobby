@@ -123,6 +123,32 @@ public class MenuManager implements Listener {
         if (topInventory == null || !topInventory.equals(menu.getInventory())) {
             return;
         }
+        final String menuTitle = event.getView().getTitle();
+        plugin.getLogger().info("[DEBUG 1] Clic détecté dans le menu: " + menuTitle);
+
+        final int slot = event.getSlot();
+        final java.util.List<String> actions = menu.getActionsForSlot(event.getRawSlot());
+        final String actionDescription;
+        if (actions.isEmpty()) {
+            actionDescription = "aucune action";
+        } else if (actions.size() == 1) {
+            actionDescription = actions.get(0);
+        } else {
+            actionDescription = String.join(", ", actions);
+        }
+        plugin.getLogger().info("[DEBUG 2] Joueur: " + player.getName() + " | Slot: " + slot + " | Action: '" + actionDescription + "'");
+
+        if (!actions.isEmpty()) {
+            final String primaryAction = actions.get(0);
+            if (primaryAction != null) {
+                final String trimmedAction = primaryAction.trim();
+                if (trimmedAction.startsWith("[MENU]")) {
+                    final String[] parts = trimmedAction.split("\\s+", 2);
+                    final String subMenuId = parts.length > 1 ? parts[1] : "";
+                    plugin.getLogger().info("[DEBUG 3] Tentative d'ouverture du sous-menu: " + subMenuId);
+                }
+            }
+        }
         menu.handleClick(event);
     }
 
