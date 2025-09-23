@@ -1627,7 +1627,7 @@ menus:
       private_messages:
         slot: 31
         material: "PLAYER_HEAD"
-        head: "hdb:2736"
+        head: "hdb:9945"
         name: "&d&lMessages privés"
         lore:
           - "&7Autorisez vos amis à vous"

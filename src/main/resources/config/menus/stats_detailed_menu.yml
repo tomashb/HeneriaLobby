@@ -68,7 +68,7 @@ menu:
     general_stats:
       slot: 13
       material: "PLAYER_HEAD"
-      head: "hdb:2736"
+      head: "hdb:8971"
       name: "&6&lStatistiques Générales"
       lore:
         - "&7Vos performances globales"

@@ -52,8 +52,7 @@ menus:
 
 head_database:
   debug: false
-  blacklist:
-    - "2736"
+  blacklist: []
 
 discord:
   enabled: false

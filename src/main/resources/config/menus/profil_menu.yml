@@ -52,7 +52,7 @@ menu:
       action: '[MENU] stats_detailed_menu'
 
     slot_22:
-      material: 'hdb:2736'
+      material: 'hdb:1455'
       name: '&f&lLangue'
       lore:
         - '&7Changez la langue d''affichage.'
