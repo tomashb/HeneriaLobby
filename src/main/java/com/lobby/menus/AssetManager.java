@@ -22,9 +22,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AssetManager {
 
-    private static final Set<String> PRELOADED_HEADS = Set.of("hdb:67957");
+    private static final Set<String> PRELOADED_HEADS = Set.of(
+            "hdb:67957",
+            "hdb:38878",
+            "hdb:23022",
+            "hdb:60776",
+            "hdb:52000",
+            "hdb:31408"
+    );
     private static final Map<String, String> SERVER_PLACEHOLDER_KEYS = Map.of(
-            "%lobby_online_bedwars%", "bedwars"
+            "%lobby_online_bedwars%", "bedwars",
+            "%lobby_online_nexus%", "nexus",
+            "%lobby_online_zombie%", "zombie",
+            "%lobby_online_custom%", "custom"
     );
     private static final String DEFAULT_PLACEHOLDER_VALUE = "0";
 
