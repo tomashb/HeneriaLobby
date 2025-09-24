@@ -1,0 +1,60 @@
+title: '&8» &aMes Amis'
+size: 54
+design:
+  primary_border:
+    material: 'LIME_STAINED_GLASS_PANE'
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+  secondary_border:
+    material: 'GRAY_STAINED_GLASS_PANE'
+    slots: [39, 40, 41]
+items:
+  ajouter-ami:
+    slot: 3
+    material: 'hdb:23533'
+    name: '&a&lAjouter un Ami'
+    lore:
+      - '&r'
+      - '&7Utilisez la commande &e/amis add'
+      - '&7pour envoyer une demande.'
+      - '&r'
+      - '&b▸ Statut : &aOuvert'
+      - '&r'
+      - '&e▶ Tapez la commande dans le chat'
+  demandes-recues:
+    slot: 7
+    material: 'hdb:23528'
+    name: '&e&lDemandes Reçues'
+    lore:
+      - '&r'
+      - '&7Gérez les demandes d''amis que'
+      - '&7vous avez reçues.'
+      - '&r'
+      - '&b▸ Statut : &6%friend_requests_count% en attente'
+      - '&r'
+      - '&e▶ Cliquez pour voir'
+    action: '[MENU] friend_requests_menu'
+  liste-amis-overview:
+    slot: 22
+    material: 'hdb:31405'
+    name: '&b&lMes Compagnons'
+    lore:
+      - '&r'
+      - '&7Consultez la liste complète de vos'
+      - '&7alliés dans les menus dédiés.'
+      - '&r'
+      - '&b▸ Statut : &a%friends_total% amis'
+      - '&r'
+      - '&e▶ Explorez votre carnet'
+  retour-profil:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Profil'
+    lore:
+      - '&r'
+      - '&7Revenez à votre espace personnel'
+      - '&7pour gérer l''ensemble des menus.'
+      - '&r'
+      - '&b▸ Statut : &aToujours disponible'
+      - '&r'
+      - '&e▶ Cliquez pour revenir'
+    action: '[MENU] profil_menu'

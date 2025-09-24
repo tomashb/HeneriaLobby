@@ -1,0 +1,98 @@
+title: '&8» &6Mon Groupe'
+size: 54
+design:
+  primary_border:
+    material: 'ORANGE_STAINED_GLASS_PANE'
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+  secondary_border:
+    material: 'GRAY_STAINED_GLASS_PANE'
+    slots: [39, 40, 41]
+items:
+  creer-groupe:
+    slot: 22
+    material: 'hdb:9723'
+    name: '&a&lCréer un Groupe'
+    lore:
+      - '&r'
+      - '&7Fondez votre propre groupe et'
+      - '&7invitez vos amis à jouer avec vous.'
+      - '&r'
+      - '&b▸ Statut : &eGratuit'
+      - '&r'
+      - '&e▶ Cliquez pour créer'
+    action: '[COMMAND] party create'
+    conditions:
+      group: 'none'
+  invitations-groupe:
+    slot: 24
+    material: 'hdb:31406'
+    name: '&b&lInvitations en Attente'
+    lore:
+      - '&r'
+      - '&7Consultez les demandes pour'
+      - '&7rejoindre un groupe existant.'
+      - '&r'
+      - '&b▸ Statut : &6%group_invites_count% invitations'
+      - '&r'
+      - '&e▶ Cliquez pour ouvrir'
+    action: '[MENU] party_invites_menu'
+    conditions:
+      group: 'none'
+  mon-groupe-info:
+    slot: 22
+    material: 'hdb:47365'
+    name: '&e&lGestion du Groupe'
+    lore:
+      - '&r'
+      - '&7Surveillez les membres, le chef et'
+      - '&7les capacités actuelles de votre équipe.'
+      - '&r'
+      - '&b▸ Statut : &a%group_members_count%&7/&a%group_max_members%'
+      - '&r'
+      - '&e▶ Cliquez pour gérer'
+    action: '[MENU] party_management_menu'
+    conditions:
+      group: 'member'
+  chat-groupe:
+    slot: 24
+    material: 'hdb:31408'
+    name: '&d&lBasculer sur le Chat Groupe'
+    lore:
+      - '&r'
+      - '&7Activez le canal privé pour'
+      - '&7échanger avec vos compagnons.'
+      - '&r'
+      - '&b▸ Statut : &aDisponible'
+      - '&r'
+      - '&e▶ Cliquez pour parler'
+    action: '[COMMAND] party chat'
+    conditions:
+      group: 'member'
+  quitter-groupe:
+    slot: 31
+    material: 'hdb:31405'
+    name: '&c&lQuitter le Groupe'
+    lore:
+      - '&r'
+      - '&7Libérez votre place pour rejoindre'
+      - '&7une nouvelle équipe quand vous le souhaitez.'
+      - '&r'
+      - '&b▸ Statut : &cAction définitive'
+      - '&r'
+      - '&e▶ Cliquez pour partir'
+    action: '[COMMAND] party leave'
+    conditions:
+      group: 'member'
+  retour-profil:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Profil'
+    lore:
+      - '&r'
+      - '&7Revenez sur votre fiche joueur pour'
+      - '&7accéder aux autres options sociales.'
+      - '&r'
+      - '&b▸ Statut : &aAccessible'
+      - '&r'
+      - '&e▶ Cliquez pour revenir'
+    action: '[MENU] profil_menu'

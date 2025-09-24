@@ -1,0 +1,83 @@
+title: '&8» &9Mon Clan'
+size: 54
+design:
+  primary_border:
+    material: 'BLUE_STAINED_GLASS_PANE'
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+  secondary_border:
+    material: 'GRAY_STAINED_GLASS_PANE'
+    slots: [39, 40, 41]
+items:
+  creer-clan:
+    slot: 21
+    material: 'hdb:8971'
+    name: '&a&lCréer un Clan'
+    lore:
+      - '&r'
+      - '&7Fondez votre propre clan et'
+      - '&7bâtissez une communauté soudée.'
+      - '&r'
+      - '&b▸ Coût : &e50 000 Coins'
+      - '&r'
+      - '&e▶ Cliquez pour créer'
+    action: '[COMMAND] clan create'
+    conditions:
+      clan: 'none'
+  rechercher-clan:
+    slot: 23
+    material: 'hdb:41680'
+    name: '&b&lRechercher un Clan'
+    lore:
+      - '&r'
+      - '&7Explorez les clans existants et'
+      - '&7trouvez celui qui vous correspond.'
+      - '&r'
+      - '&b▸ Statut : &aOuvert à tous'
+      - '&r'
+      - '&e▶ Cliquez pour rechercher'
+    action: '[MENU] clan_list_menu'
+    conditions:
+      clan: 'none'
+  mon-clan:
+    slot: 21
+    material: 'hdb:32038'
+    name: '&9&lInformations du Clan'
+    lore:
+      - '&r'
+      - '&7Accédez aux statistiques et au'
+      - '&7niveau de votre clan actuel.'
+      - '&r'
+      - '&b▸ Statut : &a%clan_members_count% membres'
+      - '&r'
+      - '&e▶ Cliquez pour consulter'
+    action: '[MESSAGE] &7Clan : &b%clan_name%'
+    conditions:
+      clan: 'member'
+  gestion-clan:
+    slot: 23
+    material: 'hdb:47366'
+    name: '&6&lGestion du Clan'
+    lore:
+      - '&r'
+      - '&7Administrez les rôles, les recrutements'
+      - '&7et les améliorations de votre clan.'
+      - '&r'
+      - '&b▸ Statut : &aNiveau &e%clan_level%'
+      - '&r'
+      - '&e▶ Cliquez pour gérer'
+    action: '[MENU] clan_management_menu'
+    conditions:
+      clan: 'leader'
+  retour-profil:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Profil'
+    lore:
+      - '&r'
+      - '&7Revenez au menu principal pour'
+      - '&7accéder à vos autres interfaces.'
+      - '&r'
+      - '&b▸ Statut : &aDisponible'
+      - '&r'
+      - '&e▶ Cliquez pour revenir'
+    action: '[MENU] profil_menu'
