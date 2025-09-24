@@ -51,6 +51,8 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
     private final Component title;
     private final int size;
     private final List<MenuItemDefinition> items;
+    private final MenuRenderContext renderContext;
+    private final Map<String, String> additionalPlaceholders;
 
     private final Map<Integer, MenuAction> actions = new HashMap<>();
     private Inventory inventory;
@@ -61,7 +63,9 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
                            final String menuId,
                            final Component title,
                            final int size,
-                           final List<MenuItemDefinition> items) {
+                           final List<MenuItemDefinition> items,
+                           final MenuRenderContext renderContext,
+                           final Map<String, String> additionalPlaceholders) {
         this.plugin = plugin;
         this.menuManager = menuManager;
         this.assetManager = assetManager;
@@ -69,12 +73,27 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         this.title = title;
         this.size = size;
         this.items = items;
+        this.renderContext = renderContext == null ? MenuRenderContext.EMPTY : renderContext;
+        if (additionalPlaceholders == null || additionalPlaceholders.isEmpty()) {
+            this.additionalPlaceholders = Map.of();
+        } else {
+            this.additionalPlaceholders = Collections.unmodifiableMap(new HashMap<>(additionalPlaceholders));
+        }
     }
 
     public static ConfiguredMenu fromConfiguration(final LobbyPlugin plugin,
                                                    final MenuManager menuManager,
                                                    final AssetManager assetManager,
                                                    final String menuId) {
+        return fromConfiguration(plugin, menuManager, assetManager, menuId, Map.of(), MenuRenderContext.EMPTY);
+    }
+
+    public static ConfiguredMenu fromConfiguration(final LobbyPlugin plugin,
+                                                   final MenuManager menuManager,
+                                                   final AssetManager assetManager,
+                                                   final String menuId,
+                                                   final Map<String, String> extraPlaceholders,
+                                                   final MenuRenderContext renderContext) {
         if (plugin == null || menuId == null || menuId.isBlank()) {
             return null;
         }
@@ -99,41 +118,31 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         final int requestedSize = configuration.getInt("size", MAX_INVENTORY_SIZE);
         final int size = normalizeInventorySize(requestedSize);
 
+        final List<MenuItemDefinition> definitions = new ArrayList<>();
+        appendDesignItems(plugin, menuId, configuration.getConfigurationSection("design"), definitions);
+
         final ConfigurationSection itemsSection = configuration.getConfigurationSection("items");
         if (itemsSection == null) {
             plugin.getLogger().warning("Menu '" + menuId + "' does not define an items section.");
             return null;
         }
 
-        final List<MenuItemDefinition> definitions = new ArrayList<>();
         for (String key : itemsSection.getKeys(false)) {
             final ConfigurationSection itemSection = itemsSection.getConfigurationSection(key);
             if (itemSection == null) {
                 continue;
             }
-            final List<Integer> slots = resolveSlots(itemSection);
-            if (slots.isEmpty()) {
-                plugin.getLogger().warning("Menu '" + menuId + "' item '" + key + "' does not specify any slot.");
-                continue;
+            final MenuItemDefinition definition = parseItemDefinition(plugin, menuId, key, itemSection);
+            if (definition != null) {
+                definitions.add(definition);
             }
-            final String material = itemSection.getString("material", "BARRIER");
-            final String name = itemSection.getString("name", "&r");
-            final List<String> lore = itemSection.getStringList("lore");
-            final String actionValue = itemSection.getString("action");
-            final int amount = Math.max(1, Math.min(64, itemSection.getInt("amount", 1)));
-            final String skullOwner = itemSection.getString("skull-owner");
-            final boolean usePlayerHead = itemSection.getBoolean("player-head", false)
-                    || "PLAYER_HEAD".equalsIgnoreCase(material);
-            final MenuAction action = MenuAction.parse(actionValue);
-            definitions.add(new MenuItemDefinition(slots, material, name, lore, action, amount, usePlayerHead,
-                    skullOwner));
         }
 
         if (definitions.isEmpty()) {
             plugin.getLogger().warning("Menu '" + menuId + "' does not define any items.");
         }
         return new ConfiguredMenu(plugin, menuManager, assetManager, menuId, title, size,
-                Collections.unmodifiableList(definitions));
+                Collections.unmodifiableList(definitions), renderContext, extraPlaceholders);
     }
 
     @Override
@@ -146,8 +155,14 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
 
         final ItemStack[] contents = new ItemStack[size];
         final Map<String, String> placeholders = buildPlaceholderMap(player);
+        if (!additionalPlaceholders.isEmpty()) {
+            placeholders.putAll(additionalPlaceholders);
+        }
 
         for (MenuItemDefinition definition : items) {
+            if (!definition.condition().isSatisfied(renderContext)) {
+                continue;
+            }
             final ItemStack baseItem = definition.createItem(assetManager, player, placeholders);
             if (baseItem == null) {
                 continue;
@@ -227,6 +242,54 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         return placeholders;
     }
 
+    private static void appendDesignItems(final LobbyPlugin plugin,
+                                          final String menuId,
+                                          final ConfigurationSection designSection,
+                                          final List<MenuItemDefinition> definitions) {
+        if (designSection == null) {
+            return;
+        }
+        final ConfigurationSection primary = designSection.getConfigurationSection("primary_border");
+        if (primary != null) {
+            final MenuItemDefinition definition = parseItemDefinition(plugin, menuId,
+                    "design-primary-border", primary);
+            if (definition != null) {
+                definitions.add(definition);
+            }
+        }
+        final ConfigurationSection secondary = designSection.getConfigurationSection("secondary_border");
+        if (secondary != null) {
+            final MenuItemDefinition definition = parseItemDefinition(plugin, menuId,
+                    "design-secondary-border", secondary);
+            if (definition != null) {
+                definitions.add(definition);
+            }
+        }
+    }
+
+    private static MenuItemDefinition parseItemDefinition(final LobbyPlugin plugin,
+                                                          final String menuId,
+                                                          final String itemId,
+                                                          final ConfigurationSection section) {
+        final List<Integer> slots = resolveSlots(section);
+        if (slots.isEmpty()) {
+            plugin.getLogger().warning("Menu '" + menuId + "' item '" + itemId + "' does not specify any slot.");
+            return null;
+        }
+        final String material = section.getString("material", "BARRIER");
+        final String name = section.getString("name", "&r");
+        final List<String> lore = section.getStringList("lore");
+        final String actionValue = section.getString("action");
+        final int amount = Math.max(1, Math.min(64, section.getInt("amount", 1)));
+        final String skullOwner = section.getString("skull-owner");
+        final boolean usePlayerHead = section.getBoolean("player-head", false)
+                || "PLAYER_HEAD".equalsIgnoreCase(material);
+        final MenuAction action = MenuAction.parse(actionValue);
+        final MenuItemCondition condition = MenuItemCondition.fromSection(section.getConfigurationSection("conditions"));
+        return new MenuItemDefinition(itemId, slots, material, name, lore, action, amount, usePlayerHead,
+                skullOwner, condition);
+    }
+
     private static File resolveMenuFile(final LobbyPlugin plugin, final String menuId) {
         final File menusDirectory = new File(plugin.getDataFolder(), "config/menus");
         if (!menusDirectory.exists() && !menusDirectory.mkdirs()) {
@@ -302,14 +365,16 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         }
     }
 
-    private record MenuItemDefinition(List<Integer> slots,
+    private record MenuItemDefinition(String id,
+                                      List<Integer> slots,
                                       String materialKey,
                                       String displayName,
                                       List<String> lore,
                                       MenuAction action,
                                       int amount,
                                       boolean playerHead,
-                                      String skullOwner) {
+                                      String skullOwner,
+                                      MenuItemCondition condition) {
 
         private ItemStack createItem(final AssetManager assetManager,
                                      final Player player,
@@ -380,6 +445,60 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
                 result = result.replace(entry.getKey(), entry.getValue());
             }
             return result;
+        }
+    }
+
+    private enum Requirement {
+        ANY,
+        MEMBER,
+        NONE,
+        LEADER;
+
+        private static Requirement fromString(final String raw) {
+            if (raw == null || raw.isBlank()) {
+                return ANY;
+            }
+            final String normalized = raw.trim().toLowerCase(Locale.ROOT);
+            return switch (normalized) {
+                case "member", "present", "oui", "yes", "true" -> MEMBER;
+                case "leader", "chef" -> LEADER;
+                case "none", "absent", "no", "false" -> NONE;
+                default -> ANY;
+            };
+        }
+
+        private boolean isSatisfied(final boolean has, final boolean leader) {
+            return switch (this) {
+                case ANY -> true;
+                case MEMBER -> has;
+                case NONE -> !has;
+                case LEADER -> leader;
+            };
+        }
+    }
+
+    private record MenuItemCondition(Requirement groupRequirement, Requirement clanRequirement) {
+
+        private static final MenuItemCondition NONE = new MenuItemCondition(Requirement.ANY, Requirement.ANY);
+
+        private static MenuItemCondition fromSection(final ConfigurationSection section) {
+            if (section == null) {
+                return NONE;
+            }
+            final Requirement group = Requirement.fromString(section.getString("group"));
+            final Requirement clan = Requirement.fromString(section.getString("clan"));
+            if (group == Requirement.ANY && clan == Requirement.ANY) {
+                return NONE;
+            }
+            return new MenuItemCondition(group, clan);
+        }
+
+        private boolean isSatisfied(final MenuRenderContext context) {
+            if (context == null) {
+                return groupRequirement == Requirement.ANY && clanRequirement == Requirement.ANY;
+            }
+            return groupRequirement.isSatisfied(context.hasGroup(), context.groupLeader())
+                    && clanRequirement.isSatisfied(context.hasClan(), context.clanLeader());
         }
     }
 }

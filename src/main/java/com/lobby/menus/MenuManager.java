@@ -31,20 +31,38 @@ public class MenuManager {
     }
 
     public boolean openMenu(final Player player, final String rawMenuId) {
+        return openMenu(player, rawMenuId, Map.of(), MenuRenderContext.EMPTY);
+    }
+
+    public boolean openMenu(final Player player,
+                            final String rawMenuId,
+                            final Map<String, String> placeholders) {
+        return openMenu(player, rawMenuId, placeholders, MenuRenderContext.EMPTY);
+    }
+
+    public boolean openMenu(final Player player,
+                            final String rawMenuId,
+                            final Map<String, String> placeholders,
+                            final MenuRenderContext context) {
         if (player == null || rawMenuId == null || rawMenuId.isBlank()) {
             return false;
         }
         final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
 
         if (isSimpleMenu(menuId)) {
-            return buildAndOpenSimpleMenu(player, menuId);
+            return buildAndOpenSimpleMenu(player, menuId, placeholders, context);
         }
 
         if (isHeavyMenu(menuId)) {
-            return buildAndOpenHeavyMenu(player, menuId);
+            return buildAndOpenHeavyMenu(player, menuId, placeholders, context);
         }
 
-        return false;
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
+        if (menu == null) {
+            return false;
+        }
+        displayMenu(player, menu);
+        return true;
     }
 
     public Optional<Menu> getOpenMenu(final UUID uuid) {
@@ -102,8 +120,11 @@ public class MenuManager {
         };
     }
 
-    private boolean buildAndOpenSimpleMenu(final Player player, final String menuId) {
-        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId);
+    private boolean buildAndOpenSimpleMenu(final Player player,
+                                           final String menuId,
+                                           final Map<String, String> placeholders,
+                                           final MenuRenderContext context) {
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
         if (menu == null) {
             return false;
         }
@@ -111,13 +132,19 @@ public class MenuManager {
         return true;
     }
 
-    private boolean buildAndOpenHeavyMenu(final Player player, final String menuId) {
-        return com.lobby.social.menus.SocialHeavyMenus.open(menuId, this, player)
-                || openConfiguredMenu(player, menuId);
+    private boolean buildAndOpenHeavyMenu(final Player player,
+                                          final String menuId,
+                                          final Map<String, String> placeholders,
+                                          final MenuRenderContext context) {
+        return com.lobby.social.menus.SocialHeavyMenus.open(menuId, this, player, placeholders, context)
+                || openConfiguredMenu(player, menuId, placeholders, context);
     }
 
-    private boolean openConfiguredMenu(final Player player, final String menuId) {
-        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId);
+    private boolean openConfiguredMenu(final Player player,
+                                       final String menuId,
+                                       final Map<String, String> placeholders,
+                                       final MenuRenderContext context) {
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
         if (menu == null) {
             return false;
         }
