@@ -21,6 +21,7 @@ import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 import java.io.IOException;
@@ -49,6 +50,7 @@ public final class ScoreboardManager implements Listener {
     private static final String DEFAULT_PREFIX = ChatColor.GRAY + "Joueur";
     private static final String SCOREBOARD_OBJECTIVE_PREFIX = "lobby";
     private static final int MAX_SCOREBOARD_LINES = 15;
+    private static final String[] LINE_ENTRIES = createLineEntries();
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacySection();
 
     private static final List<String> DEFAULT_BODY = List.of(
@@ -130,7 +132,10 @@ public final class ScoreboardManager implements Listener {
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> initializePlayer(player), 2L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            initializePlayer(player);
+            forceUpdateForPlayer(player);
+        }, 2L);
     }
 
     @EventHandler
@@ -156,6 +161,55 @@ public final class ScoreboardManager implements Listener {
         view.updateTitle(current.titleComponent());
         final PlayerScoreboardData data = dataCache.getOrDefault(uuid, PlayerScoreboardData.empty());
         view.apply(buildLines(player, data, resolveNetworkPlayerCount(), footerAnimation.getCurrentFrame(), current));
+    }
+
+    public void forceUpdateForPlayer(final Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        final ScoreboardSettings current = settings.get();
+        if (current == null || !current.enabled()) {
+            return;
+        }
+        final UUID uuid = player.getUniqueId();
+        if (!trackedPlayers.contains(uuid)) {
+            return;
+        }
+        final String username = player.getName();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                final long coins = economyManager != null ? economyManager.getCoins(uuid) : 0L;
+                final long tokens = economyManager != null ? economyManager.getTokens(uuid) : 0L;
+                final String prefix = prefixResolver.fetchPrefixAsync(uuid, username).join();
+                final PlayerScoreboardData data = new PlayerScoreboardData(prefix, coins, tokens);
+                dataCache.put(uuid, data);
+                Bukkit.getScheduler().runTask(plugin, () -> applyForcedUpdate(player, data));
+            } catch (final Exception exception) {
+                plugin.getLogger().warning("Failed to force refresh scoreboard data for " + username + ": "
+                        + exception.getMessage());
+            }
+        });
+    }
+
+    private void applyForcedUpdate(final Player player, final PlayerScoreboardData data) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        final UUID uuid = player.getUniqueId();
+        if (!trackedPlayers.contains(uuid)) {
+            return;
+        }
+        final ScoreboardSettings current = settings.get();
+        if (current == null || !current.enabled()) {
+            return;
+        }
+        lastKnownNames.put(uuid, player.getName());
+        final PlayerScoreboardView view = views.computeIfAbsent(uuid,
+                id -> createView(player, current.titleComponent()));
+        view.updateTitle(current.titleComponent());
+        final int networkPlayers = resolveNetworkPlayerCount();
+        final String footerFrame = footerAnimation.getCurrentFrame();
+        view.apply(buildLines(player, data, networkPlayers, footerFrame, current));
     }
 
     private void handleQuit(final Player player) {
@@ -331,17 +385,6 @@ public final class ScoreboardManager implements Listener {
         if (lines.size() > MAX_SCOREBOARD_LINES) {
             lines.subList(MAX_SCOREBOARD_LINES, lines.size()).clear();
         }
-        final Set<String> seen = new HashSet<>();
-        for (int index = 0; index < lines.size(); index++) {
-            String line = lines.get(index);
-            String unique = line;
-            int attempt = 0;
-            while (!seen.add(unique) && attempt < 16) {
-                unique = line + ChatColor.COLOR_CHAR + Integer.toHexString(attempt);
-                attempt++;
-            }
-            lines.set(index, unique);
-        }
     }
 
     private PlayerScoreboardView createView(final Player player, final Component title) {
@@ -428,6 +471,15 @@ public final class ScoreboardManager implements Listener {
         return colored;
     }
 
+    private static String[] createLineEntries() {
+        final String[] entries = new String[MAX_SCOREBOARD_LINES];
+        for (int index = 0; index < MAX_SCOREBOARD_LINES; index++) {
+            final String color = Integer.toHexString(index);
+            entries[index] = "" + ChatColor.COLOR_CHAR + color + ChatColor.COLOR_CHAR + 'r';
+        }
+        return entries;
+    }
+
     private static String applyPlaceholders(final String input, final Map<String, String> placeholders) {
         if (input == null) {
             return "";
@@ -509,7 +561,7 @@ public final class ScoreboardManager implements Listener {
 
         private final Scoreboard scoreboard;
         private final Objective objective;
-        private final List<String> lines = new ArrayList<>();
+        private final List<ScoreboardLine> lines = new ArrayList<>();
         private Component title;
 
         private PlayerScoreboardView(final Scoreboard scoreboard, final Objective objective, final Component title) {
@@ -519,18 +571,22 @@ public final class ScoreboardManager implements Listener {
         }
 
         private void apply(final List<String> newLines) {
-            final Set<String> currentEntries = Set.copyOf(lines);
-            for (final String entry : currentEntries) {
-                if (!newLines.contains(entry)) {
-                    scoreboard.resetScores(entry);
-                }
+            final int targetSize = Math.min(newLines.size(), MAX_SCOREBOARD_LINES);
+            for (int index = lines.size() - 1; index >= targetSize; index--) {
+                final ScoreboardLine removed = lines.remove(index);
+                removed.clear(scoreboard);
             }
-            lines.clear();
-            lines.addAll(newLines);
-            final int size = newLines.size();
-            for (int index = 0; index < size; index++) {
-                final String line = newLines.get(index);
-                objective.getScore(line).setScore(size - index);
+            for (int index = 0; index < targetSize; index++) {
+                final String value = sanitize(newLines.get(index));
+                final ScoreboardLine line;
+                if (index < lines.size()) {
+                    line = lines.get(index);
+                } else {
+                    line = createLine(index);
+                    lines.add(line);
+                }
+                line.update(value);
+                objective.getScore(line.entry()).setScore(targetSize - index);
             }
         }
 
@@ -538,14 +594,9 @@ public final class ScoreboardManager implements Listener {
             if (index < 0 || index >= lines.size()) {
                 return;
             }
-            final String current = lines.get(index);
-            if (current.equals(value)) {
-                return;
-            }
-            scoreboard.resetScores(current);
-            final int score = lines.size() - index;
-            objective.getScore(value).setScore(score);
-            lines.set(index, value);
+            final ScoreboardLine line = lines.get(index);
+            line.update(sanitize(value));
+            objective.getScore(line.entry()).setScore(lines.size() - index);
         }
 
         private void updateTitle(final Component newTitle) {
@@ -557,14 +608,68 @@ public final class ScoreboardManager implements Listener {
         }
 
         private void clear(final Player player) {
-            for (final String entry : lines) {
-                scoreboard.resetScores(entry);
+            for (final ScoreboardLine line : lines) {
+                line.clear(scoreboard);
             }
             lines.clear();
             final org.bukkit.scoreboard.ScoreboardManager manager = Bukkit.getScoreboardManager();
             if (manager != null) {
                 player.setScoreboard(manager.getNewScoreboard());
             }
+        }
+
+        private ScoreboardLine createLine(final int index) {
+            final String teamName = SCOREBOARD_OBJECTIVE_PREFIX + "_line_" + index;
+            Team team = scoreboard.getTeam(teamName);
+            if (team == null) {
+                team = scoreboard.registerNewTeam(teamName);
+            }
+            team.setSuffix("");
+            final String entry = LINE_ENTRIES[index];
+            if (!team.getEntries().contains(entry)) {
+                team.addEntry(entry);
+            }
+            return new ScoreboardLine(team, entry);
+        }
+
+        private String sanitize(final String value) {
+            return (value == null || value.isBlank()) ? " " : value;
+        }
+    }
+
+    private static final class ScoreboardLine {
+
+        private final Team team;
+        private final String entry;
+        private String text = "";
+
+        private ScoreboardLine(final Team team, final String entry) {
+            this.team = team;
+            this.entry = entry;
+        }
+
+        private void update(final String value) {
+            if (!team.getEntries().contains(entry)) {
+                team.addEntry(entry);
+            }
+            if (!value.equals(text)) {
+                team.setPrefix(value);
+                team.setSuffix("");
+                text = value;
+            }
+        }
+
+        private void clear(final Scoreboard scoreboard) {
+            for (String existing : new HashSet<>(team.getEntries())) {
+                team.removeEntry(existing);
+            }
+            scoreboard.resetScores(entry);
+            team.unregister();
+            text = "";
+        }
+
+        private String entry() {
+            return entry;
         }
     }
 }
