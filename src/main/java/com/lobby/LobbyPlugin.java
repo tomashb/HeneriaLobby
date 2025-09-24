@@ -36,6 +36,7 @@ import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.stats.StatsManager;
+import com.lobby.tablist.TablistManager;
 import com.lobby.velocity.VelocityManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.Material;
@@ -71,6 +72,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private StatsManager statsManager;
     private PlayerSettingsManager playerSettingsManager;
     private ScoreboardManager scoreboardManager;
+    private TablistManager tablistManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -126,6 +128,9 @@ public final class LobbyPlugin extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(this);
         getServer().getPluginManager().registerEvents(scoreboardManager, this);
 
+        tablistManager = new TablistManager(this);
+        getServer().getPluginManager().registerEvents(tablistManager, this);
+
         registerCommands();
 
         getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
@@ -144,6 +149,9 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         if (scoreboardManager != null) {
             scoreboardManager.shutdown();
+        }
+        if (tablistManager != null) {
+            tablistManager.shutdown();
         }
         if (hologramManager != null) {
             hologramManager.shutdown();
@@ -278,6 +286,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return scoreboardManager;
     }
 
+    public TablistManager getTablistManager() {
+        return tablistManager;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -324,6 +336,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (scoreboardManager != null) {
             scoreboardManager.reload();
+        }
+        if (tablistManager != null) {
+            tablistManager.reload();
         }
     }
 
