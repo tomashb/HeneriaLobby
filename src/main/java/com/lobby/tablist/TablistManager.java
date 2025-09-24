@@ -53,6 +53,7 @@ public final class TablistManager implements Listener {
     private final ServerPlaceholderCache serverPlaceholderCache;
     private final VelocityManager velocityManager;
     private final LuckPermsTablistResolver luckPermsResolver;
+    private final NametagManager nametagManager;
     private final ScoreboardAnimation footerAnimation = new ScoreboardAnimation(List.of(""));
     private final AtomicReference<TablistSettings> settings = new AtomicReference<>();
     private final Set<UUID> trackedPlayers = ConcurrentHashMap.newKeySet();
@@ -69,6 +70,7 @@ public final class TablistManager implements Listener {
         this.serverPlaceholderCache = plugin.getServerPlaceholderCache();
         this.velocityManager = plugin.getVelocityManager();
         this.luckPermsResolver = new LuckPermsTablistResolver(plugin, ChatColor.GRAY + "Joueur");
+        this.nametagManager = plugin.getNametagManager();
         reload();
     }
 
@@ -220,6 +222,9 @@ public final class TablistManager implements Listener {
             final Component footer = renderFooter(footerFrame, placeholders);
             player.sendPlayerListHeaderAndFooter(header, footer);
             applyPlayerListName(player, current.playerNameFormat(), placeholders);
+            if (nametagManager != null) {
+                nametagManager.applyNametag(player, entry.data());
+            }
         }
     }
 
@@ -295,13 +300,51 @@ public final class TablistManager implements Listener {
                                                   final PlayerTablistData data,
                                                   final int networkPlayers) {
         final Map<String, String> placeholders = new HashMap<>();
+        final String prefix = Optional.ofNullable(data.prefix()).orElse("");
         placeholders.put("%player_name%", player.getName());
         placeholders.put("%player_ping%", Integer.toString(player.getPing()));
-        placeholders.put("%luckperms_prefix%", Optional.ofNullable(data.prefix()).orElse(""));
+        placeholders.put("%luckperms_prefix%", prefix);
         placeholders.put("%luckperms_suffix%", Optional.ofNullable(data.suffix()).orElse(""));
+        placeholders.put("%luckperms_primary_group%", Optional.ofNullable(data.primaryGroup()).orElse(""));
+        placeholders.put("%luckperms_primary_color%", extractNameColor(prefix));
         placeholders.put("%server_id%", serverId);
         placeholders.put("%bungee_total%", NUMBER_FORMAT.format(networkPlayers));
         return placeholders;
+    }
+
+    private String extractNameColor(final String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            return "&f";
+        }
+        for (int index = prefix.length() - 1; index >= 0; index--) {
+            if (prefix.charAt(index) != ChatColor.COLOR_CHAR || index + 1 >= prefix.length()) {
+                continue;
+            }
+            final char code = Character.toLowerCase(prefix.charAt(index + 1));
+            if (code == 'x') {
+                if ((index + 13) < prefix.length()) {
+                    final StringBuilder builder = new StringBuilder("&#");
+                    boolean valid = true;
+                    for (int offset = 2; offset <= 12; offset += 2) {
+                        final int sectionIndex = index + offset;
+                        if (sectionIndex + 1 >= prefix.length() || prefix.charAt(sectionIndex) != ChatColor.COLOR_CHAR) {
+                            valid = false;
+                            break;
+                        }
+                        builder.append(Character.toLowerCase(prefix.charAt(sectionIndex + 1)));
+                    }
+                    if (valid && builder.length() == 8) {
+                        return builder.toString();
+                    }
+                }
+                continue;
+            }
+            final ChatColor color = ChatColor.getByChar(code);
+            if (color != null && color.isColor()) {
+                return "&" + code;
+            }
+        }
+        return "&f";
     }
 
     private void applyPlayerListName(final Player player,
@@ -388,6 +431,9 @@ public final class TablistManager implements Listener {
         trackedPlayers.clear();
         lastKnownNames.clear();
         dataCache.clear();
+        if (nametagManager != null) {
+            nametagManager.clearAll();
+        }
     }
 
     private void resetPlayer(final Player player) {
@@ -396,6 +442,9 @@ public final class TablistManager implements Listener {
         final Scoreboard scoreboard = player.getScoreboard();
         if (scoreboard != null) {
             cleanupTablistTeams(scoreboard);
+        }
+        if (nametagManager != null) {
+            nametagManager.removePlayer(player);
         }
     }
 
@@ -424,7 +473,8 @@ public final class TablistManager implements Listener {
         final long updateInterval = Math.max(1L, section.getLong("update-interval-ticks", 40L));
         final List<String> header = section.getStringList("header");
         final List<String> footerFrames = section.getStringList("footer-animation-frames");
-        final String nameFormat = section.getString("player-name-format", "%luckperms_prefix%%player_name%");
+        final String nameFormat = section.getString("player-name-format",
+                "%luckperms_prefix%%luckperms_primary_color%%player_name%");
         final boolean sort = section.getBoolean("sort-players-by-luckperms-weight", false);
         return new TablistSettings(enabled, updateInterval,
                 header == null ? List.of() : List.copyOf(header),
@@ -481,7 +531,7 @@ public final class TablistManager implements Listener {
             return new TablistSettings(true, 40L,
                     List.of("&r", "&3&lHENERIA NETWORK", "&7Bienvenue sur nos serveurs, &b%player_name%&7!", "&r"),
                     List.of(""),
-                    "%luckperms_prefix%%player_name%",
+                    "%luckperms_prefix%%luckperms_primary_color%%player_name%",
                     true);
         }
 

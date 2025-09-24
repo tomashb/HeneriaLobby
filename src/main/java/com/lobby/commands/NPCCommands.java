@@ -10,7 +10,6 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -389,20 +388,15 @@ public class NPCCommands implements CommandExecutor, TabCompleter {
             return;
         }
 
-        final ArmorStand armorStand = npc.getArmorStand();
-        if (armorStand == null || armorStand.isDead()) {
-            MessageUtils.sendPrefixedMessage(player, "&cLe PNJ n'est pas disponible actuellement.");
-            return;
+        try {
+            npcManager.updateNPCMainHandItem(name, itemInHand);
+            MessageUtils.sendPrefixedMessage(player, "&aPNJ '&6" + name + "&a' équipé avec l'item !");
+        } catch (final Exception exception) {
+            MessageUtils.sendPrefixedMessage(player, "&cImpossible d'équiper ce PNJ (" + exception.getMessage() + ")");
+            if (plugin != null) {
+                plugin.getLogger().severe("Error updating NPC item: " + exception.getMessage());
+            }
         }
-
-        final var equipment = armorStand.getEquipment();
-        if (equipment == null) {
-            MessageUtils.sendPrefixedMessage(player, "&cImpossible d'équiper ce PNJ.");
-            return;
-        }
-
-        equipment.setItemInMainHand(itemInHand.clone());
-        MessageUtils.sendPrefixedMessage(player, "&aPNJ '&6" + name + "&a' équipé avec l'item !");
     }
 
     private void handleSetColor(final CommandSender sender, final String[] args) {

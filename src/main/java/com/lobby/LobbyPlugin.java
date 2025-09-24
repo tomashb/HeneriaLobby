@@ -37,6 +37,7 @@ import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.stats.StatsManager;
 import com.lobby.tablist.TablistManager;
+import com.lobby.tablist.NametagManager;
 import com.lobby.velocity.VelocityManager;
 import com.lobby.utils.LogUtils;
 import org.bukkit.Material;
@@ -72,6 +73,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private StatsManager statsManager;
     private PlayerSettingsManager playerSettingsManager;
     private ScoreboardManager scoreboardManager;
+    private NametagManager nametagManager;
     private TablistManager tablistManager;
 
     public static LobbyPlugin getInstance() {
@@ -128,6 +130,8 @@ public final class LobbyPlugin extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(this);
         getServer().getPluginManager().registerEvents(scoreboardManager, this);
 
+        nametagManager = new NametagManager(this);
+
         tablistManager = new TablistManager(this);
         getServer().getPluginManager().registerEvents(tablistManager, this);
 
@@ -149,6 +153,9 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         if (scoreboardManager != null) {
             scoreboardManager.shutdown();
+        }
+        if (nametagManager != null) {
+            nametagManager.shutdown();
         }
         if (tablistManager != null) {
             tablistManager.shutdown();
@@ -196,6 +203,10 @@ public final class LobbyPlugin extends JavaPlugin {
             confirmationManager.clearAll();
         }
         instance = null;
+    }
+
+    public NametagManager getNametagManager() {
+        return nametagManager;
     }
 
     public DatabaseManager getDatabaseManager() {

@@ -36,7 +36,7 @@ final class LuckPermsTablistResolver {
         this.luckPerms = Bukkit.getServicesManager().load(LuckPerms.class);
         this.queryOptions = luckPerms != null ? luckPerms.getContextManager().getStaticQueryOptions() : null;
         final String resolvedPrefix = Objects.requireNonNullElse(defaultPrefix, ChatColor.GRAY + "Joueur");
-        this.defaultData = new PlayerTablistData(resolvedPrefix, "", 0);
+        this.defaultData = new PlayerTablistData(resolvedPrefix, "", 0, null);
     }
 
     PlayerTablistData getMeta(final UUID uuid, final String username) {
@@ -74,7 +74,7 @@ final class LuckPermsTablistResolver {
                     if (user == null) {
                         metaFuture = CompletableFuture.completedFuture(resolved);
                     } else {
-                        final String primaryGroup = user.getPrimaryGroup();
+                        final String primaryGroup = resolved.primaryGroup();
                         if (primaryGroup == null || primaryGroup.isBlank()) {
                             metaFuture = CompletableFuture.completedFuture(resolved);
                         } else {
@@ -153,7 +153,8 @@ final class LuckPermsTablistResolver {
         final String prefix = colorize(metaData.getPrefix());
         final String suffix = colorize(metaData.getSuffix());
         final String resolvedPrefix = prefix.isBlank() ? previous.prefix() : prefix;
-        return new PlayerTablistData(resolvedPrefix, suffix, previous.weight());
+        final String primaryGroup = user != null ? user.getPrimaryGroup() : previous.primaryGroup();
+        return new PlayerTablistData(resolvedPrefix, suffix, previous.weight(), primaryGroup);
     }
 
     private PlayerTablistData mergeGroupData(final PlayerTablistData base,
@@ -161,10 +162,10 @@ final class LuckPermsTablistResolver {
                                             final PlayerTablistData previous) {
         final Group group = unwrapGroup(groupResult);
         if (group == null) {
-            return new PlayerTablistData(base.prefix(), base.suffix(), previous.weight());
+            return new PlayerTablistData(base.prefix(), base.suffix(), previous.weight(), base.primaryGroup());
         }
         final int weight = group.getWeight().orElse(previous.weight());
-        return new PlayerTablistData(base.prefix(), base.suffix(), weight);
+        return new PlayerTablistData(base.prefix(), base.suffix(), weight, base.primaryGroup());
     }
 
     private Group unwrapGroup(final Object groupResult) {
