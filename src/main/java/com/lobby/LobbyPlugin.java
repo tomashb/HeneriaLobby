@@ -25,6 +25,7 @@ import com.lobby.lobby.LobbyManager;
 import com.lobby.lobby.listeners.LobbyItemListener;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
+import com.lobby.scoreboard.LobbyScoreboardManager;
 import com.lobby.servers.ServerManager;
 import com.lobby.servers.ServerPlaceholderCache;
 import com.lobby.settings.PlayerSettingsManager;
@@ -69,6 +70,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private ChatInputManager chatInputManager;
     private StatsManager statsManager;
     private PlayerSettingsManager playerSettingsManager;
+    private LobbyScoreboardManager scoreboardManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -121,6 +123,9 @@ public final class LobbyPlugin extends JavaPlugin {
         shopCommands = new ShopCommands(this, shopManager);
         chatInputManager = new ChatInputManager(this);
 
+        scoreboardManager = new LobbyScoreboardManager(this);
+        getServer().getPluginManager().registerEvents(scoreboardManager, this);
+
         registerCommands();
 
         getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
@@ -137,6 +142,9 @@ public final class LobbyPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+        if (scoreboardManager != null) {
+            scoreboardManager.shutdown();
+        }
         if (hologramManager != null) {
             hologramManager.shutdown();
         }
@@ -266,6 +274,10 @@ public final class LobbyPlugin extends JavaPlugin {
         return lobbyManager;
     }
 
+    public LobbyScoreboardManager getScoreboardManager() {
+        return scoreboardManager;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -309,6 +321,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (playerSettingsManager != null) {
             playerSettingsManager.clearCache();
+        }
+        if (scoreboardManager != null) {
+            scoreboardManager.reload();
         }
     }
 

@@ -87,6 +87,12 @@ public class ServerPlaceholderCache {
         return activeGames.getOrDefault(normalize(serverId), 0);
     }
 
+    public int getTotalPlayerCount() {
+        return playerCounts.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+    }
+
     public void updateServerPlayerCount(final String serverId, final int count) {
         if (serverId == null) {
             return;
