@@ -13,6 +13,7 @@ import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Manages player nametag formatting by creating and assigning scoreboard teams
@@ -33,6 +35,8 @@ public final class NametagManager {
 
     private static final String TEAM_PREFIX = "nt";
     private static final int TEAM_NAME_MAX_LENGTH = 16;
+    private static final Pattern HEX_COLOR_PATTERN = Pattern.compile("^#?[0-9a-fA-F]{6}$");
+    private static final Map<ChatColor, int[]> BASE_CHAT_COLORS = createBaseChatColors();
 
     private final LobbyPlugin plugin;
     private final LuckPerms luckPerms;
@@ -267,12 +271,11 @@ public final class NametagManager {
             return null;
         }
         final String trimmed = value.trim();
-        try {
-            if (trimmed.startsWith("#")) {
-                return ChatColor.of(trimmed);
+        if (trimmed.startsWith("#")) {
+            final ChatColor hexColor = parseHexColor(trimmed);
+            if (hexColor != null) {
+                return hexColor;
             }
-        } catch (final IllegalArgumentException ignored) {
-            return null;
         }
         if (trimmed.length() == 2 && trimmed.charAt(0) == ChatColor.COLOR_CHAR) {
             final ChatColor color = ChatColor.getByChar(trimmed.charAt(1));
@@ -293,6 +296,40 @@ public final class NametagManager {
             }
         }
         return null;
+    }
+
+    private ChatColor parseHexColor(final String value) {
+        if (!HEX_COLOR_PATTERN.matcher(value).matches()) {
+            return null;
+        }
+        final String hex = value.charAt(0) == '#' ? value.substring(1) : value;
+        try {
+            final int rgb = Integer.parseInt(hex, 16);
+            final int red = (rgb >> 16) & 0xFF;
+            final int green = (rgb >> 8) & 0xFF;
+            final int blue = rgb & 0xFF;
+            ChatColor nearest = null;
+            int bestDistance = Integer.MAX_VALUE;
+            for (Map.Entry<ChatColor, int[]> entry : BASE_CHAT_COLORS.entrySet()) {
+                final int[] components = entry.getValue();
+                final int distance = computeDistance(red, green, blue, components[0], components[1], components[2]);
+                if (distance < bestDistance) {
+                    bestDistance = distance;
+                    nearest = entry.getKey();
+                }
+            }
+            return nearest;
+        } catch (final NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private int computeDistance(final int red, final int green, final int blue,
+                                final int otherRed, final int otherGreen, final int otherBlue) {
+        final int diffRed = red - otherRed;
+        final int diffGreen = green - otherGreen;
+        final int diffBlue = blue - otherBlue;
+        return diffRed * diffRed + diffGreen * diffGreen + diffBlue * diffBlue;
     }
 
     private ChatColor extractColorFromPrefix(final String prefix) {
@@ -348,6 +385,35 @@ public final class NametagManager {
             return "";
         }
         return value.endsWith(" ") ? value : value + ' ';
+    }
+
+    private static Map<ChatColor, int[]> createBaseChatColors() {
+        final EnumMap<ChatColor, int[]> colors = new EnumMap<>(ChatColor.class);
+        registerColor(colors, ChatColor.BLACK, 0x00, 0x00, 0x00);
+        registerColor(colors, ChatColor.DARK_BLUE, 0x00, 0x00, 0xAA);
+        registerColor(colors, ChatColor.DARK_GREEN, 0x00, 0xAA, 0x00);
+        registerColor(colors, ChatColor.DARK_AQUA, 0x00, 0xAA, 0xAA);
+        registerColor(colors, ChatColor.DARK_RED, 0xAA, 0x00, 0x00);
+        registerColor(colors, ChatColor.DARK_PURPLE, 0xAA, 0x00, 0xAA);
+        registerColor(colors, ChatColor.GOLD, 0xFF, 0xAA, 0x00);
+        registerColor(colors, ChatColor.GRAY, 0xAA, 0xAA, 0xAA);
+        registerColor(colors, ChatColor.DARK_GRAY, 0x55, 0x55, 0x55);
+        registerColor(colors, ChatColor.BLUE, 0x55, 0x55, 0xFF);
+        registerColor(colors, ChatColor.GREEN, 0x55, 0xFF, 0x55);
+        registerColor(colors, ChatColor.AQUA, 0x55, 0xFF, 0xFF);
+        registerColor(colors, ChatColor.RED, 0xFF, 0x55, 0x55);
+        registerColor(colors, ChatColor.LIGHT_PURPLE, 0xFF, 0x55, 0xFF);
+        registerColor(colors, ChatColor.YELLOW, 0xFF, 0xFF, 0x55);
+        registerColor(colors, ChatColor.WHITE, 0xFF, 0xFF, 0xFF);
+        return colors;
+    }
+
+    private static void registerColor(final EnumMap<ChatColor, int[]> colors,
+                                      final ChatColor color,
+                                      final int red, final int green, final int blue) {
+        if (color != null && color.isColor()) {
+            colors.put(color, new int[] { red, green, blue });
+        }
     }
 
     private record TeamTemplate(String key, String prefix, ChatColor color) {
