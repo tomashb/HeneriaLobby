@@ -1,0 +1,51 @@
+# ============================================================
+#       CONFIGURATION COMPLÈTE DE LA TABLIST
+# ============================================================
+
+tablist:
+  # Activer ou désactiver la gestion de la tablist par ce plugin
+  enabled: true
+
+  # Vitesse de rafraîchissement des informations (header/footer) en ticks
+  # (40 ticks = 2 secondes). Inutile de le faire trop vite.
+  update-interval-ticks: 40
+
+  # ============================================================
+  #                       HEADER (Haut de la Tablist)
+  # ============================================================
+  # Chaque ligne sera affichée. Utilisez des lignes vides ('&r') pour l'espacement.
+  header:
+    - '&r'
+    - '&3&lHENERIA NETWORK'
+    - '&7Bienvenue sur nos serveurs, &b%player_name%&7!'
+    - '&r'
+
+  # ============================================================
+  #                       FOOTER (Bas de la Tablist)
+  # ============================================================
+  # Vous pouvez créer une animation ici de la même manière que le scoreboard.
+  # Le plugin cyclera sur ces "frames". S'il n'y a qu'une frame, il sera statique.
+  footer-animation-frames:
+    - |
+      &r
+      &7Joueurs en ligne: &a%bungee_total%
+      &7Notre Discord : &9discord.gg/heneria
+      &7Ping : &a%player_ping%ms
+      &r
+    - |
+      &r
+      &7Vous êtes sur le lobby &b#%server_id%
+      &7Notre Boutique : &6store.heneria.com
+      &7Ping : &a%player_ping%ms
+      &r
+
+  # ============================================================
+  #                 FORMAT DU NOM DES JOUEURS
+  # ============================================================
+  # Contrôle l'apparence des joueurs dans la liste.
+  # Placeholders disponibles : %luckperms_prefix%, %player_name%, %luckperms_suffix%
+  player-name-format: '%luckperms_prefix%&f%player_name%'
+  
+  # Optionnel : Trier les joueurs dans la tablist en fonction de leur groupe LuckPerms.
+  # Les groupes avec le poids le plus élevé (ex: admin) apparaîtront en haut.
+  sort-players-by-luckperms-weight: true
