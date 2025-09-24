@@ -291,6 +291,25 @@ public class VelocityManager {
         return Optional.of(serverKey);
     }
 
+    public Optional<String> findPlayerServerId(final UUID playerUuid, final String playerName) {
+        if (!enabled) {
+            return Optional.empty();
+        }
+        final String key = normalizePlayerKey(playerUuid, playerName);
+        if (key == null) {
+            return Optional.empty();
+        }
+        final String serverKey = playerServerIndex.get(key);
+        if (serverKey == null) {
+            return Optional.empty();
+        }
+        final VelocityServerInfo info = resolveServerInfo(serverKey);
+        if (info != null) {
+            return Optional.of(info.getId());
+        }
+        return Optional.of(serverKey);
+    }
+
     public boolean isPlayerOnlineProxy(final UUID playerUuid, final String playerName) {
         if (!enabled) {
             return false;

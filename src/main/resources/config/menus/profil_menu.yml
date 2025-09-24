@@ -24,8 +24,8 @@ items:
       - '&7des invitations et rejoignez vos'
       - '&7camarades en jeu.'
       - '&r'
-      - '&c⚠ En développement'
-    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+      - '&a▶ Cliquez pour ouvrir'
+    action: '[MENU] amis_menu'
 
   party-button:
     slot: 4
@@ -36,8 +36,8 @@ items:
       - '&7pour vous lancer ensemble dans'
       - '&7les mini-jeux.'
       - '&r'
-      - '&c⚠ En développement'
-    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+      - '&a▶ Cliquez pour gérer votre groupe'
+    action: '[MENU] groupe_menu'
 
   clan-button:
     slot: 5
@@ -48,8 +48,8 @@ items:
       - '&7des événements exclusifs et montrez'
       - '&7la force de votre communauté.'
       - '&r'
-      - '&c⚠ En développement'
-    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+      - '&a▶ Cliquez pour ouvrir'
+    action: '[MENU] clan_menu'
 
   daily-reward:
     slot: 21

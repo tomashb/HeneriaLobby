@@ -16,7 +16,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -33,9 +32,9 @@ public class ClanManager {
     private final LobbyPlugin plugin;
     private final DatabaseManager databaseManager;
     private final EconomyManager economyManager;
-    private final Map<String, Clan> clanCache = new HashMap<>();
-    private final Map<Integer, Clan> clanCacheById = new HashMap<>();
-    private final Map<UUID, String> playerClanCache = new HashMap<>();
+    private final Map<String, Clan> clanCache = new ConcurrentHashMap<>();
+    private final Map<Integer, Clan> clanCacheById = new ConcurrentHashMap<>();
+    private final Map<UUID, String> playerClanCache = new ConcurrentHashMap<>();
     private final Map<Integer, Map<UUID, ClanBanEntry>> clanBanCache = new ConcurrentHashMap<>();
 
     public ClanManager(final LobbyPlugin plugin) {
@@ -605,6 +604,31 @@ public class ClanManager {
             bannedPlayer.sendMessage(message.toString());
             bannedPlayer.closeInventory();
         }
+        return true;
+    }
+
+    public boolean leaveClan(final Player player) {
+        if (player == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        final Clan clan = getPlayerClan(uuid);
+        if (clan == null) {
+            player.sendMessage("§cVous n'êtes dans aucun clan.");
+            return false;
+        }
+        if (clan.isLeader(uuid)) {
+            player.sendMessage("§cVous devez transférer ou dissoudre votre clan avant de le quitter.");
+            return false;
+        }
+        if (!removeMemberFromClan(clan, uuid)) {
+            player.sendMessage("§cImpossible de quitter le clan pour le moment.");
+            return false;
+        }
+        final String playerName = player.getName();
+        broadcastLeaveMessage(clan, playerName, "Départ volontaire");
+        player.sendMessage("§cVous avez quitté le clan §6" + clan.getName() + "§c.");
+        player.closeInventory();
         return true;
     }
 

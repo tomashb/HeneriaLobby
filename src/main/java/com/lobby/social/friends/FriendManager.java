@@ -5,6 +5,7 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.servers.ServerInfo;
 import com.lobby.servers.ServerManager;
 import com.lobby.velocity.VelocityManager;
+import org.bukkit.ChatColor;
 import com.lobby.settings.FriendRequestSetting;
 import com.lobby.settings.PlayerSettingsManager;
 import org.bukkit.Bukkit;
@@ -780,6 +781,24 @@ public class FriendManager {
         return new ArrayList<>(favoritesCache.computeIfAbsent(uuid, this::loadFavoritesFromDatabase));
     }
 
+    public boolean isFavorite(final UUID playerUUID, final UUID friendUUID) {
+        if (playerUUID == null || friendUUID == null) {
+            return false;
+        }
+        return favoritesCache.computeIfAbsent(playerUUID, this::loadFavoritesFromDatabase)
+                .contains(friendUUID);
+    }
+
+    public boolean toggleFavorite(final UUID playerUUID, final UUID friendUUID) {
+        if (playerUUID == null || friendUUID == null) {
+            return false;
+        }
+        if (isFavorite(playerUUID, friendUUID)) {
+            return removeFromFavorites(playerUUID, friendUUID);
+        }
+        return addToFavorites(playerUUID, friendUUID);
+    }
+
     public boolean addToFavorites(final UUID playerUUID, final UUID friendUUID) {
         if (!areFriends(playerUUID, friendUUID)) {
             return false;
@@ -797,6 +816,56 @@ public class FriendManager {
             plugin.getLogger().log(Level.SEVERE,
                     "Failed to add favorite friend for " + playerUUID, exception);
         }
+        return false;
+    }
+
+    public boolean joinFriendServer(final Player player, final FriendInfo friendInfo) {
+        if (player == null || friendInfo == null) {
+            return false;
+        }
+        if (!friendInfo.isOnline()) {
+            player.sendMessage("§cCe joueur n'est pas en ligne.");
+            return false;
+        }
+
+        final VelocityManager velocityManager = plugin.getVelocityManager();
+        if (velocityManager != null) {
+            final var serverId = velocityManager.findPlayerServerId(friendInfo.getUuid(), friendInfo.getName());
+            if (serverId.isPresent()) {
+                velocityManager.sendPlayerToServer(player, serverId.get());
+                return true;
+            }
+        }
+
+        final ServerManager serverManager = plugin.getServerManager();
+        if (serverManager != null) {
+            final String friendServer = friendInfo.getServer();
+            if (friendServer != null && !friendServer.isBlank()) {
+                final String stripped = ChatColor.stripColor(friendServer);
+                ServerInfo matched = null;
+                for (ServerInfo info : serverManager.getServers()) {
+                    final String display = ChatColor.stripColor(info.getDisplayName());
+                    if (display.equalsIgnoreCase(stripped) || info.getId().equalsIgnoreCase(stripped)
+                            || info.getName().equalsIgnoreCase(stripped)) {
+                        matched = info;
+                        break;
+                    }
+                }
+                if (matched != null) {
+                    serverManager.sendPlayerToServer(player, matched.getId());
+                    return true;
+                }
+            }
+        }
+
+        final Player target = Bukkit.getPlayer(friendInfo.getUuid());
+        if (target != null && target.isOnline()) {
+            player.teleport(target.getLocation());
+            player.sendMessage("§aTéléportation vers " + target.getName() + "§a.");
+            return true;
+        }
+
+        player.sendMessage("§cImpossible de rejoindre ce joueur pour le moment.");
         return false;
     }
 

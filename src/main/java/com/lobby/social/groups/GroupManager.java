@@ -13,7 +13,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.ResultSetMetaData;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -24,8 +23,8 @@ public class GroupManager {
 
     private final LobbyPlugin plugin;
     private final DatabaseManager databaseManager;
-    private final Map<UUID, Group> playerGroups = new HashMap<>();
-    private final Map<Integer, Group> groupCache = new HashMap<>();
+    private final Map<UUID, Group> playerGroups = new ConcurrentHashMap<>();
+    private final Map<Integer, Group> groupCache = new ConcurrentHashMap<>();
     private final Map<UUID, GroupSettings> settingsCache = new ConcurrentHashMap<>();
 
     public GroupManager(final LobbyPlugin plugin) {

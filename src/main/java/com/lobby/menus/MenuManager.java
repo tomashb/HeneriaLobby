@@ -97,7 +97,7 @@ public class MenuManager {
 
     private boolean isHeavyMenu(final String menuId) {
         return switch (menuId) {
-            case "stats_detailed_menu" -> true;
+            case "stats_detailed_menu", "amis_menu", "groupe_menu", "clan_menu", "clan_management_menu" -> true;
             default -> false;
         };
     }
@@ -107,18 +107,39 @@ public class MenuManager {
         if (menu == null) {
             return false;
         }
-        menu.open(player);
-        openMenus.put(player.getUniqueId(), menu);
+        displayMenu(player, menu);
         return true;
     }
 
     private boolean buildAndOpenHeavyMenu(final Player player, final String menuId) {
+        return com.lobby.social.menus.SocialHeavyMenus.open(menuId, this, player)
+                || openConfiguredMenu(player, menuId);
+    }
+
+    private boolean openConfiguredMenu(final Player player, final String menuId) {
         final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId);
         if (menu == null) {
             return false;
         }
-        menu.open(player);
-        openMenus.put(player.getUniqueId(), menu);
+        displayMenu(player, menu);
         return true;
+    }
+
+    public void displayMenu(final Player player, final Menu menu) {
+        if (player == null || menu == null) {
+            return;
+        }
+        final Runnable opener = () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            menu.open(player);
+            openMenus.put(player.getUniqueId(), menu);
+        };
+        if (Bukkit.isPrimaryThread()) {
+            opener.run();
+        } else {
+            Bukkit.getScheduler().runTask(plugin, opener);
+        }
     }
 }

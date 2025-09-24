@@ -104,7 +104,7 @@ public final class MenuClickHandler implements Listener {
             return;
         }
         if (slot == 49) {
-            openMenu(player, "friends_menu");
+            openMenu(player, "amis_menu");
             return;
         }
         if (FriendsMenus.FRIENDS_ONLINE_TITLE.equals(title) && slot == 46) {
