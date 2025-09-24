@@ -13,7 +13,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.List;
-import java.util.Set;
 
 public class JeuxMenu implements Menu, InventoryHolder {
 
@@ -27,12 +26,13 @@ public class JeuxMenu implements Menu, InventoryHolder {
     private static final int SLOT_PROFILE = 48;
     private static final int SLOT_SHOP = 49;
     private static final int SLOT_CLOSE = 50;
-    private static final Set<Integer> DECORATION_SLOTS = Set.of(
+    private static final int[] PURPLE_PANE_SLOTS = {
             0, 1, 2, 6, 7, 8,
-            9, 17, 35,
+            9, 17, 36,
             44, 45, 46,
             52, 53
-    );
+    };
+    private static final int[] GRAY_PANE_SLOTS = {39, 40, 41};
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
@@ -78,9 +78,14 @@ public class JeuxMenu implements Menu, InventoryHolder {
     private void buildItems(final Player player) {
         final ItemStack[] contents = new ItemStack[INVENTORY_SIZE];
 
-        final ItemStack decoration = createDecorationPane();
-        for (int slot : DECORATION_SLOTS) {
-            contents[slot] = decoration.clone();
+        final ItemStack purplePane = createPane(Material.PURPLE_STAINED_GLASS_PANE);
+        for (int slot : PURPLE_PANE_SLOTS) {
+            contents[slot] = purplePane.clone();
+        }
+
+        final ItemStack grayPane = createPane(Material.GRAY_STAINED_GLASS_PANE);
+        for (int slot : GRAY_PANE_SLOTS) {
+            contents[slot] = grayPane.clone();
         }
 
         contents[SLOT_BEDWARS] = createBedwarsItem();
@@ -94,11 +99,11 @@ public class JeuxMenu implements Menu, InventoryHolder {
         inventory.setContents(contents);
     }
 
-    private ItemStack createDecorationPane() {
-        final ItemStack pane = new ItemStack(Material.PURPLE_STAINED_GLASS_PANE);
+    private ItemStack createPane(final Material material) {
+        final ItemStack pane = new ItemStack(material);
         final ItemMeta meta = pane.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("     ");
+            meta.setDisplayName("§7");
             pane.setItemMeta(meta);
         }
         return pane;
@@ -111,6 +116,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_bedwars%");
             meta.setDisplayName("§c§lBedWars");
             meta.setLore(List.of(
+                    "§r",
                     "§d§lDescription",
                     "§7Protégez votre lit et soyez la",
                     "§7dernière équipe en vie.",
@@ -133,6 +139,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_nexus%");
             meta.setDisplayName("§b§lNexus");
             meta.setLore(List.of(
+                    "§r",
                     "§d§lDescription",
                     "§7Détruisez le Nexus ennemi avant",
                     "§7qu'ils n'atteignent le vôtre.",
@@ -153,8 +160,9 @@ public class JeuxMenu implements Menu, InventoryHolder {
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_zombie%");
-            meta.setDisplayName("§2§lSurvie Zombie");
+            meta.setDisplayName("§2§lZombie");
             meta.setLore(List.of(
+                    "§r",
                     "§d§lDescription",
                     "§7Repoussez des vagues de zombies",
                     "§7et survivez le plus longtemps possible.",
@@ -177,6 +185,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
             final String players = assetManager.getGlobalPlaceholder("%lobby_online_custom%");
             meta.setDisplayName("§6§lJeux Inédits");
             meta.setLore(List.of(
+                    "§r",
                     "§d§lDescription",
                     "§7Découvrez nos créations originales",
                     "§7en rotation constante.",
@@ -231,7 +240,7 @@ public class JeuxMenu implements Menu, InventoryHolder {
         final ItemStack item = assetManager.getHead("hdb:9334");
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName("§c§lFermer le Menu");
+            meta.setDisplayName("§c§lFermer");
             meta.setLore(List.of(
                     "§7Retourner au cœur du lobby.",
                     "§r",
