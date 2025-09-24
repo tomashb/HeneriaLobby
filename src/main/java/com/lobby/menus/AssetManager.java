@@ -28,13 +28,24 @@ public class AssetManager {
             "hdb:32038",
             "hdb:23959",
             "hdb:35472",
-            "hdb:9334"
+            "hdb:9334",
+            "hdb:9945",
+            "hdb:9723",
+            "hdb:8971",
+            "hdb:12654",
+            "hdb:25442",
+            "hdb:2736",
+            "hdb:1218",
+            "hdb:18351"
     );
     private static final Map<String, String> SERVER_PLACEHOLDER_KEYS = Map.of(
             "%lobby_online_bedwars%", "bedwars",
             "%lobby_online_nexus%", "nexus",
             "%lobby_online_zombie%", "zombie",
             "%lobby_online_custom%", "custom"
+    );
+    private static final Map<String, String> STATIC_PLACEHOLDERS = Map.of(
+            "%daily_reward_status%", "Disponible"
     );
     private static final String DEFAULT_PLACEHOLDER_VALUE = "0";
 
@@ -82,6 +93,7 @@ public class AssetManager {
 
     private void startPreloadTasks() {
         cancelTasks();
+        globalPlaceholderCache.putAll(STATIC_PLACEHOLDERS);
         preloadHeadsAsync();
         startOnlinePlayersTask();
     }
