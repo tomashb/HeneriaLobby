@@ -293,11 +293,13 @@ public class DatabaseManager {
                         z REAL NOT NULL,
                         yaw REAL DEFAULT 0,
                         pitch REAL DEFAULT 0,
-                        head_texture TEXT,
-                        armor_color TEXT,
-                        animation TEXT,
-                        actions TEXT,
-                        visible INTEGER DEFAULT 1,
+                    head_texture TEXT,
+                    armor_color TEXT,
+                    animation TEXT,
+                    actions TEXT,
+                    main_hand_item TEXT,
+                    off_hand_item TEXT,
+                    visible INTEGER DEFAULT 1,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                     """;
@@ -306,6 +308,8 @@ public class DatabaseManager {
             plugin.getLogger().fine("Created npcs table for SQLite");
             addColumnIfNotExists("npcs", "armor_color", "TEXT");
             addColumnIfNotExists("npcs", "animation", "TEXT");
+            addColumnIfNotExists("npcs", "main_hand_item", "TEXT");
+            addColumnIfNotExists("npcs", "off_hand_item", "TEXT");
             createNPCIndexes();
             return;
         }
@@ -325,6 +329,8 @@ public class DatabaseManager {
                     armor_color VARCHAR(7) NULL DEFAULT NULL,
                     animation VARCHAR(50) NULL DEFAULT NULL,
                     actions TEXT,
+                    main_hand_item TEXT,
+                    off_hand_item TEXT,
                     visible BOOLEAN DEFAULT TRUE,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     INDEX idx_world (world),
@@ -337,6 +343,8 @@ public class DatabaseManager {
         LogUtils.info(plugin, "Created npcs table with proper AUTO_INCREMENT");
         addColumnIfNotExists("npcs", "armor_color", "VARCHAR(7)");
         addColumnIfNotExists("npcs", "animation", "VARCHAR(50)");
+        addColumnIfNotExists("npcs", "main_hand_item", "TEXT");
+        addColumnIfNotExists("npcs", "off_hand_item", "TEXT");
     }
 
     private void addColumnIfMissing(final String table, final String columnName, final String definition) throws SQLException {
@@ -688,7 +696,10 @@ public class DatabaseManager {
                         pitch FLOAT DEFAULT 0,
                         head_texture TEXT,
                         armor_color VARCHAR(7),
+                        animation VARCHAR(50),
                         `actions` TEXT,
+                        main_hand_item TEXT,
+                        off_hand_item TEXT,
                         visible BOOLEAN DEFAULT TRUE,
                         INDEX idx_world (world),
                         INDEX idx_visible (visible)
@@ -709,7 +720,10 @@ public class DatabaseManager {
                     pitch REAL DEFAULT 0,
                     head_texture TEXT,
                     armor_color TEXT,
+                    animation TEXT,
                     actions TEXT,
+                    main_hand_item TEXT,
+                    off_hand_item TEXT,
                     visible INTEGER DEFAULT 1
                 )
                 """;

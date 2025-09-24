@@ -108,7 +108,7 @@ public class NPCManager {
                 location.getWorld().getName(),
                 location.getX(), location.getY(), location.getZ(),
                 location.getYaw(), location.getPitch(),
-                headTexture, null, actions, null, true
+                headTexture, null, actions, null, true, null, null
         );
 
         try {
@@ -208,6 +208,66 @@ public class NPCManager {
 
         if (!updated) {
             LogUtils.warning(plugin, "Updated armor color for NPC '" + name + "' locally but no database row was modified.");
+        }
+    }
+
+    public void updateNPCMainHandItem(final String name, final ItemStack item) {
+        final NPC npc = npcs.get(name);
+        if (npc == null) {
+            throw new IllegalArgumentException("NPC '" + name + "' not found");
+        }
+
+        final ItemStack clone = item == null ? null : item.clone();
+        final boolean updated;
+        try {
+            updated = npcDAO.updateNpcMainHandItem(name, clone);
+        } catch (final SQLException exception) {
+            throw new RuntimeException("Failed to update NPC item: " + exception.getMessage(), exception);
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand != null && !armorStand.isDead()) {
+            final var equipment = armorStand.getEquipment();
+            if (equipment != null) {
+                equipment.setItemInMainHand(clone);
+            }
+        }
+
+        npc.setData(npc.getData().withMainHandItem(clone));
+
+        if (!updated) {
+            LogUtils.warning(plugin, "Updated main hand item for NPC '" + name
+                    + "' locally but no database row was modified.");
+        }
+    }
+
+    public void updateNPCOffHandItem(final String name, final ItemStack item) {
+        final NPC npc = npcs.get(name);
+        if (npc == null) {
+            throw new IllegalArgumentException("NPC '" + name + "' not found");
+        }
+
+        final ItemStack clone = item == null ? null : item.clone();
+        final boolean updated;
+        try {
+            updated = npcDAO.updateNpcOffHandItem(name, clone);
+        } catch (final SQLException exception) {
+            throw new RuntimeException("Failed to update NPC off hand item: " + exception.getMessage(), exception);
+        }
+
+        final ArmorStand armorStand = npc.getArmorStand();
+        if (armorStand != null && !armorStand.isDead()) {
+            final var equipment = armorStand.getEquipment();
+            if (equipment != null) {
+                equipment.setItemInOffHand(clone);
+            }
+        }
+
+        npc.setData(npc.getData().withOffHandItem(clone));
+
+        if (!updated) {
+            LogUtils.warning(plugin, "Updated off hand item for NPC '" + name
+                    + "' locally but no database row was modified.");
         }
     }
 

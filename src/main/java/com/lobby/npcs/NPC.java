@@ -12,6 +12,7 @@ import org.bukkit.World;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -184,6 +185,7 @@ public class NPC {
         if (equipment.getItemInMainHand() == null || equipment.getItemInMainHand().getType() == Material.AIR) {
             equipment.setItemInMainHand(new ItemStack(Material.STICK));
         }
+        applyPersistedItems(equipment);
     }
 
     private void applyArmorColor() {
@@ -192,6 +194,20 @@ public class NPC {
         }
 
         manager.applyArmorColor(armorStand, data.armorColor());
+    }
+
+    private void applyPersistedItems(final EntityEquipment equipment) {
+        if (equipment == null) {
+            return;
+        }
+        final ItemStack mainHand = data.mainHandItem();
+        if (mainHand != null && mainHand.getType() != Material.AIR) {
+            equipment.setItemInMainHand(mainHand.clone());
+        }
+        final ItemStack offHand = data.offHandItem();
+        if (offHand != null && offHand.getType() != Material.AIR) {
+            equipment.setItemInOffHand(offHand.clone());
+        }
     }
 
     private static final Pattern UUID_PATTERN = Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");

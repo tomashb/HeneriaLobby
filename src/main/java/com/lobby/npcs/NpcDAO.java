@@ -3,7 +3,9 @@ package com.lobby.npcs;
 import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.data.NPCData;
+import com.lobby.utils.ItemSerializationUtils;
 import com.lobby.utils.LogUtils;
+import org.bukkit.inventory.ItemStack;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,8 +31,8 @@ public class NpcDAO {
 
     public List<NPCData> loadAllNpcs() throws SQLException {
         final List<NPCData> npcs = new ArrayList<>();
-        final String sql = "SELECT name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation, visible "
-                + "FROM npcs WHERE visible = TRUE";
+        final String sql = "SELECT name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation,"
+                + " visible, main_hand_item, off_hand_item FROM npcs WHERE visible = TRUE";
 
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -52,8 +54,9 @@ public class NpcDAO {
 
     public boolean createNpc(final NPCData data) throws SQLException {
         final String sql = """
-                INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation, visible)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO npcs (name, display_name, world, x, y, z, yaw, pitch, head_texture, armor_color, actions, animation,
+                visible, main_hand_item, off_hand_item)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = databaseManager.getConnection();
@@ -72,6 +75,8 @@ public class NpcDAO {
             statement.setString(11, actionsToJson(data.actions()));
             setNullableString(statement, 12, data.animation());
             statement.setBoolean(13, data.visible());
+            setNullableString(statement, 14, serializeItem(data.mainHandItem()));
+            setNullableString(statement, 15, serializeItem(data.offHandItem()));
 
             return statement.executeUpdate() > 0;
         }
@@ -132,8 +137,30 @@ public class NpcDAO {
                 resultSet.getString("armor_color"),
                 actions,
                 resultSet.getString("animation"),
-                resultSet.getBoolean("visible")
+                resultSet.getBoolean("visible"),
+                deserializeItem(resultSet.getString("main_hand_item")),
+                deserializeItem(resultSet.getString("off_hand_item"))
         );
+    }
+
+    public boolean updateNpcMainHandItem(final String name, final ItemStack item) throws SQLException {
+        final String sql = "UPDATE npcs SET main_hand_item = ? WHERE name = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            setNullableString(statement, 1, serializeItem(item));
+            statement.setString(2, name);
+            return statement.executeUpdate() > 0;
+        }
+    }
+
+    public boolean updateNpcOffHandItem(final String name, final ItemStack item) throws SQLException {
+        final String sql = "UPDATE npcs SET off_hand_item = ? WHERE name = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            setNullableString(statement, 1, serializeItem(item));
+            statement.setString(2, name);
+            return statement.executeUpdate() > 0;
+        }
     }
 
     private List<String> parseActions(String actionsJson) {
@@ -248,5 +275,30 @@ public class NpcDAO {
             return;
         }
         statement.setString(index, value);
+    }
+
+    private String serializeItem(final ItemStack item) {
+        try {
+            return ItemSerializationUtils.serializeItem(item);
+        } catch (final IllegalStateException exception) {
+            if (plugin != null) {
+                LogUtils.warning(plugin, "Failed to serialize NPC item: " + exception.getMessage());
+            }
+            return null;
+        }
+    }
+
+    private ItemStack deserializeItem(final String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return ItemSerializationUtils.deserializeItem(value);
+        } catch (final IllegalStateException exception) {
+            if (plugin != null) {
+                LogUtils.warning(plugin, "Failed to deserialize NPC item: " + exception.getMessage());
+            }
+            return null;
+        }
     }
 }
