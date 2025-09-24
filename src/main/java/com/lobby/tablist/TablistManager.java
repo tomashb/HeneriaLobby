@@ -445,27 +445,27 @@ public final class TablistManager implements Listener {
                     true);
         }
 
-        private boolean enabled() {
+        public boolean enabled() {
             return enabled;
         }
 
-        private long updateIntervalTicks() {
+        public long updateIntervalTicks() {
             return updateIntervalTicks;
         }
 
-        private List<String> headerLines() {
+        public List<String> headerLines() {
             return headerLines;
         }
 
-        private List<String> footerFrames() {
+        public List<String> footerFrames() {
             return footerFrames;
         }
 
-        private String playerNameFormat() {
+        public String playerNameFormat() {
             return playerNameFormat;
         }
 
-        private boolean sortByWeight() {
+        public boolean sortByWeight() {
             return sortByWeight;
         }
     }
