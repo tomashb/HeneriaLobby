@@ -10,6 +10,7 @@ import org.bukkit.ChatColor;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -141,13 +142,27 @@ final class LuckPermsTablistResolver {
     }
 
     private PlayerTablistData mergeGroupData(final PlayerTablistData base,
-                                            final Group group,
+                                            final Object groupResult,
                                             final PlayerTablistData previous) {
+        final Group group = unwrapGroup(groupResult);
         if (group == null) {
             return new PlayerTablistData(base.prefix(), base.suffix(), previous.weight());
         }
         final int weight = group.getWeight().orElse(previous.weight());
         return new PlayerTablistData(base.prefix(), base.suffix(), weight);
+    }
+
+    private Group unwrapGroup(final Object groupResult) {
+        if (groupResult == null) {
+            return null;
+        }
+        if (groupResult instanceof Optional<?> optional) {
+            return optional.map(Group.class::cast).orElse(null);
+        }
+        if (groupResult instanceof Group group) {
+            return group;
+        }
+        return null;
     }
 
     private String colorize(final String input) {
