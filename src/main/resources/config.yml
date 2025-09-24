@@ -58,6 +58,7 @@ discord:
   enabled: false
 
 lobby:
+  server_id: "1"
   spawn:
     world: "world"
     x: 0.5

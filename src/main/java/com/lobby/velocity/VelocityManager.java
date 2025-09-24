@@ -261,6 +261,12 @@ public class VelocityManager {
         return serverPlayerCounts.getOrDefault(normalize(serverId), 0);
     }
 
+    public int getTotalPlayerCount() {
+        return serverPlayerCounts.values().stream()
+                .mapToInt(Integer::intValue)
+                .sum();
+    }
+
     public boolean isServerOnline(final String serverId) {
         final VelocityServerInfo info = servers.get(normalize(serverId));
         return info != null && info.isEnabled();
