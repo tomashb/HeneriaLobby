@@ -284,7 +284,7 @@ public class FriendsMainMenu implements Menu, InventoryHolder {
                     "§aEn attente: §f" + requestsCount
             ));
             if (requestsCount > 0) {
-                meta.addEnchant(org.bukkit.enchantments.Enchantment.DURABILITY, 1, true);
+                meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
             item.setItemMeta(meta);
