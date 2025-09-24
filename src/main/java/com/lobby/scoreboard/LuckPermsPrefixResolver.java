@@ -11,6 +11,7 @@ import org.bukkit.ChatColor;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class LuckPermsPrefixResolver {
@@ -53,6 +54,36 @@ public final class LuckPermsPrefixResolver {
         refresh(uuid, username);
     }
 
+    public CompletableFuture<String> fetchPrefixAsync(final UUID uuid, final String username) {
+        if (uuid == null) {
+            return CompletableFuture.completedFuture(defaultPrefix);
+        }
+        if (luckPerms == null) {
+            cache.put(uuid, defaultPrefix);
+            lastRequest.put(uuid, System.currentTimeMillis());
+            return CompletableFuture.completedFuture(defaultPrefix);
+        }
+        return luckPerms.getUserManager().loadUser(uuid, username)
+                .thenApply(user -> {
+                    try {
+                        final String resolved = resolvePrefix(user);
+                        cache.put(uuid, resolved);
+                        return resolved;
+                    } finally {
+                        if (user != null) {
+                            luckPerms.getUserManager().saveUser(user);
+                        }
+                    }
+                })
+                .exceptionally(throwable -> {
+                    plugin.getLogger().warning("Failed to load LuckPerms data for " + username + ": "
+                            + throwable.getMessage());
+                    cache.put(uuid, defaultPrefix);
+                    return defaultPrefix;
+                })
+                .whenComplete((prefix, throwable) -> lastRequest.put(uuid, System.currentTimeMillis()));
+    }
+
     private boolean shouldRefresh(final UUID uuid) {
         final long now = System.currentTimeMillis();
         final Long last = lastRequest.get(uuid);
@@ -67,24 +98,7 @@ public final class LuckPermsPrefixResolver {
         if (uuid == null) {
             return;
         }
-        if (luckPerms == null) {
-            cache.put(uuid, defaultPrefix);
-            return;
-        }
-        luckPerms.getUserManager().loadUser(uuid, username).thenAccept(user -> {
-            try {
-                cache.put(uuid, resolvePrefix(user));
-            } catch (final Exception exception) {
-                plugin.getLogger().warning("Failed to resolve LuckPerms prefix for " + username + ": " + exception.getMessage());
-            } finally {
-                if (user != null) {
-                    luckPerms.getUserManager().saveUser(user);
-                }
-            }
-        }).exceptionally(throwable -> {
-            plugin.getLogger().warning("Failed to load LuckPerms data for " + username + ": " + throwable.getMessage());
-            return null;
-        });
+        fetchPrefixAsync(uuid, username);
     }
 
     private String resolvePrefix(final User user) {

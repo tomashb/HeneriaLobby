@@ -100,7 +100,10 @@ public final class TablistManager implements Listener {
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> initializePlayer(player), 2L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            initializePlayer(player);
+            forceUpdateForPlayer(player);
+        }, 2L);
     }
 
     @EventHandler
@@ -123,6 +126,43 @@ public final class TablistManager implements Listener {
         luckPermsResolver.forceRefresh(uuid, player.getName());
         dataCache.put(uuid, luckPermsResolver.getMeta(uuid, player.getName()));
         Bukkit.getScheduler().runTask(plugin, this::updateTablist);
+    }
+
+    public void forceUpdateForPlayer(final Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        final TablistSettings current = settings.get();
+        if (current == null || !current.enabled()) {
+            return;
+        }
+        final UUID uuid = player.getUniqueId();
+        if (!trackedPlayers.contains(uuid)) {
+            return;
+        }
+        final String username = player.getName();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                final PlayerTablistData data = luckPermsResolver.fetchMetaAsync(uuid, username).join();
+                dataCache.put(uuid, data);
+                Bukkit.getScheduler().runTask(plugin, () -> applyImmediateTablistUpdate(player));
+            } catch (final Exception exception) {
+                plugin.getLogger().warning("Failed to force refresh tablist data for " + username + ": "
+                        + exception.getMessage());
+            }
+        });
+    }
+
+    private void applyImmediateTablistUpdate(final Player player) {
+        if (player == null || !player.isOnline()) {
+            return;
+        }
+        final UUID uuid = player.getUniqueId();
+        if (!trackedPlayers.contains(uuid)) {
+            return;
+        }
+        lastKnownNames.put(uuid, player.getName());
+        updateTablist();
     }
 
     private void handleQuit(final Player player) {

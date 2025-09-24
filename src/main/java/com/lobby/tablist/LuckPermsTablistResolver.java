@@ -57,6 +57,61 @@ final class LuckPermsTablistResolver {
         refresh(uuid, username);
     }
 
+    CompletableFuture<PlayerTablistData> fetchMetaAsync(final UUID uuid, final String username) {
+        if (uuid == null) {
+            return CompletableFuture.completedFuture(defaultData);
+        }
+        if (luckPerms == null) {
+            cache.put(uuid, defaultData);
+            lastRefresh.put(uuid, System.currentTimeMillis());
+            return CompletableFuture.completedFuture(defaultData);
+        }
+        return luckPerms.getUserManager().loadUser(uuid, username)
+                .thenCompose(user -> {
+                    final PlayerTablistData previous = cache.getOrDefault(uuid, defaultData);
+                    final PlayerTablistData resolved = resolveFromUser(user, previous);
+                    final CompletableFuture<PlayerTablistData> metaFuture;
+                    if (user == null) {
+                        metaFuture = CompletableFuture.completedFuture(resolved);
+                    } else {
+                        final String primaryGroup = user.getPrimaryGroup();
+                        if (primaryGroup == null || primaryGroup.isBlank()) {
+                            metaFuture = CompletableFuture.completedFuture(resolved);
+                        } else {
+                            metaFuture = luckPerms.getGroupManager().loadGroup(primaryGroup)
+                                    .exceptionally(throwable -> {
+                                        plugin.getLogger().warning("Failed to load LuckPerms group '" + primaryGroup + "' for "
+                                                + username + ": " + throwable.getMessage());
+                                        return null;
+                                    })
+                                    .thenApply(group -> mergeGroupData(resolved, group, previous));
+                        }
+                    }
+                    return metaFuture.whenComplete((data, throwable) -> {
+                        if (throwable != null) {
+                            plugin.getLogger().warning("Failed to resolve LuckPerms data for " + username + ": "
+                                    + throwable.getMessage());
+                        }
+                        if (user != null) {
+                            luckPerms.getUserManager().saveUser(user);
+                        }
+                    });
+                })
+                .thenApply(data -> {
+                    final PlayerTablistData resolved = Objects.requireNonNullElse(data, defaultData);
+                    cache.put(uuid, resolved);
+                    lastRefresh.put(uuid, System.currentTimeMillis());
+                    return resolved;
+                })
+                .exceptionally(throwable -> {
+                    plugin.getLogger().warning("Failed to load LuckPerms data for " + username + ": "
+                            + throwable.getMessage());
+                    cache.put(uuid, defaultData);
+                    lastRefresh.put(uuid, System.currentTimeMillis());
+                    return defaultData;
+                });
+    }
+
     void invalidate(final UUID uuid) {
         if (uuid == null) {
             return;
@@ -84,47 +139,7 @@ final class LuckPermsTablistResolver {
         if (uuid == null) {
             return;
         }
-        if (luckPerms == null) {
-            cache.put(uuid, defaultData);
-            return;
-        }
-        final CompletableFuture<User> userFuture = luckPerms.getUserManager().loadUser(uuid, username);
-        userFuture.thenCompose(user -> {
-            final PlayerTablistData previous = cache.getOrDefault(uuid, defaultData);
-            final PlayerTablistData resolved = resolveFromUser(user, previous);
-            final CompletableFuture<PlayerTablistData> metaFuture;
-            if (user == null) {
-                metaFuture = CompletableFuture.completedFuture(resolved);
-            } else {
-                final String primaryGroup = user.getPrimaryGroup();
-                if (primaryGroup == null || primaryGroup.isBlank()) {
-                    metaFuture = CompletableFuture.completedFuture(resolved);
-                } else {
-                    metaFuture = luckPerms.getGroupManager().loadGroup(primaryGroup)
-                            .exceptionally(throwable -> {
-                                plugin.getLogger().warning("Failed to load LuckPerms group '" + primaryGroup + "' for "
-                                        + username + ": " + throwable.getMessage());
-                                return null;
-                            })
-                            .thenApply(group -> mergeGroupData(resolved, group, previous));
-                }
-            }
-            return metaFuture.whenComplete((data, throwable) -> {
-                if (throwable != null) {
-                    plugin.getLogger().warning("Failed to resolve LuckPerms data for " + username + ": "
-                            + throwable.getMessage());
-                }
-                if (user != null) {
-                    luckPerms.getUserManager().saveUser(user);
-                }
-            });
-        }).thenAccept(data -> cache.put(uuid, Objects.requireNonNullElse(data, defaultData)))
-                .exceptionally(throwable -> {
-                    plugin.getLogger().warning("Failed to load LuckPerms data for " + username + ": "
-                            + throwable.getMessage());
-                    cache.put(uuid, defaultData);
-                    return null;
-                });
+        fetchMetaAsync(uuid, username);
     }
 
     private PlayerTablistData resolveFromUser(final User user, final PlayerTablistData previous) {
