@@ -13,35 +13,33 @@ scoreboard:
   animation-interval-ticks: 4
 
   # Titre statique du scoreboard
-  title: '&6&l· &f&lHENERIA &6&l·'
+  title: ' &8· &6&lHENERIA &8·'
 
   # Corps du scoreboard. L'ordre est respecté.
   # Les lignes vides créent des espaces.
   body:
     - '&r' # Ligne vide
     - '&f→ &d&lProfil'
-    - '  &7Compte: &f%player_name%'
-    - '  &7Grade: %luckperms_prefix%'
-    - '  &7Coins: &e%player_coins% ⛁'
-    - '  &7Tokens: &b%player_tokens% ✪'
+    - ' &8· &7Compte: &f%player_name%'
+    - ' &8· &7Grade: %luckperms_prefix%'
+    - ' &8· &7Coins: &e%player_coins% ⛁'
+    - ' &8· &7Tokens: &b%player_tokens% ✪'
     - '&r' # Ligne vide
     - '&f→ &6&lServeur'
-    - '  &7Lobby: &f#%server_id%'
-    - '  &7En ligne: &a%bungee_total%'
+    - ' &8· &7Lobby: &f#%server_id%'
+    - ' &8· &7En ligne: &a%bungee_total%'
     - '&r' # Ligne vide
 
   # Pied de page (footer). L'animation cyclera sur ces lignes.
   footer-animation-frames:
-    - '    §7→ §ewww.§6h§ce§6n§ce§6r§ci§6a§e.com'
-    - '    §7→ §ewww.§ch§6e§cn§6e§cr§6i§ca§e.com'
-    - '    §7→ §ewww.§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.h§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.he§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.hen§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.hene§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.hener§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.heneri§eh§ce§6n§ce§6r§ci§6a.com'
-    - '    §7→ §ewww.heneria§e.§ch§6e§cn§6e§cr§6i.com'
-    - '    §7→ §ewww.heneria.§ec§ch§6e§cn§6e§cr.com'
-    - '    §7→ §ewww.heneria.co§em§ec§ch§6e§cn§6e.com'
-    - '    §7→ §ewww.heneria.com§em§ec§ch§6e§cn.com'
+    - '§8→ §ch§6eneria.com'
+    - '§8→ §eh§ce§6neria.com'
+    - '§8→ §ehe§cn§6eria.com'
+    - '§8→ §ehen§ce§6ria.com'
+    - '§8→ §ehene§cr§6ia.com'
+    - '§8→ §ehener§ci§6a.com'
+    - '§8→ §eheneri§ca§6.com'
+    - '§8→ §eheneria§c.§6com'
+    - '§8→ §eheneria.§cc§6om'
+    - '§8→ §eheneria.c§co§6m'
+    - '§8→ §eheneria.co§cm'
