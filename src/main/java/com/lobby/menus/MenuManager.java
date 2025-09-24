@@ -103,7 +103,7 @@ public class MenuManager {
     }
 
     private boolean buildAndOpenSimpleMenu(final Player player, final String menuId) {
-        final Menu menu = createMenu(menuId);
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId);
         if (menu == null) {
             return false;
         }
@@ -113,19 +113,12 @@ public class MenuManager {
     }
 
     private boolean buildAndOpenHeavyMenu(final Player player, final String menuId) {
-        final Menu menu = createMenu(menuId);
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId);
         if (menu == null) {
             return false;
         }
         menu.open(player);
         openMenus.put(player.getUniqueId(), menu);
         return true;
-    }
-
-    private Menu createMenu(final String menuId) {
-        return switch (menuId) {
-            case "jeux_menu" -> new JeuxMenu(plugin, this, assetManager);
-            default -> null;
-        };
     }
 }

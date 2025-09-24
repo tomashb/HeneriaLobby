@@ -1,0 +1,47 @@
+# ============================================================
+#       CONFIGURATION COMPLÈTE DU SCOREBOARD
+# ============================================================
+
+scoreboard:
+  # Activer ou désactiver le scoreboard
+  enabled: true
+
+  # Vitesse de rafraîchissement des données (placeholders) en ticks (20 ticks = 1 seconde)
+  update-interval-ticks: 20
+
+  # Vitesse de l'animation du pied de page en ticks (4 ticks = 0.2 secondes)
+  animation-interval-ticks: 4
+
+  # Titre statique du scoreboard
+  title: '&6&l· &f&lHENERIA &6&l·'
+
+  # Corps du scoreboard. L'ordre est respecté.
+  # Les lignes vides créent des espaces.
+  body:
+    - '&r' # Ligne vide
+    - '&f→ &d&lProfil'
+    - '  &7Compte: &f%player_name%'
+    - '  &7Grade: %luckperms_prefix%'
+    - '  &7Coins: &e%player_coins% ⛁'
+    - '  &7Tokens: &b%player_tokens% ✪'
+    - '&r' # Ligne vide
+    - '&f→ &6&lServeur'
+    - '  &7Lobby: &f#%server_id%'
+    - '  &7En ligne: &a%bungee_total%'
+    - '&r' # Ligne vide
+
+  # Pied de page (footer). L'animation cyclera sur ces lignes.
+  footer-animation-frames:
+    - '    §7→ §ewww.§6h§ce§6n§ce§6r§ci§6a§e.com'
+    - '    §7→ §ewww.§ch§6e§cn§6e§cr§6i§ca§e.com'
+    - '    §7→ §ewww.§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.h§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.he§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.hen§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.hene§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.hener§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.heneri§eh§ce§6n§ce§6r§ci§6a.com'
+    - '    §7→ §ewww.heneria§e.§ch§6e§cn§6e§cr§6i.com'
+    - '    §7→ §ewww.heneria.§ec§ch§6e§cn§6e§cr.com'
+    - '    §7→ §ewww.heneria.co§em§ec§ch§6e§cn§6e.com'
+    - '    §7→ §ewww.heneria.com§em§ec§ch§6e§cn.com'

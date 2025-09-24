@@ -25,7 +25,7 @@ import com.lobby.lobby.LobbyManager;
 import com.lobby.lobby.listeners.LobbyItemListener;
 import com.lobby.lobby.listeners.LobbyPlayerListener;
 import com.lobby.lobby.listeners.LobbyProtectionListener;
-import com.lobby.scoreboard.LobbyScoreboardManager;
+import com.lobby.scoreboard.ScoreboardManager;
 import com.lobby.servers.ServerManager;
 import com.lobby.servers.ServerPlaceholderCache;
 import com.lobby.settings.PlayerSettingsManager;
@@ -70,7 +70,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private ChatInputManager chatInputManager;
     private StatsManager statsManager;
     private PlayerSettingsManager playerSettingsManager;
-    private LobbyScoreboardManager scoreboardManager;
+    private ScoreboardManager scoreboardManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -123,7 +123,7 @@ public final class LobbyPlugin extends JavaPlugin {
         shopCommands = new ShopCommands(this, shopManager);
         chatInputManager = new ChatInputManager(this);
 
-        scoreboardManager = new LobbyScoreboardManager(this);
+        scoreboardManager = new ScoreboardManager(this);
         getServer().getPluginManager().registerEvents(scoreboardManager, this);
 
         registerCommands();
@@ -274,7 +274,7 @@ public final class LobbyPlugin extends JavaPlugin {
         return lobbyManager;
     }
 
-    public LobbyScoreboardManager getScoreboardManager() {
+    public ScoreboardManager getScoreboardManager() {
         return scoreboardManager;
     }
 
