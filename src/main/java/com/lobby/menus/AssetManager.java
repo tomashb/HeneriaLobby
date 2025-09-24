@@ -36,7 +36,15 @@ public class AssetManager {
             "hdb:25442",
             "hdb:2736",
             "hdb:1218",
-            "hdb:18351"
+            "hdb:18351",
+            "hdb:23533",
+            "hdb:23528",
+            "hdb:31405",
+            "hdb:31406",
+            "hdb:31408",
+            "hdb:47365",
+            "hdb:47366",
+            "hdb:52000"
     );
     private static final Map<String, String> SERVER_PLACEHOLDER_KEYS = Map.of(
             "%lobby_online_bedwars%", "bedwars",

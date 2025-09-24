@@ -53,7 +53,7 @@ public final class ChatInputManager implements Listener {
             if (input.equalsIgnoreCase("cancel")) {
                 player.sendMessage("§cAjout annulé");
                 if (menuManager != null) {
-                    menuManager.openMenu(player, "friends_menu");
+                    menuManager.openMenu(player, "amis_menu");
                 }
                 return;
             }
@@ -63,11 +63,11 @@ public final class ChatInputManager implements Listener {
                 player.sendMessage("§cImpossible d'envoyer la demande");
             }
             if (menuManager != null) {
-                menuManager.openMenu(player, "friends_menu");
+                menuManager.openMenu(player, "amis_menu");
             }
         }, () -> {
             if (menuManager != null) {
-                menuManager.openMenu(player, "friends_menu");
+                menuManager.openMenu(player, "amis_menu");
             }
         });
     }
@@ -88,14 +88,14 @@ public final class ChatInputManager implements Listener {
             if (input.equalsIgnoreCase("cancel")) {
                 player.sendMessage("§cCréation annulée");
                 if (menuManager != null) {
-                    menuManager.openMenu(player, "groups_menu");
+                    menuManager.openMenu(player, "groupe_menu");
                 }
                 return;
             }
             if (input.isEmpty()) {
                 player.sendMessage("§cLe nom du groupe ne peut pas être vide");
                 if (menuManager != null) {
-                    menuManager.openMenu(player, "groups_menu");
+                    menuManager.openMenu(player, "groupe_menu");
                 }
                 return;
             }
@@ -106,11 +106,45 @@ public final class ChatInputManager implements Listener {
                 player.sendMessage("§cErreur lors de la création");
             }
             if (menuManager != null) {
-                menuManager.openMenu(player, "groups_menu");
+                menuManager.openMenu(player, "groupe_menu");
             }
         }, () -> {
             if (menuManager != null) {
-                menuManager.openMenu(player, "groups_menu");
+                menuManager.openMenu(player, "groupe_menu");
+            }
+        });
+    }
+
+    public static void startGroupInviteFlow(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final ChatInputManager manager = getInstance();
+        player.closeInventory();
+        player.sendMessage("§e§l» Inviter dans le groupe");
+        player.sendMessage("§7Tapez le nom du joueur à inviter:");
+        player.sendMessage("§7Tapez §ccancel §7pour annuler");
+
+        final MenuManager menuManager = manager.plugin.getMenuManager();
+        final GroupManager groupManager = manager.plugin.getGroupManager();
+        startInputFlow(player, inputRaw -> {
+            final String input = inputRaw.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§cInvitation annulée");
+                if (menuManager != null) {
+                    menuManager.openMenu(player, "groupe_menu");
+                }
+                return;
+            }
+            if (groupManager != null) {
+                groupManager.inviteToGroup(player, input);
+            }
+            if (menuManager != null) {
+                menuManager.openMenu(player, "groupe_menu");
+            }
+        }, () -> {
+            if (menuManager != null) {
+                menuManager.openMenu(player, "groupe_menu");
             }
         });
     }
