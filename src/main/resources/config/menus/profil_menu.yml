@@ -1,0 +1,129 @@
+# ============================================================
+#       CONFIGURATION COMPLÈTE DU MENU PROFIL
+# ============================================================
+title: '&8» &dMon Profil'
+size: 54
+
+items:
+  orange-border:
+    material: 'ORANGE_STAINED_GLASS_PANE'
+    name: '&r'
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+
+  gray-border:
+    material: 'GRAY_STAINED_GLASS_PANE'
+    name: '&r'
+    slots: [39, 40, 41]
+
+  friends-button:
+    slot: 3
+    material: 'hdb:9945'
+    name: '&a&lAmis'
+    lore:
+      - '&7Gérez votre liste d''amis, envoyez'
+      - '&7des invitations et rejoignez vos'
+      - '&7camarades en jeu.'
+      - '&r'
+      - '&c⚠ En développement'
+    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+
+  party-button:
+    slot: 4
+    material: 'hdb:9723'
+    name: '&e&lGroupe'
+    lore:
+      - '&7Formez une équipe avec vos amis'
+      - '&7pour vous lancer ensemble dans'
+      - '&7les mini-jeux.'
+      - '&r'
+      - '&c⚠ En développement'
+    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+
+  clan-button:
+    slot: 5
+    material: 'hdb:8971'
+    name: '&c&lClan'
+    lore:
+      - '&7Rejoignez un clan, participez à'
+      - '&7des événements exclusifs et montrez'
+      - '&7la force de votre communauté.'
+      - '&r'
+      - '&c⚠ En développement'
+    action: '[MESSAGE] &cCette fonctionnalité n''est pas encore disponible.'
+
+  daily-reward:
+    slot: 21
+    material: 'hdb:12654'
+    name: '&6&lRécompenses Journalières'
+    lore:
+      - '&7Connectez-vous chaque jour pour'
+      - '&7réclamer des récompenses exclusives.'
+      - '&r'
+      - '&8Statut: &a%daily_reward_status%'
+    action: '[MENU] daily_reward_menu'
+
+  stats-button:
+    slot: 22
+    material: 'hdb:25442'
+    name: '&b&lStatistiques Détaillées'
+    lore:
+      - '&7Suivez votre progression ! Consultez'
+      - '&7vos performances dans chaque mini-jeu.'
+      - '&r'
+      - '&a▶ Cliquez pour voir vos exploits'
+    action: '[MENU] stats_detailed_menu'
+
+  language-button:
+    slot: 23
+    material: 'hdb:2736'
+    name: '&f&lVotre Langue'
+    lore:
+      - '&7Choisissez la langue d''affichage'
+      - '&7du serveur pour une expérience adaptée.'
+      - '&r'
+      - '&a▶ Cliquez pour choisir'
+    action: '[MENU] language_menu'
+
+  settings-button:
+    slot: 31
+    material: 'hdb:1218'
+    name: '&d&lParamètres'
+    lore:
+      - '&7Personnalisez votre expérience de jeu'
+      - '&7(messages, notifications, etc.).'
+      - '&r'
+      - '&a▶ Cliquez pour configurer'
+    action: '[MENU] settings_menu'
+
+  shop-button:
+    slot: 48
+    material: 'hdb:35472'
+    name: '&e&lBoutique'
+    lore:
+      - '&7Accédez à la boutique pour obtenir'
+      - '&7des avantages exclusifs.'
+      - '&r'
+      - '&a▶ Cliquez pour acheter'
+    action: '[MENU] shop_menu'
+
+  games-selector:
+    slot: 49
+    material: 'hdb:18351'
+    name: '&a&lSélecteur de Jeux'
+    lore:
+      - '&7Retourner à la sélection des'
+      - '&7mini-jeux.'
+      - '&r'
+      - '&a▶ Cliquez pour choisir un jeu'
+    action: '[MENU] jeux_menu'
+
+  lobby-return:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Lobby'
+    lore:
+      - '&7Fermer ce menu et revenir'
+      - '&7au cœur de l''action.'
+      - '&r'
+      - '&a▶ Cliquez pour fermer'
+    action: '[CLOSE_MENU]'
