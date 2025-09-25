@@ -21,7 +21,7 @@ items:
       - '&r'
       - '&e▶ Tapez la commande dans le chat'
   demandes-recues:
-    slot: 7
+    slot: 5
     material: 'hdb:23528'
     name: '&e&lDemandes Reçues'
     lore:
@@ -46,15 +46,13 @@ items:
       - '&r'
       - '&e▶ Explorez votre carnet'
   retour-profil:
-    slot: 50
+    slot: 49
     material: 'hdb:9334'
     name: '&c&lRetour au Profil'
     lore:
       - '&r'
       - '&7Revenez à votre espace personnel'
       - '&7pour gérer l''ensemble des menus.'
-      - '&r'
-      - '&b▸ Statut : &aToujours disponible'
       - '&r'
       - '&e▶ Cliquez pour revenir'
     action: '[MENU] profil_menu'
