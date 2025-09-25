@@ -1,0 +1,56 @@
+title: '&8» &6Gestion du Groupe'
+size: 54
+design:
+  primary_border:
+    material: 'ORANGE_STAINED_GLASS_PANE'
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+items:
+  statut-groupe:
+    slot: 20
+    material: 'hdb:11181'
+    name: '&b&lStatut du Groupe'
+    lore:
+      - '&r'
+      - '&7Contrôlez si votre groupe est'
+      - '&7public ou sur invitation.'
+      - '&r'
+      - '&b▸ Actuel : %party_status%'
+      - '&r'
+      - '&e▶ Cliquez pour changer'
+    action: '[COMMAND] party toggle public'
+  promouvoir-membre:
+    slot: 22
+    material: 'hdb:52331'
+    name: '&a&lPromouvoir un Chef'
+    lore:
+      - '&r'
+      - '&7Donnez le lead du groupe'
+      - '&7à un autre membre.'
+      - '&r'
+      - '&e▶ Ouvre la liste des membres'
+    action: '[MENU] party_promote_menu'
+  renommer-groupe:
+    slot: 24
+    material: 'NAME_TAG'
+    name: '&e&lRenommer le Groupe'
+    lore:
+      - '&r'
+      - '&7Changez le nom de votre'
+      - '&7groupe (cosmétique).'
+      - '&r'
+      - '&e▶ Cliquez pour renommer'
+    action: '[CHAT_PROMPT] &aEntrez le nouveau nom du groupe.'
+    chat_prompt:
+      command: 'party rename %input%'
+      reopen_menu: 'party_management_menu'
+  retour-menu:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour'
+    lore:
+      - '&r'
+      - '&7Revenez au panneau de groupe'
+      - '&7pour continuer la gestion.'
+      - '&r'
+      - '&e▶ Cliquez pour revenir'
+    action: '[MENU] groupe_menu'

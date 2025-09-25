@@ -9,6 +9,8 @@ import com.lobby.menus.MenuRenderContext;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.clans.ClanMember;
+import com.lobby.social.clans.ClanSummary;
+import com.lobby.social.friends.FriendInfo;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import org.bukkit.Bukkit;
@@ -45,9 +47,11 @@ public final class SocialHeavyMenus {
             case "amis_menu" -> openFriendsMenu(menuManager, player, placeholders);
             case "friend_requests_menu" -> openFriendRequestsMenu(menuManager, player, 0);
             case "friend_settings_menu" -> openFriendSettingsMenu(menuManager, player);
+            case "friends_main_menu" -> openFriendsMainMenu(menuManager, player, 0);
             case "groupe_menu" -> openGroupMenu(menuManager, player, placeholders, context);
             case "party_invites_menu" -> openPartyInvitesMenu(menuManager, player, 0);
             case "clan_menu" -> openClanMenu(menuManager, player, placeholders, context);
+            case "clan_list_menu" -> openClanListMenu(menuManager, player, 0);
             case "clan_members_menu" -> openClanMembersMenu(menuManager, player);
             case "clan_bank_menu" -> openClanBankMenu(menuManager, player);
             case "clan_management_menu" -> openClanManagementMenu(menuManager, player);
@@ -91,6 +95,31 @@ public final class SocialHeavyMenus {
 
     public static boolean openFriendsMenu(final MenuManager menuManager, final Player player, final int page) {
         return openFriendsMenu(menuManager, player, Map.of());
+    }
+
+    public static boolean openFriendsMainMenu(final MenuManager menuManager, final Player player, final int page) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final FriendManager friendManager = plugin.getFriendManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (friendManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final List<FriendInfo> friends = friendManager.getFriendsList(uuid);
+            final int requests = friendManager.getPendingRequests(uuid).size();
+            final int pageIndex = Math.max(0, page);
+            final FriendsMainMenu menu = new FriendsMainMenu(plugin, menuManager, assetManager, friendManager,
+                    friends, requests, pageIndex);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
     }
 
     public static boolean openFriendRequestsMenu(final MenuManager menuManager, final Player player, final int page) {
@@ -227,6 +256,33 @@ public final class SocialHeavyMenus {
 
     public static boolean openClanMenu(final MenuManager menuManager, final Player player) {
         return openClanMenu(menuManager, player, Map.of(), MenuRenderContext.EMPTY);
+    }
+
+    public static boolean openClanListMenu(final MenuManager menuManager, final Player player, final int page) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (clanManager == null || assetManager == null) {
+            return false;
+        }
+        final int requestedPage = Math.max(0, page);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final int total = clanManager.countPublicClans();
+            final int pageSize = ClanListMenu.CLANS_PER_PAGE;
+            final int maxPage = total <= 0 ? 0 : Math.max(0, (int) Math.ceil((double) total / pageSize) - 1);
+            final int targetPage = Math.min(requestedPage, maxPage);
+            final int offset = targetPage * pageSize;
+            final List<ClanSummary> clans = clanManager.listPublicClans(pageSize, offset);
+            final ClanListMenu menu = new ClanListMenu(menuManager, assetManager, clans, targetPage, total, pageSize);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
     }
 
     public static boolean openClanMenu(final MenuManager menuManager,

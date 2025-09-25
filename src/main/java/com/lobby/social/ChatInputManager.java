@@ -5,6 +5,7 @@ import com.lobby.menus.MenuManager;
 import com.lobby.social.clans.ClanManager;
 import com.lobby.social.groups.GroupManager;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -14,6 +15,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -70,6 +72,66 @@ public final class ChatInputManager implements Listener {
                 menuManager.openMenu(player, "amis_menu");
             }
         });
+    }
+
+    public static void startCommandPrompt(final Player player,
+                                          final String promptMessage,
+                                          final String commandTemplate,
+                                          final String reopenMenuId) {
+        if (player == null || commandTemplate == null || commandTemplate.isBlank()) {
+            if (promptMessage != null && !promptMessage.isBlank()) {
+                player.sendMessage(colorize(promptMessage));
+            }
+            return;
+        }
+        final ChatInputManager manager = getInstance();
+        final MenuManager menuManager = manager.plugin.getMenuManager();
+        final String reopenMenu = sanitizeMenuId(reopenMenuId, null);
+
+        player.closeInventory();
+        if (promptMessage != null && !promptMessage.isBlank()) {
+            player.sendMessage(colorize(promptMessage));
+        }
+        player.sendMessage("§7Tapez §ccancel §7pour annuler.");
+
+        startInputFlow(player, inputRaw -> {
+            final String input = inputRaw == null ? "" : inputRaw.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§cOpération annulée.");
+                reopenMenu(menuManager, player, reopenMenu);
+                return;
+            }
+            if (input.isEmpty()) {
+                player.sendMessage("§cMerci d'entrer une valeur valide.");
+                startCommandPrompt(player, promptMessage, commandTemplate, reopenMenu);
+                return;
+            }
+            final String formatted = commandTemplate.replace("%input%", input).replace("{input}", input);
+            final String command = formatted.startsWith("/") ? formatted.substring(1) : formatted;
+            if (!command.isBlank()) {
+                Bukkit.getScheduler().runTask(manager.plugin, () -> player.performCommand(command));
+            }
+            reopenMenu(menuManager, player, reopenMenu);
+        }, () -> reopenMenu(menuManager, player, reopenMenu));
+    }
+
+    public static void startClanCreationFlow(final Player player,
+                                             final String promptMessage,
+                                             final String reopenMenuId) {
+        if (player == null) {
+            return;
+        }
+        final ChatInputManager manager = getInstance();
+        final ClanManager clanManager = manager.plugin.getClanManager();
+        if (clanManager == null) {
+            player.sendMessage("§cLa création de clan est indisponible pour le moment.");
+            return;
+        }
+        final MenuManager menuManager = manager.plugin.getMenuManager();
+        final String reopenMenu = sanitizeMenuId(reopenMenuId, "clan_menu");
+
+        player.closeInventory();
+        promptClanName(manager, player, clanManager, menuManager, reopenMenu, promptMessage);
     }
 
     public static void startGroupCreateFlow(final Player player) {
@@ -231,6 +293,106 @@ public final class ChatInputManager implements Listener {
                 Bukkit.getScheduler().runTask(plugin, (Runnable) onTimeout);
             }
         });
+    }
+
+    private static void promptClanName(final ChatInputManager manager,
+                                       final Player player,
+                                       final ClanManager clanManager,
+                                       final MenuManager menuManager,
+                                       final String reopenMenu,
+                                       final String promptMessage) {
+        if (promptMessage != null && !promptMessage.isBlank()) {
+            player.sendMessage(colorize(promptMessage));
+        } else {
+            player.sendMessage("§eEntrez le nom de votre clan (3 à 20 caractères).");
+        }
+        player.sendMessage("§7Tapez §ccancel §7pour annuler.");
+        startInputFlow(player, inputRaw -> {
+            final String input = inputRaw == null ? "" : inputRaw.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§cCréation de clan annulée.");
+                reopenMenu(menuManager, player, reopenMenu);
+                return;
+            }
+            if (input.length() < 3 || input.length() > 20) {
+                player.sendMessage("§cLe nom du clan doit faire entre 3 et 20 caractères.");
+                promptClanName(manager, player, clanManager, menuManager, reopenMenu,
+                        "§eEntrez un nom de clan valide (3 à 20 caractères).");
+                return;
+            }
+            promptClanTag(manager, player, clanManager, menuManager, reopenMenu, input);
+        }, () -> reopenMenu(menuManager, player, reopenMenu));
+    }
+
+    private static void promptClanTag(final ChatInputManager manager,
+                                      final Player player,
+                                      final ClanManager clanManager,
+                                      final MenuManager menuManager,
+                                      final String reopenMenu,
+                                      final String clanName) {
+        player.sendMessage("§eEntrez le tag de votre clan (2 à 6 caractères).");
+        player.sendMessage("§7Tapez §ccancel §7pour annuler.");
+        startInputFlow(player, inputRaw -> {
+            final String input = inputRaw == null ? "" : inputRaw.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§cCréation de clan annulée.");
+                reopenMenu(menuManager, player, reopenMenu);
+                return;
+            }
+            if (input.length() < 2 || input.length() > 6) {
+                player.sendMessage("§cLe tag du clan doit faire entre 2 et 6 caractères.");
+                promptClanTag(manager, player, clanManager, menuManager, reopenMenu, clanName);
+                return;
+            }
+            promptClanConfirmation(manager, player, clanManager, menuManager, reopenMenu,
+                    clanName, input.toUpperCase(Locale.ROOT));
+        }, () -> reopenMenu(menuManager, player, reopenMenu));
+    }
+
+    private static void promptClanConfirmation(final ChatInputManager manager,
+                                               final Player player,
+                                               final ClanManager clanManager,
+                                               final MenuManager menuManager,
+                                               final String reopenMenu,
+                                               final String clanName,
+                                               final String clanTag) {
+        player.sendMessage("§7Nom choisi : §b" + clanName);
+        player.sendMessage("§7Tag choisi : §3[" + clanTag + "]");
+        player.sendMessage("§eTapez §aconfirmer §epour valider ou §ccancel §epour annuler.");
+        startInputFlow(player, inputRaw -> {
+            final String input = inputRaw == null ? "" : inputRaw.trim();
+            if (input.equalsIgnoreCase("cancel")) {
+                player.sendMessage("§cCréation de clan annulée.");
+                reopenMenu(menuManager, player, reopenMenu);
+                return;
+            }
+            if (input.equalsIgnoreCase("confirmer") || input.equalsIgnoreCase("confirm")
+                    || input.equalsIgnoreCase("oui")) {
+                clanManager.createClan(player, clanName, clanTag);
+                reopenMenu(menuManager, player, reopenMenu);
+                return;
+            }
+            player.sendMessage("§cRéponse invalide. Tapez 'confirmer' pour valider ou 'cancel' pour annuler.");
+            promptClanConfirmation(manager, player, clanManager, menuManager, reopenMenu, clanName, clanTag);
+        }, () -> reopenMenu(menuManager, player, reopenMenu));
+    }
+
+    private static void reopenMenu(final MenuManager menuManager, final Player player, final String menuId) {
+        if (menuManager == null || player == null || menuId == null || menuId.isBlank()) {
+            return;
+        }
+        menuManager.openMenu(player, menuId);
+    }
+
+    private static String sanitizeMenuId(final String raw, final String fallback) {
+        if (raw != null && !raw.isBlank()) {
+            return raw;
+        }
+        return fallback;
+    }
+
+    private static String colorize(final String message) {
+        return ChatColor.translateAlternateColorCodes('&', message == null ? "" : message);
     }
 
     private static final class InputSession {

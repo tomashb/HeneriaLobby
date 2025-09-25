@@ -137,7 +137,7 @@ public final class LobbyPlugin extends JavaPlugin {
 
         registerCommands();
 
-        getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(playerDataManager, economyManager), this);
         getServer().getPluginManager().registerEvents(new LobbyPlayerListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new LobbyItemListener(lobbyManager, lobbyManager.getItemManager()), this);
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);

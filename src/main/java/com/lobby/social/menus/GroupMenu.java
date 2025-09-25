@@ -4,9 +4,12 @@ import com.lobby.LobbyPlugin;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.Menu;
 import com.lobby.menus.MenuManager;
+import com.lobby.menus.MenuRenderContext;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.groups.Group;
 import com.lobby.social.groups.GroupManager;
+import com.lobby.social.groups.GroupSettings;
+import com.lobby.social.groups.GroupVisibility;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -102,7 +105,10 @@ public class GroupMenu implements Menu, InventoryHolder {
             return;
         }
         if (slot == 4 && group.isLeader(viewerUuid)) {
-            if (!menuManager.openMenu(player, "party_management_menu")) {
+            final Map<String, String> placeholders = new HashMap<>();
+            placeholders.put("%party_status%", formatGroupVisibility(groupManager.getGroupSettings(viewerUuid)));
+            final MenuRenderContext context = MenuRenderContext.EMPTY.withGroup(true, true);
+            if (!menuManager.openMenu(player, "party_management_menu", placeholders, context)) {
                 player.sendMessage("§cOutil de gestion indisponible pour le moment.");
             }
             return;
@@ -223,6 +229,15 @@ public class GroupMenu implements Menu, InventoryHolder {
             info.setItemMeta(infoMeta);
         }
         inventory.setItem(22, info);
+    }
+
+    private String formatGroupVisibility(final GroupSettings settings) {
+        final GroupVisibility visibility = settings == null ? GroupVisibility.PUBLIC : settings.getVisibility();
+        return switch (visibility) {
+            case PUBLIC -> "§aPublic";
+            case FRIENDS_ONLY -> "§eAmis uniquement";
+            case INVITE_ONLY -> "§cSur invitation";
+        };
     }
 
     private ItemStack createMemberItem(final UUID uuid) {

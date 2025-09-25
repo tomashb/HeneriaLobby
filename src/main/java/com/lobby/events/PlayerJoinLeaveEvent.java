@@ -1,27 +1,21 @@
 package com.lobby.events;
 
-import com.lobby.LobbyPlugin;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.utils.MessageUtils;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.List;
-
 public class PlayerJoinLeaveEvent implements Listener {
 
-    private final LobbyPlugin plugin;
     private final PlayerDataManager playerDataManager;
     private final EconomyManager economyManager;
 
-    public PlayerJoinLeaveEvent(final LobbyPlugin plugin, final PlayerDataManager playerDataManager,
-                                final EconomyManager economyManager) {
-        this.plugin = plugin;
+    public PlayerJoinLeaveEvent(final PlayerDataManager playerDataManager, final EconomyManager economyManager) {
         this.playerDataManager = playerDataManager;
         this.economyManager = economyManager;
     }
@@ -29,30 +23,30 @@ public class PlayerJoinLeaveEvent implements Listener {
     @EventHandler
     public void onPlayerJoin(final PlayerJoinEvent event) {
         final Player player = event.getPlayer();
+        event.setJoinMessage(null);
         playerDataManager.handlePlayerJoin(player);
         if (economyManager != null) {
             economyManager.handlePlayerJoin(player.getUniqueId(), player.getName());
         }
-        sendWelcomeMessage(player);
+        broadcastConnectionMessage("&7[&a+&7] &a" + player.getName());
     }
 
     @EventHandler
     public void onPlayerQuit(final PlayerQuitEvent event) {
         final Player player = event.getPlayer();
+        event.setQuitMessage(null);
         playerDataManager.handlePlayerQuit(player);
         if (economyManager != null) {
             economyManager.handlePlayerQuit(player.getUniqueId());
         }
+        broadcastConnectionMessage("&7[&c-&7] &c" + player.getName());
     }
 
-    private void sendWelcomeMessage(final Player player) {
-        final FileConfiguration messagesConfig = plugin.getConfigManager().getMessagesConfig();
-        final List<String> lines = messagesConfig.getStringList("welcome_message");
-        if (lines.isEmpty()) {
+    private void broadcastConnectionMessage(final String message) {
+        if (message == null || message.isBlank()) {
             return;
         }
-        lines.stream()
-                .map(line -> line.replace("%player_name%", player.getName()))
-                .forEach(line -> player.sendMessage(MessageUtils.applyPrefix(line)));
+        Bukkit.getOnlinePlayers().forEach(target ->
+                target.sendMessage(MessageUtils.colorize(message)));
     }
 }

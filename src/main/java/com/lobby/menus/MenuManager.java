@@ -116,8 +116,8 @@ public class MenuManager {
     private boolean isHeavyMenu(final String menuId) {
         return switch (menuId) {
             case "stats_detailed_menu", "amis_menu", "friend_requests_menu", "friend_settings_menu",
-                    "groupe_menu", "party_invites_menu", "clan_menu", "clan_members_menu",
-                    "clan_bank_menu", "clan_management_menu" -> true;
+                    "friends_main_menu", "groupe_menu", "party_invites_menu", "clan_menu",
+                    "clan_list_menu", "clan_members_menu", "clan_bank_menu", "clan_management_menu" -> true;
             default -> false;
         };
     }

@@ -19,8 +19,11 @@ items:
       - '&r'
       - '&b▸ Coût : &e50 000 Coins'
       - '&r'
-      - '&e▶ Cliquez pour créer'
-    action: '[COMMAND] clan create'
+      - '&e▶ Cliquez pour lancer la création'
+    action: '[CHAT_PROMPT] &aEntrez le nom de votre futur clan.'
+    chat_prompt:
+      flow: 'clan_create'
+      reopen_menu: 'clan_menu'
     conditions:
       clan: 'none'
   rechercher-clan:
