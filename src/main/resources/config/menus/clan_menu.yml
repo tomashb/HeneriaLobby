@@ -69,15 +69,13 @@ items:
     conditions:
       clan: 'leader'
   retour-profil:
-    slot: 50
+    slot: 49
     material: 'hdb:9334'
     name: '&c&lRetour au Profil'
     lore:
       - '&r'
       - '&7Revenez au menu principal pour'
       - '&7accéder à vos autres interfaces.'
-      - '&r'
-      - '&b▸ Statut : &aDisponible'
       - '&r'
       - '&e▶ Cliquez pour revenir'
     action: '[MENU] profil_menu'
