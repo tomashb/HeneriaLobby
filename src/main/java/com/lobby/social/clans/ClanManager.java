@@ -216,6 +216,56 @@ public class ClanManager {
         return 0;
     }
 
+    public int countPublicClans() {
+        final String query = "SELECT COUNT(*) FROM clans WHERE disbanded_at IS NULL AND is_public <> 0";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query);
+             ResultSet resultSet = statement.executeQuery()) {
+            if (resultSet.next()) {
+                return resultSet.getInt(1);
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to count public clans", exception);
+        }
+        return 0;
+    }
+
+    public List<ClanSummary> listPublicClans(final int limit, final int offset) {
+        final int pageSize = Math.max(1, limit);
+        final int safeOffset = Math.max(0, offset);
+        final List<ClanSummary> clans = new ArrayList<>();
+        final String query = "SELECT c.id, c.name, c.tag, c.leader_uuid, c.description, c.level, c.max_members, "
+                + "COUNT(m.player_uuid) AS members_count "
+                + "FROM clans c "
+                + "LEFT JOIN clan_members m ON m.clan_id = c.id "
+                + "WHERE c.disbanded_at IS NULL AND c.is_public <> 0 "
+                + "GROUP BY c.id, c.name, c.tag, c.leader_uuid, c.description, c.level, c.max_members "
+                + "ORDER BY c.level DESC, members_count DESC, c.name ASC "
+                + "LIMIT ? OFFSET ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, pageSize);
+            statement.setInt(2, safeOffset);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    final int id = resultSet.getInt("id");
+                    final String name = resultSet.getString("name");
+                    final String tag = resultSet.getString("tag");
+                    final String leaderRaw = resultSet.getString("leader_uuid");
+                    final UUID leaderUuid = leaderRaw != null ? UUID.fromString(leaderRaw) : null;
+                    final String description = resultSet.getString("description");
+                    final int level = resultSet.getInt("level");
+                    final int members = resultSet.getInt("members_count");
+                    final int maxMembers = resultSet.getInt("max_members");
+                    clans.add(new ClanSummary(id, name, tag, leaderUuid, description, level, members, maxMembers));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to list public clans", exception);
+        }
+        return clans;
+    }
+
     public int countCachedOpenClans() {
         return (int) clanCache.values().stream()
                 .filter(Objects::nonNull)

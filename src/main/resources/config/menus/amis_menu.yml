@@ -19,7 +19,11 @@ items:
       - '&r'
       - '&b▸ Statut : &aOuvert'
       - '&r'
-      - '&e▶ Tapez la commande dans le chat'
+      - '&e▶ Cliquez pour saisir un pseudo'
+    action: '[CHAT_PROMPT] &aVeuillez taper le pseudo de l''ami que vous souhaitez ajouter.'
+    chat_prompt:
+      command: 'amis add %input%'
+      reopen_menu: 'amis_menu'
   demandes-recues:
     slot: 5
     material: 'hdb:23528'
@@ -44,7 +48,8 @@ items:
       - '&r'
       - '&b▸ Statut : &a%friends_total% amis'
       - '&r'
-      - '&e▶ Explorez votre carnet'
+      - '&e▶ Cliquez pour ouvrir la liste'
+    action: '[MENU] friends_main_menu'
   retour-profil:
     slot: 49
     material: 'hdb:9334'

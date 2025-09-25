@@ -62,7 +62,6 @@ public class FriendRequestsMenu implements Menu, InventoryHolder {
         inventory = Bukkit.createInventory(this, SIZE, TITLE);
         slotMapping.clear();
 
-        fillBackground();
         placeBorders();
         placeRequests(player);
         placeNavigationControls();
@@ -192,23 +191,11 @@ public class FriendRequestsMenu implements Menu, InventoryHolder {
         }
     }
 
-    private void fillBackground() {
-        final ItemStack filler = createGlass(Material.BLACK_STAINED_GLASS_PANE);
-        for (int slot = 0; slot < SIZE; slot++) {
-            inventory.setItem(slot, filler);
-        }
-    }
-
     private void placeBorders() {
         final ItemStack primary = createGlass(Material.LIME_STAINED_GLASS_PANE);
         final int[] primarySlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : primarySlots) {
             inventory.setItem(slot, primary);
-        }
-        final ItemStack secondary = createGlass(Material.GRAY_STAINED_GLASS_PANE);
-        final int[] secondarySlots = {39, 40, 41};
-        for (int slot : secondarySlots) {
-            inventory.setItem(slot, secondary);
         }
     }
 
