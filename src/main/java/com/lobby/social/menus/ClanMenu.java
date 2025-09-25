@@ -76,8 +76,8 @@ public class ClanMenu implements Menu, InventoryHolder {
             return;
         }
         switch (slot) {
-            case 10 -> ClanMenus.openClanMembersMenu(player);
-            case 12 -> ClanMenus.openClanVaultMenu(player);
+            case 10 -> SocialHeavyMenus.openClanMembersMenu(menuManager, player);
+            case 12 -> SocialHeavyMenus.openClanBankMenu(menuManager, player);
             case 14 -> openOrMessage(player, "clan_upgrades_menu");
             case 16 -> openOrMessage(player, "clan_wars_menu");
             case 22 -> {

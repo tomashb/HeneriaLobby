@@ -117,6 +117,8 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_auto_accept%", "Tous");
         replacements.put("%friend_notifications%", "Activées");
         replacements.put("%friend_notifications_status%", "Activées");
+        replacements.put("%friend_requests_status%", "Tous");
+        replacements.put("%friend_jump_status%", "Autorisé");
         replacements.put("%friend_visibility%", "Visible");
         replacements.put("%friend_visibility_mode%", "Visible");
         replacements.put("%friend_auto_favorites%", "Désactivée");
@@ -195,6 +197,7 @@ public class SocialPlaceholderManager {
                 ? "Favoris auto"
                 : formatAcceptMode(settings.getAcceptRequests()));
         replacements.put("%friend_request_mode%", formatDetailedAcceptMode(settings.getAcceptRequests()));
+        replacements.put("%friend_requests_status%", formatAcceptMode(settings.getAcceptRequests()));
 
         final boolean notificationsEnabled = settings.isAllowNotifications();
         replacements.put("%friend_notifications%", notificationsEnabled ? "Activées" : "Désactivées");
@@ -204,6 +207,7 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_visibility%", visible ? "Visible" : "Caché");
         replacements.put("%friend_visibility_mode%", formatVisibilityMode(visible));
         replacements.put("%friend_status%", visible ? "Disponible" : "Invisible");
+        replacements.put("%friend_jump_status%", visible ? "Autorisé" : "Bloqué");
 
         final boolean autoFavorites = settings.isAutoAcceptFavorites();
         replacements.put("%friend_auto_favorites%", autoFavorites ? "Activée" : "Désactivée");

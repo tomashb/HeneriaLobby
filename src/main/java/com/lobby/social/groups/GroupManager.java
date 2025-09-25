@@ -13,6 +13,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.ResultSetMetaData;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -335,6 +337,35 @@ public class GroupManager {
         return 0;
     }
 
+    public List<GroupInvitation> getPendingInvitations(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return List.of();
+        }
+        final String query = "SELECT id, group_id, inviter_uuid, invited_uuid, created_at, expires_at "
+                + "FROM group_invitations WHERE invited_uuid = ? AND status = 'PENDING' ORDER BY created_at DESC";
+        final List<GroupInvitation> invitations = new ArrayList<>();
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    final int id = resultSet.getInt("id");
+                    final int groupId = resultSet.getInt("group_id");
+                    final UUID inviter = UUID.fromString(resultSet.getString("inviter_uuid"));
+                    final UUID invited = UUID.fromString(resultSet.getString("invited_uuid"));
+                    final Timestamp created = resultSet.getTimestamp("created_at");
+                    final Timestamp expires = resultSet.getTimestamp("expires_at");
+                    invitations.add(new GroupInvitation(id, groupId, inviter, invited,
+                            created != null ? created.getTime() : System.currentTimeMillis(),
+                            expires != null ? expires.getTime() : System.currentTimeMillis()));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to fetch pending invitations for " + playerUuid, exception);
+        }
+        return invitations;
+    }
+
     public int countSentInvitations(final UUID inviterUUID) {
         final String query = "SELECT COUNT(*) FROM group_invitations WHERE inviter_uuid = ? AND status = 'PENDING'";
         try (Connection connection = databaseManager.getConnection();
@@ -368,6 +399,10 @@ public class GroupManager {
             cacheGroup(group);
         }
         return group;
+    }
+
+    public Group getGroupSnapshot(final int id) {
+        return getGroupById(id);
     }
 
     private void updateSettings(final UUID uuid, final GroupSettings settings) {

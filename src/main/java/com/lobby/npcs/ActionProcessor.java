@@ -16,6 +16,7 @@ import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.social.menus.ClanMenus;
 import com.lobby.social.menus.FriendsMenus;
+import com.lobby.social.menus.SocialHeavyMenus;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -77,7 +78,10 @@ public class ActionProcessor {
             return;
         }
         if (trimmed.equalsIgnoreCase("[FRIEND_REQUESTS]")) {
-            FriendsMenus.openFriendRequestsMenu(player);
+            final MenuManager menuManager = plugin.getMenuManager();
+            if (menuManager != null) {
+                SocialHeavyMenus.openFriendRequestsMenu(menuManager, player, 0);
+            }
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[FRIEND_ADD]")) {
@@ -155,11 +159,17 @@ public class ActionProcessor {
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_MEMBERS]")) {
-            ClanMenus.openClanMembersMenu(player);
+            final MenuManager menuManager = plugin.getMenuManager();
+            if (menuManager != null) {
+                SocialHeavyMenus.openClanMembersMenu(menuManager, player);
+            }
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_VAULT]")) {
-            ClanMenus.openClanVaultMenu(player);
+            final MenuManager menuManager = plugin.getMenuManager();
+            if (menuManager != null) {
+                SocialHeavyMenus.openClanBankMenu(menuManager, player);
+            }
             return;
         }
         if (trimmed.equalsIgnoreCase("[CLAN_PROMOTE_MEMBER]")) {
@@ -996,7 +1006,10 @@ public class ActionProcessor {
         if (player == null) {
             return;
         }
-        Bukkit.getScheduler().runTask(plugin, (Runnable) () -> ClanMenus.openClanMembersMenu(player));
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (menuManager != null) {
+            Bukkit.getScheduler().runTask(plugin, () -> SocialHeavyMenus.openClanMembersMenu(menuManager, player));
+        }
     }
 
     private void reopenMenu(final Player player, final String menuId) {

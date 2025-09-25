@@ -1,6 +1,7 @@
 package com.lobby.social.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.menus.Menu;
 import com.lobby.menus.MenuManager;
 import com.lobby.social.ChatInputManager;
 import com.lobby.social.friends.FriendManager;
@@ -44,6 +45,9 @@ public final class MenuClickHandler implements Listener {
     @EventHandler
     public void onInventoryClick(final InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
+        if (event.getInventory().getHolder() instanceof Menu) {
             return;
         }
         final UUID playerId = player.getUniqueId();
@@ -179,7 +183,7 @@ public final class MenuClickHandler implements Listener {
         ChatInputManager.startInputFlow(player, inputRaw -> {
             final String input = inputRaw.trim();
             if (input.equalsIgnoreCase("cancel")) {
-                ClanMenus.openClanVaultMenu(player);
+                SocialHeavyMenus.openClanBankMenu(menuManager, player);
                 return;
             }
             try {
@@ -194,8 +198,8 @@ public final class MenuClickHandler implements Listener {
             } catch (NumberFormatException exception) {
                 player.sendMessage("§cMontant invalide!");
             }
-            ClanMenus.openClanVaultMenu(player);
-        }, () -> ClanMenus.openClanVaultMenu(player));
+            SocialHeavyMenus.openClanBankMenu(menuManager, player);
+        }, () -> SocialHeavyMenus.openClanBankMenu(menuManager, player));
     }
 
     private void startWithdrawFlow(final Player player) {
@@ -207,7 +211,7 @@ public final class MenuClickHandler implements Listener {
         ChatInputManager.startInputFlow(player, inputRaw -> {
             final String input = inputRaw.trim();
             if (input.equalsIgnoreCase("cancel")) {
-                ClanMenus.openClanVaultMenu(player);
+                SocialHeavyMenus.openClanBankMenu(menuManager, player);
                 return;
             }
             try {
@@ -222,8 +226,8 @@ public final class MenuClickHandler implements Listener {
             } catch (NumberFormatException exception) {
                 player.sendMessage("§cMontant invalide!");
             }
-            ClanMenus.openClanVaultMenu(player);
-        }, () -> ClanMenus.openClanVaultMenu(player));
+            SocialHeavyMenus.openClanBankMenu(menuManager, player);
+        }, () -> SocialHeavyMenus.openClanBankMenu(menuManager, player));
     }
 
     private void openMenu(final Player player, final String menuId) {
