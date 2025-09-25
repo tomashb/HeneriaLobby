@@ -900,6 +900,7 @@ public class DatabaseManager {
         createGroupInvitationsTable();
         createClansTable();
         createClanMembersTable();
+        createClanMemberPermissionsTable();
         createClanRanksTable();
         createClanInvitationsTable();
         createClanTransactionsTable();
@@ -1773,6 +1774,37 @@ public class DatabaseManager {
         }
         addColumnIfNotExists("clan_members", "last_contribution", "TIMESTAMP NULL");
         addColumnIfNotExists("clan_members", "total_contributions", "BIGINT DEFAULT 0");
+    }
+
+    private void createClanMemberPermissionsTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS clan_member_permissions (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        clan_id INT NOT NULL,
+                        member_uuid VARCHAR(36) NOT NULL,
+                        permission_node VARCHAR(255) NOT NULL,
+                        INDEX idx_clan_member_permissions_clan_id (clan_id),
+                        INDEX idx_clan_member_permissions_member_uuid (member_uuid)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS clan_member_permissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    clan_id INTEGER NOT NULL,
+                    member_uuid VARCHAR(36) NOT NULL,
+                    permission_node TEXT NOT NULL
+                )
+                """;
+        executeSQL(sql);
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_member_permissions_clan_id ON clan_member_permissions(clan_id)");
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_clan_member_permissions_member_uuid ON clan_member_permissions(member_uuid)");
+        }
     }
 
     private void createClanRanksTable() throws SQLException {
