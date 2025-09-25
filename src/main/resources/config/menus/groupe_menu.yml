@@ -69,7 +69,7 @@ items:
     conditions:
       group: 'member'
   quitter-groupe:
-    slot: 31
+    slot: 20
     material: 'hdb:31405'
     name: '&c&lQuitter le Groupe'
     lore:
@@ -84,15 +84,13 @@ items:
     conditions:
       group: 'member'
   retour-profil:
-    slot: 50
+    slot: 49
     material: 'hdb:9334'
     name: '&c&lRetour au Profil'
     lore:
       - '&r'
       - '&7Revenez sur votre fiche joueur pour'
       - '&7accéder aux autres options sociales.'
-      - '&r'
-      - '&b▸ Statut : &aAccessible'
       - '&r'
       - '&e▶ Cliquez pour revenir'
     action: '[MENU] profil_menu'
