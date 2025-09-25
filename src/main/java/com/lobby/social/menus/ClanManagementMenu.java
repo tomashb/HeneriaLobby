@@ -25,7 +25,7 @@ import java.util.UUID;
 public class ClanManagementMenu implements Menu, InventoryHolder {
 
     private static final String TITLE = ChatColor.translateAlternateColorCodes('&', "&8» &cGestion du Clan");
-    private static final int SIZE = 27;
+    private static final int SIZE = 54;
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
@@ -55,6 +55,7 @@ public class ClanManagementMenu implements Menu, InventoryHolder {
     public void open(final Player player) {
         inventory = Bukkit.createInventory(this, SIZE, TITLE);
         fillBackground();
+        placeBorders();
         placeItems();
         player.openInventory(inventory);
     }
@@ -65,10 +66,10 @@ public class ClanManagementMenu implements Menu, InventoryHolder {
             return;
         }
         final int slot = event.getSlot();
-        if (slot == 11) {
+        if (slot == 22) {
             player.closeInventory();
             player.performCommand("clan delete");
-        } else if (slot == 26) {
+        } else if (slot == 50) {
             menuManager.openMenu(player, "clan_menu");
         }
     }
@@ -79,12 +80,7 @@ public class ClanManagementMenu implements Menu, InventoryHolder {
     }
 
     private void fillBackground() {
-        final ItemStack filler = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
-        final ItemMeta meta = filler.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(" ");
-            filler.setItemMeta(meta);
-        }
+        final ItemStack filler = createGlass(Material.BLACK_STAINED_GLASS_PANE);
         for (int i = 0; i < SIZE; i++) {
             inventory.setItem(i, filler);
         }
@@ -94,24 +90,51 @@ public class ClanManagementMenu implements Menu, InventoryHolder {
         final ItemStack disband = new ItemStack(Material.TNT);
         final ItemMeta disbandMeta = disband.getItemMeta();
         if (disbandMeta != null) {
-            disbandMeta.setDisplayName("§4§lDissoudre le Clan");
+            disbandMeta.setDisplayName("§4§lDISSOUDRE LE CLAN");
             disbandMeta.setLore(List.of(
-                    "§7Supprime définitivement votre clan.",
-                    "§cAction irréversible!",
+                    "§cATTENTION : Cette action est",
+                    "§cDÉFINITIVE.",
                     "§r",
-                    "§eTapez /clan disband confirm après la commande."
+                    "§4▶ Cliquez pour dissoudre"
             ));
             disband.setItemMeta(disbandMeta);
         }
-        inventory.setItem(11, disband);
+        inventory.setItem(22, disband);
 
-        inventory.setItem(26, decorate(assetManager.getHead("hdb:9334"), "§cRetour",
-                List.of("§7Revenir au menu du clan")));
+        final ItemStack ranks = decorate(new ItemStack(Material.BOOK), "§eGestion des Rangs",
+                List.of(
+                        "§r",
+                        "§7Bientôt disponible"
+                ));
+        inventory.setItem(30, ranks);
 
-        inventory.setItem(15, decorate(new ItemStack(Material.BOOK), "§eGestion des Rangs",
-                List.of("§7Bientôt disponible")));
-        inventory.setItem(13, decorate(new ItemStack(Material.PAPER), "§bAnnonce de Clan",
-                List.of("§7Bientôt disponible")));
+        final ItemStack announcement = decorate(new ItemStack(Material.PAPER), "§bAnnonce de Clan",
+                List.of(
+                        "§r",
+                        "§7Bientôt disponible"
+                ));
+        inventory.setItem(32, announcement);
+
+        final ItemStack back = decorate(assetManager.getHead("hdb:9334"),
+                "§c§lRetour",
+                List.of(
+                        "§r",
+                        "§7Revenir au menu du clan"
+                ));
+        inventory.setItem(50, back);
+    }
+
+    private void placeBorders() {
+        final ItemStack primary = createGlass(Material.BLUE_STAINED_GLASS_PANE);
+        final int[] primarySlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
+        for (int slot : primarySlots) {
+            inventory.setItem(slot, primary);
+        }
+        final ItemStack secondary = createGlass(Material.GRAY_STAINED_GLASS_PANE);
+        final int[] secondarySlots = {39, 40, 41};
+        for (int slot : secondarySlots) {
+            inventory.setItem(slot, secondary);
+        }
     }
 
     private ItemStack decorate(final ItemStack item, final String name, final List<String> lore) {
@@ -122,5 +145,15 @@ public class ClanManagementMenu implements Menu, InventoryHolder {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private ItemStack createGlass(final Material material) {
+        final ItemStack pane = new ItemStack(material);
+        final ItemMeta meta = pane.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(" ");
+            pane.setItemMeta(meta);
+        }
+        return pane;
     }
 }

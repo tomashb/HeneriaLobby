@@ -8,14 +8,19 @@ import com.lobby.menus.MenuManager;
 import com.lobby.menus.MenuRenderContext;
 import com.lobby.social.clans.Clan;
 import com.lobby.social.clans.ClanManager;
+import com.lobby.social.clans.ClanMember;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Entry point for every heavy social menu. Each menu collects all required
@@ -38,8 +43,13 @@ public final class SocialHeavyMenus {
                                final MenuRenderContext context) {
         return switch (menuId) {
             case "amis_menu" -> openFriendsMenu(menuManager, player, placeholders);
+            case "friend_requests_menu" -> openFriendRequestsMenu(menuManager, player, 0);
+            case "friend_settings_menu" -> openFriendSettingsMenu(menuManager, player);
             case "groupe_menu" -> openGroupMenu(menuManager, player, placeholders, context);
+            case "party_invites_menu" -> openPartyInvitesMenu(menuManager, player, 0);
             case "clan_menu" -> openClanMenu(menuManager, player, placeholders, context);
+            case "clan_members_menu" -> openClanMembersMenu(menuManager, player);
+            case "clan_bank_menu" -> openClanBankMenu(menuManager, player);
             case "clan_management_menu" -> openClanManagementMenu(menuManager, player);
             default -> false;
         };
@@ -81,6 +91,61 @@ public final class SocialHeavyMenus {
 
     public static boolean openFriendsMenu(final MenuManager menuManager, final Player player, final int page) {
         return openFriendsMenu(menuManager, player, Map.of());
+    }
+
+    public static boolean openFriendRequestsMenu(final MenuManager menuManager, final Player player, final int page) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final FriendManager friendManager = plugin.getFriendManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (friendManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final var requests = friendManager.getPendingRequestsDetailed(uuid).stream()
+                    .map(request -> new FriendRequestsMenu.FriendRequestEntry(request.getSender(),
+                            Bukkit.getOfflinePlayer(request.getSender()).getName(), request.getTimestamp()))
+                    .collect(Collectors.toList());
+            final FriendRequestsMenu menu = new FriendRequestsMenu(menuManager, assetManager, friendManager, requests, page);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
+    }
+
+    public static boolean openFriendSettingsMenu(final MenuManager menuManager, final Player player) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final FriendManager friendManager = plugin.getFriendManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (friendManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final var settings = friendManager.getFriendSettings(uuid);
+            final String requestStatus = switch (settings.getAcceptRequests()) {
+                case ALL -> "§aTous";
+                case FRIENDS_OF_FRIENDS -> "§eAmis d'amis";
+                case NONE -> "§cPersonne";
+            };
+            final String notifications = settings.isAllowNotifications() ? "§aActivées" : "§cDésactivées";
+            final String jump = settings.isShowOnlineStatus() ? "§aAutorisé" : "§cBloqué";
+            final FriendSettingsMenu menu = new FriendSettingsMenu(plugin, menuManager, assetManager,
+                    friendManager, uuid, requestStatus, notifications, jump);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
     }
 
     public static boolean openGroupMenu(final MenuManager menuManager, final Player player) {
@@ -130,6 +195,36 @@ public final class SocialHeavyMenus {
         return true;
     }
 
+    public static boolean openPartyInvitesMenu(final MenuManager menuManager, final Player player, final int page) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final GroupManager groupManager = plugin.getGroupManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (groupManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final var invites = groupManager.getPendingInvitations(uuid).stream()
+                    .map(invite -> {
+                        final var leaderName = Bukkit.getOfflinePlayer(invite.getInviter()).getName();
+                        final var group = groupManager.getGroupSnapshot(invite.getGroupId());
+                        final int size = group != null ? group.getSize() : 1;
+                        final String displayLeader = leaderName != null ? leaderName : invite.getInviter().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+                        return new PartyInvitesMenu.PartyInviteEntry(invite.getInviter(), displayLeader, size);
+                    })
+                    .collect(Collectors.toList());
+            final PartyInvitesMenu menu = new PartyInvitesMenu(menuManager, assetManager, invites, page);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
+    }
+
     public static boolean openClanMenu(final MenuManager menuManager, final Player player) {
         return openClanMenu(menuManager, player, Map.of(), MenuRenderContext.EMPTY);
     }
@@ -171,6 +266,59 @@ public final class SocialHeavyMenus {
             if (menu != null) {
                 menuManager.displayMenu(player, menu);
             }
+        });
+        return true;
+    }
+
+    public static boolean openClanMembersMenu(final MenuManager menuManager, final Player player) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (clanManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final Clan clan = clanManager.getPlayerClan(uuid);
+            if (clan == null) {
+                Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§cVous n'avez pas de clan."));
+                return;
+            }
+            final List<ClanMember> members = new ArrayList<>(clanManager.getClanMembers(clan.getId()));
+            final ClanMembersMenu menu = new ClanMembersMenu(menuManager, assetManager, clan, uuid, members);
+            menuManager.displayMenu(player, menu);
+        });
+        return true;
+    }
+
+    public static boolean openClanBankMenu(final MenuManager menuManager, final Player player) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final ClanManager clanManager = plugin.getClanManager();
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (clanManager == null || assetManager == null) {
+            return false;
+        }
+        final UUID uuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final Clan clan = clanManager.getPlayerClan(uuid);
+            if (clan == null) {
+                Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§cVous n'avez pas de clan."));
+                return;
+            }
+            final ClanBankMenu menu = new ClanBankMenu(menuManager, assetManager, clanManager, clan, uuid);
+            menuManager.displayMenu(player, menu);
         });
         return true;
     }

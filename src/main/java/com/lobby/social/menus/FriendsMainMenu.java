@@ -105,7 +105,7 @@ public class FriendsMainMenu implements Menu, InventoryHolder {
         }
         if (slot == 7) {
             player.closeInventory();
-            FriendsMenus.openFriendRequestsMenu(player);
+            SocialHeavyMenus.openFriendRequestsMenu(menuManager, player, 0);
             return;
         }
         if (slot == 48 && page > 0) {
