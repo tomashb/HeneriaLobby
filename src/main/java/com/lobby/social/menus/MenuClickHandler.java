@@ -4,15 +4,12 @@ import com.lobby.LobbyPlugin;
 import com.lobby.menus.Menu;
 import com.lobby.menus.MenuManager;
 import com.lobby.social.ChatInputManager;
-import com.lobby.social.friends.FriendManager;
-import com.lobby.social.friends.FriendRequest;
 import com.lobby.social.clans.ClanManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
@@ -32,13 +29,11 @@ public final class MenuClickHandler implements Listener {
 
     private final LobbyPlugin plugin;
     private final MenuManager menuManager;
-    private final FriendManager friendManager;
     private final ClanManager clanManager;
 
     public MenuClickHandler(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.menuManager = plugin.getMenuManager();
-        this.friendManager = plugin.getFriendManager();
         this.clanManager = plugin.getClanManager();
     }
 
@@ -63,16 +58,12 @@ public final class MenuClickHandler implements Listener {
             return;
         }
 
-        event.setCancelled(true);
-        if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)) {
-            handleClanMembersClick(event, player);
-            return;
-        }
         if (!Objects.equals(event.getView().getTopInventory(), event.getClickedInventory())) {
             return;
         }
-        if (isFriendsMenuTitle(title)) {
-            handleFriendsMenuClick(player, title, event.getSlot(), event.getClick());
+        event.setCancelled(true);
+        if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)) {
+            handleClanMembersClick(event, player);
             return;
         }
         if (isClanMenuTitle(title)) {
@@ -86,9 +77,6 @@ public final class MenuClickHandler implements Listener {
             return;
         }
         final String title = event.getView().getTitle();
-        if (isFriendsMenuTitle(title)) {
-            FriendsMenus.clearRequestCache(player.getUniqueId());
-        }
         final var placeholderManager = plugin.getSocialPlaceholderManager();
         if (ClanMenus.CLAN_MEMBERS_TITLE.equals(title)
                 || title.startsWith(CLAN_MEMBER_MANAGEMENT_PREFIX)
@@ -100,33 +88,6 @@ public final class MenuClickHandler implements Listener {
                 placeholderManager.clearClanPermissionTarget(player.getUniqueId());
             }
             clickCooldown.remove(player.getUniqueId());
-        }
-    }
-
-    private void handleFriendsMenuClick(final Player player, final String title, final int slot, final ClickType clickType) {
-        if (slot < 0) {
-            return;
-        }
-        if (slot == 49) {
-            openMenu(player, "amis_menu");
-            return;
-        }
-        if (FriendsMenus.FRIENDS_ONLINE_TITLE.equals(title) && slot == 46) {
-            friendManager.refreshOnlineFriends(player.getUniqueId());
-            FriendsMenus.openFriendsOnlineMenu(player);
-            return;
-        }
-        if (FriendsMenus.FRIEND_REQUESTS_TITLE.equals(title)) {
-            final FriendRequest request = FriendsMenus.getRequestAt(player, slot);
-            if (request == null) {
-                return;
-            }
-            if (clickType == ClickType.RIGHT) {
-                friendManager.denyFriendRequest(player, request.getSender());
-            } else {
-                friendManager.acceptFriendRequest(player, request.getSender());
-            }
-            FriendsMenus.openFriendRequestsMenu(player);
         }
     }
 
@@ -245,10 +206,6 @@ public final class MenuClickHandler implements Listener {
             placeholderManager.setClanPermissionTarget(player.getUniqueId(), target);
         }
         menuManager.openMenu(player, "clan_member_management_menu");
-    }
-
-    private boolean isFriendsMenuTitle(final String title) {
-        return FriendsMenus.FRIENDS_ONLINE_TITLE.equals(title) || FriendsMenus.FRIEND_REQUESTS_TITLE.equals(title);
     }
 
     private boolean isClanMenuTitle(final String title) {

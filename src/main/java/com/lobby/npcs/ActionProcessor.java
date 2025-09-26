@@ -15,7 +15,6 @@ import com.lobby.social.clans.ClanManager;
 import com.lobby.social.friends.FriendManager;
 import com.lobby.social.groups.GroupManager;
 import com.lobby.social.menus.ClanMenus;
-import com.lobby.social.menus.FriendsMenus;
 import com.lobby.social.menus.SocialHeavyMenus;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
@@ -74,7 +73,10 @@ public class ActionProcessor {
             return;
         }
         if (trimmed.equalsIgnoreCase("[FRIENDS_ONLINE]")) {
-            FriendsMenus.openFriendsOnlineMenu(player);
+            final MenuManager menuManager = plugin.getMenuManager();
+            if (menuManager != null) {
+                SocialHeavyMenus.openFriendsMenu(menuManager, player, 0, null);
+            }
             return;
         }
         if (trimmed.equalsIgnoreCase("[FRIEND_REQUESTS]")) {
@@ -97,23 +99,23 @@ public class ActionProcessor {
             return;
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_NOTIFICATIONS]")) {
-            toggleAndRefresh(player, "friend_notifications", "friend_settings_menu");
+            toggleAndRefresh(player, "friend_notifications", "amis_settings_menu");
             return;
         }
         if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_REQUESTS]")) {
-            cycleAndRefresh(player, "friend_requests", "friend_settings_menu");
+            cycleAndRefresh(player, "friend_requests", "amis_settings_menu");
             return;
         }
         if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_VISIBILITY]")) {
-            cycleAndRefresh(player, "friend_visibility", "friend_settings_menu");
+            cycleAndRefresh(player, "friend_visibility", "amis_settings_menu");
             return;
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_AUTO_FAVORITES]")) {
-            toggleAndRefresh(player, "friend_auto_favorites", "friend_settings_menu");
+            toggleAndRefresh(player, "friend_auto_favorites", "amis_settings_menu");
             return;
         }
         if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_MESSAGES]")) {
-            toggleAndRefresh(player, "friend_messages", "friend_settings_menu");
+            toggleAndRefresh(player, "friend_messages", "amis_settings_menu");
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[SETTING_TOGGLE]")) {

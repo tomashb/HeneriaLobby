@@ -1,63 +1,46 @@
 title: '&8» &aMes Amis'
 size: 54
 design:
-  primary_border:
-    material: 'LIME_STAINED_GLASS_PANE'
-    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
-  secondary_border:
-    material: 'GRAY_STAINED_GLASS_PANE'
-    slots: [39, 40, 41]
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53] }
+  secondary_border: { material: 'GRAY_STAINED_GLASS_PANE', slots: [39,40,41] }
 items:
-  ajouter-ami:
+  add-friend:
     slot: 3
     material: 'hdb:23533'
     name: '&a&lAjouter un Ami'
+    lore: ['&r', '&7Utilisez &e/amis add <pseudo>', '&7pour envoyer une demande.', '&r', '&e▶ Cliquez pour lancer l\'invitation']
+
+  sort-search:
+    slot: 5
+    material: 'hdb:176'
+    name: '&e&lTrier & Rechercher'
     lore:
       - '&r'
-      - '&7Utilisez la commande &e/amis add'
-      - '&7pour envoyer une demande.'
+      - '&7Organisez votre liste d\'amis'
+      - '&7ou trouvez quelqu\'un rapidement.'
       - '&r'
-      - '&b▸ Statut : &aOuvert'
+      - '&b▸ Tri actuel: &a%friends_sort_mode%'
       - '&r'
-      - '&e▶ Cliquez pour saisir un pseudo'
-    action: '[CHAT_PROMPT] &aVeuillez taper le pseudo de l''ami que vous souhaitez ajouter.'
-    chat_prompt:
-      command: 'amis add %input%'
-      reopen_menu: 'amis_menu'
-  demandes-recues:
-    slot: 5
+      - '&e▶ Clic-gauche pour trier'
+      - '&e▶ Clic-droit pour rechercher'
+
+  requests:
+    slot: 7
     material: 'hdb:23528'
     name: '&e&lDemandes Reçues'
-    lore:
-      - '&r'
-      - '&7Gérez les demandes d''amis que'
-      - '&7vous avez reçues.'
-      - '&r'
-      - '&b▸ Statut : &6%friend_requests_count% en attente'
-      - '&r'
-      - '&e▶ Cliquez pour voir'
-    action: '[MENU] friend_requests_menu'
-  liste-amis-overview:
-    slot: 22
-    material: 'hdb:31405'
-    name: '&b&lMes Compagnons'
-    lore:
-      - '&r'
-      - '&7Consultez la liste complète de vos'
-      - '&7alliés dans les menus dédiés.'
-      - '&r'
-      - '&b▸ Statut : &a%friends_total% amis'
-      - '&r'
-      - '&e▶ Cliquez pour ouvrir la liste'
-    action: '[MENU] friends_main_menu'
-  retour-profil:
+    enchanted: '%friend_requests_count% > 0'
+    lore: ['&r', '&7Gérez les demandes d\'ami que', '&7vous avez reçues.', '&r', '&b▸ En attente : &6%friend_requests_count%', '&r', '&e▶ Cliquez pour voir']
+    action: '[MENU] amis_requests_menu'
+
+  settings:
     slot: 49
+    material: 'hdb:1218'
+    name: '&d&lConfidentialité & Social'
+    lore: ['&r', '&7Gérez vos paramètres de' , '&7confidentialité et de notification.', '&r', '&e▶ Cliquez pour configurer']
+    action: '[MENU] amis_settings_menu'
+
+  return-to-profile:
+    slot: 50
     material: 'hdb:9334'
     name: '&c&lRetour au Profil'
-    lore:
-      - '&r'
-      - '&7Revenez à votre espace personnel'
-      - '&7pour gérer l''ensemble des menus.'
-      - '&r'
-      - '&e▶ Cliquez pour revenir'
     action: '[MENU] profil_menu'

@@ -1,6 +1,7 @@
 package com.lobby.social.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.economy.EconomyManager;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.ConfiguredMenu;
 import com.lobby.menus.Menu;
@@ -12,8 +13,13 @@ import com.lobby.social.clans.ClanMember;
 import com.lobby.social.clans.ClanSummary;
 import com.lobby.social.friends.FriendInfo;
 import com.lobby.social.friends.FriendManager;
+import com.lobby.social.friends.FriendRequest;
 import com.lobby.social.groups.GroupManager;
+import com.lobby.social.menus.friends.FriendGiftMenu;
+import com.lobby.social.menus.friends.FriendRequestsMenu;
+import com.lobby.social.menus.friends.FriendsMenu;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -22,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 /**
  * Entry point for every heavy social menu. Each menu collects all required
@@ -43,11 +48,13 @@ public final class SocialHeavyMenus {
                                final Player player,
                                final Map<String, String> placeholders,
                                final MenuRenderContext context) {
+        final String searchTerm = placeholders == null ? null
+                : placeholders.getOrDefault("%friends_search%", placeholders.getOrDefault("friends_search", null));
         return switch (menuId) {
-            case "amis_menu" -> openFriendsMenu(menuManager, player, placeholders);
-            case "friend_requests_menu" -> openFriendRequestsMenu(menuManager, player, 0);
-            case "friend_settings_menu" -> openFriendSettingsMenu(menuManager, player);
-            case "friends_main_menu" -> openFriendsMainMenu(menuManager, player, 0);
+            case "amis_menu" -> openFriendsMenu(menuManager, player, 0, searchTerm);
+            case "amis_requests_menu" -> openFriendRequestsMenu(menuManager, player, 0);
+            case "amis_settings_menu" -> openFriendSettingsMenu(menuManager, player);
+            case "amis_gift_menu" -> openFriendGiftMenu(menuManager, player, placeholders);
             case "groupe_menu" -> openGroupMenu(menuManager, player, placeholders, context);
             case "party_invites_menu" -> openPartyInvitesMenu(menuManager, player, 0);
             case "clan_menu" -> openClanMenu(menuManager, player, placeholders, context);
@@ -59,9 +66,14 @@ public final class SocialHeavyMenus {
         };
     }
 
+    public static boolean openFriendsMenu(final MenuManager menuManager, final Player player, final int page) {
+        return openFriendsMenu(menuManager, player, page, null);
+    }
+
     public static boolean openFriendsMenu(final MenuManager menuManager,
                                           final Player player,
-                                          final Map<String, String> additionalPlaceholders) {
+                                          final int page,
+                                          final String rawSearchTerm) {
         if (menuManager == null || player == null) {
             return false;
         }
@@ -76,50 +88,36 @@ public final class SocialHeavyMenus {
         }
         final UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final Map<String, String> placeholders = new HashMap<>();
-            if (additionalPlaceholders != null) {
-                placeholders.putAll(additionalPlaceholders);
+            final List<FriendInfo> allFriends = friendManager.getFriendsList(uuid);
+            final String searchTerm = sanitizeSearchTerm(rawSearchTerm);
+            final List<FriendInfo> filteredFriends;
+            if (searchTerm == null) {
+                filteredFriends = allFriends;
+            } else {
+                final String lower = searchTerm.toLowerCase(Locale.ROOT);
+                final List<FriendInfo> matches = new ArrayList<>();
+                for (FriendInfo info : allFriends) {
+                    if (info.getName().toLowerCase(Locale.ROOT).contains(lower)) {
+                        matches.add(info);
+                    }
+                }
+                filteredFriends = matches;
             }
             final int requests = friendManager.getPendingRequests(uuid).size();
-            final int friends = friendManager.getFriendsList(uuid).size();
-            placeholders.putIfAbsent("%friend_requests_count%", Integer.toString(requests));
-            placeholders.putIfAbsent("%friends_total%", Integer.toString(friends));
-            final ConfiguredMenu menu = ConfiguredMenu.fromConfiguration(plugin, menuManager, assetManager,
-                    "amis_menu", placeholders, MenuRenderContext.EMPTY);
-            if (menu != null) {
-                menuManager.displayMenu(player, menu);
-            }
-        });
-        return true;
-    }
-
-    public static boolean openFriendsMenu(final MenuManager menuManager, final Player player, final int page) {
-        return openFriendsMenu(menuManager, player, Map.of());
-    }
-
-    public static boolean openFriendsMainMenu(final MenuManager menuManager, final Player player, final int page) {
-        if (menuManager == null || player == null) {
-            return false;
-        }
-        final LobbyPlugin plugin = LobbyPlugin.getInstance();
-        if (plugin == null) {
-            return false;
-        }
-        final FriendManager friendManager = plugin.getFriendManager();
-        final AssetManager assetManager = menuManager.getAssetManager();
-        if (friendManager == null || assetManager == null) {
-            return false;
-        }
-        final UUID uuid = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final List<FriendInfo> friends = friendManager.getFriendsList(uuid);
-            final int requests = friendManager.getPendingRequests(uuid).size();
-            final int pageIndex = Math.max(0, page);
-            final FriendsMainMenu menu = new FriendsMainMenu(plugin, menuManager, assetManager, friendManager,
-                    friends, requests, pageIndex);
+            final String sortMode = searchTerm == null ? "§aPriorité intelligente" : "§dRecherche";
+            final FriendsMenu menu = new FriendsMenu(plugin, menuManager, assetManager, friendManager,
+                    filteredFriends, requests, sortMode, searchTerm, Math.max(0, page));
             menuManager.displayMenu(player, menu);
         });
         return true;
+    }
+
+    private static String sanitizeSearchTerm(final String input) {
+        if (input == null) {
+            return null;
+        }
+        final String trimmed = ChatColor.stripColor(input).trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     public static boolean openFriendRequestsMenu(final MenuManager menuManager, final Player player, final int page) {
@@ -137,11 +135,12 @@ public final class SocialHeavyMenus {
         }
         final UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final var requests = friendManager.getPendingRequestsDetailed(uuid).stream()
-                    .map(request -> new FriendRequestsMenu.FriendRequestEntry(request.getSender(),
-                            Bukkit.getOfflinePlayer(request.getSender()).getName(), request.getTimestamp()))
-                    .collect(Collectors.toList());
-            final FriendRequestsMenu menu = new FriendRequestsMenu(menuManager, assetManager, friendManager, requests, page);
+            final List<FriendRequestsMenu.FriendRequestEntry> entries = new ArrayList<>();
+            for (FriendRequest request : friendManager.getPendingRequestsDetailed(uuid)) {
+                entries.add(FriendRequestsMenu.FriendRequestEntry.from(request));
+            }
+            final FriendRequestsMenu menu = new FriendRequestsMenu(plugin, menuManager, assetManager,
+                    friendManager, entries, Math.max(0, page));
             menuManager.displayMenu(player, menu);
         });
         return true;
@@ -163,15 +162,61 @@ public final class SocialHeavyMenus {
         final UUID uuid = player.getUniqueId();
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             final var settings = friendManager.getFriendSettings(uuid);
+            final Map<String, String> placeholders = new HashMap<>();
             final String requestStatus = switch (settings.getAcceptRequests()) {
                 case ALL -> "§aTous";
                 case FRIENDS_OF_FRIENDS -> "§eAmis d'amis";
                 case NONE -> "§cPersonne";
             };
-            final String notifications = settings.isAllowNotifications() ? "§aActivées" : "§cDésactivées";
-            final String jump = settings.isShowOnlineStatus() ? "§aAutorisé" : "§cBloqué";
-            final FriendSettingsMenu menu = new FriendSettingsMenu(plugin, menuManager, assetManager,
-                    friendManager, uuid, requestStatus, notifications, jump);
+            placeholders.put("%friend_requests_status%", requestStatus);
+            placeholders.put("%messaging_status%",
+                    settings.isAllowPrivateMessages() ? "§aAutorisés" : "§cBloqués");
+            placeholders.put("%visibility_status%",
+                    settings.isShowOnlineStatus() ? "§aVisible" : "§cInvisible");
+            placeholders.put("%friend_notifications_status%",
+                    settings.isAllowNotifications() ? "§aActivées" : "§cDésactivées");
+            final ConfiguredMenu menu = ConfiguredMenu.fromConfiguration(plugin, menuManager, assetManager,
+                    "amis_settings_menu", placeholders, MenuRenderContext.EMPTY);
+            if (menu != null) {
+                menuManager.displayMenu(player, menu);
+            }
+        });
+        return true;
+    }
+
+    public static boolean openFriendGiftMenu(final MenuManager menuManager,
+                                             final Player player,
+                                             final Map<String, String> placeholders) {
+        if (menuManager == null || player == null) {
+            return false;
+        }
+        final LobbyPlugin plugin = LobbyPlugin.getInstance();
+        if (plugin == null) {
+            return false;
+        }
+        final AssetManager assetManager = menuManager.getAssetManager();
+        if (assetManager == null) {
+            return false;
+        }
+        final String rawUuid = placeholders == null ? null
+                : placeholders.getOrDefault("%target_uuid%", placeholders.get("target_uuid"));
+        if (rawUuid == null || rawUuid.isBlank()) {
+            player.sendMessage("§cDestinataire inconnu.");
+            return false;
+        }
+        final UUID targetUuid;
+        try {
+            targetUuid = UUID.fromString(rawUuid);
+        } catch (final IllegalArgumentException exception) {
+            player.sendMessage("§cDestinataire invalide.");
+            return false;
+        }
+        final String targetName = placeholders == null ? null
+                : placeholders.getOrDefault("%target_name%", placeholders.getOrDefault("target_name", "Inconnu"));
+        final EconomyManager economyManager = plugin.getEconomyManager();
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            final FriendGiftMenu menu = new FriendGiftMenu(plugin, menuManager, assetManager,
+                    economyManager, targetUuid, targetName);
             menuManager.displayMenu(player, menu);
         });
         return true;
