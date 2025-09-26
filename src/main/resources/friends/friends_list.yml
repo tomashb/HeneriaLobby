@@ -1,0 +1,235 @@
+# ===============================
+# CONFIGURATION LISTE DES AMIS
+# ===============================
+
+menu:
+  title: "§8» §aListe des Amis ({page}/{total_pages})"
+  size: 54
+  items_per_page: 28
+  auto_refresh: true
+  refresh_interval: 10
+
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 45, 46, 52, 53]
+
+friend_slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
+
+navigation:
+  previous_page:
+    slot: 47
+    hdb_id: 7827
+    name: "§c◀ Page Précédente"
+    lore:
+      - "§7Aller à la page {page_precedente}"
+      - ""
+      - "§8» §cCliquez pour revenir"
+    visible_when: "{page_actuelle} > 1"
+    actions:
+      left_click: "previous_page"
+
+  back_to_main:
+    slot: 49
+    hdb_id: 3593
+    name: "§e🏠 Retour Menu Principal"
+    lore:
+      - "§7Revenir au menu principal"
+      - "§7des amis"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    actions:
+      left_click: "back_to_main"
+
+  next_page:
+    slot: 51
+    hdb_id: 7828
+    name: "§a▶ Page Suivante"
+    lore:
+      - "§7Aller à la page {page_suivante}"
+      - ""
+      - "§8» §aCliquez pour continuer"
+    visible_when: "{page_actuelle} < {total_pages}"
+    actions:
+      left_click: "next_page"
+
+sorting:
+  current_sort: "online_first"
+  sort_button:
+    slot: 46
+    hdb_id: 1619
+    name: "§6§l📋 Tri: §e{tri_actuel}"
+    lore:
+      - "§7Trier la liste des amis"
+      - ""
+      - "§6▸ Tri actuel: §e{tri_actuel}"
+      - "§7▸ Total d'amis: §8{total_amis}"
+      - ""
+      - "§7Options disponibles:"
+      - "§8▸ §aEn ligne d'abord"
+      - "§8▸ §7Alphabétique (A-Z)"
+      - "§8▸ §bDate d'amitié"
+      - "§8▸ §eDernière connexion"
+      - "§8▸ §6Favoris d'abord"
+      - "§8▸ §dPlus de messages"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    actions:
+      left_click: "change_sorting"
+
+  options:
+    online_first:
+      name: "En ligne d'abord"
+      description: "Amis connectés en premier"
+    alphabetical:
+      name: "Alphabétique (A-Z)"
+      description: "Ordre alphabétique des noms"
+    friendship_date:
+      name: "Date d'amitié"
+      description: "Plus récents en premier"
+    last_seen:
+      name: "Dernière connexion"
+      description: "Plus récemment vus en premier"
+    favorites_first:
+      name: "Favoris d'abord"
+      description: "Favoris en priorité"
+    most_messages:
+      name: "Plus de messages"
+      description: "Plus actifs en premier"
+
+filters:
+  show_online_only: false
+  show_favorites_only: false
+  hide_away: false
+  hide_busy: false
+
+  filter_button:
+    slot: 52
+    hdb_id: 8726
+    name: "§b§l🔍 Filtres"
+    lore:
+      - "§7Filtrer l'affichage des amis"
+      - ""
+      - "§b▸ En ligne seulement: §3{filtre_en_ligne}"
+      - "§e▸ Favoris seulement: §6{filtre_favoris}"
+      - "§c▸ Masquer absents: §4{filtre_absents}"
+      - "§7▸ Masquer occupés: §8{filtre_occupes}"
+      - ""
+      - "§8» §bCliquez pour configurer"
+    actions:
+      left_click: "open_filters"
+
+friend_online:
+  item: "PLAYER_HEAD"
+  name: "§a§l{nom_joueur} §2●"
+  lore:
+    - "§7Statut: §aEn ligne"
+    - "§7Serveur: §e{serveur_actuel}"
+    - "§7Ami depuis: §b{date_amitie}"
+    - ""
+    - "§6🏆 Favori: §e{est_favori_text}"
+    - "§3📊 Messages échangés: §b{nb_messages}"
+    - "§d💌 Dernier message: §5{dernier_message}"
+    - "§b⏰ En ligne depuis: §3{temps_en_ligne}"
+    - ""
+    - "§8▸ §aClique gauche §8: §7Téléporter"
+    - "§8▸ §eClique milieu §8: §7Message privé"
+    - "§8▸ §cClique droit §8: §7Plus d'options"
+  actions:
+    left_click: "teleport_to_friend"
+    middle_click: "send_private_message"
+    right_click: "open_friend_options"
+
+friend_offline:
+  item: "PLAYER_HEAD"
+  name: "§7§l{nom_joueur} §8●"
+  lore:
+    - "§7Statut: §cHors ligne"
+    - "§7Dernière connexion: §e{derniere_co}"
+    - "§7Ami depuis: §b{date_amitie}"
+    - ""
+    - "§6🏆 Favori: §e{est_favori_text}"
+    - "§3📊 Messages échangés: §b{nb_messages}"
+    - "§d💌 Dernier message: §5{dernier_message}"
+    - "§c⏰ Hors ligne depuis: §4{temps_hors_ligne}"
+    - ""
+    - "§8▸ §eClique milieu §8: §7Message hors-ligne"
+    - "§8▸ §cClique droit §8: §7Plus d'options"
+  actions:
+    middle_click: "send_offline_message"
+    right_click: "open_friend_options"
+
+friend_favorite:
+  enchanted: true
+  particles: "VILLAGER_HAPPY"
+  name_prefix: "§e⭐ "
+  lore_addition:
+    - "§6✨ AMI FAVORI ✨"
+
+friend_statuses:
+  away:
+    name_suffix: " §7(Absent)"
+    status_color: "§7"
+  busy:
+    name_suffix: " §c(Occupé)"
+    status_color: "§c"
+  do_not_disturb:
+    name_suffix: " §8(Ne pas déranger)"
+    status_color: "§8"
+
+sounds:
+  open_list: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  page_turn: "ITEM_BOOK_PAGE_TURN"
+  friend_click: "UI_BUTTON_CLICK"
+  teleport_success: "ENTITY_ENDERMAN_TELEPORT"
+  teleport_failed: "BLOCK_ANVIL_LAND"
+  message_sent: "ENTITY_EXPERIENCE_ORB_PICKUP"
+
+messages:
+  no_friends: "§7Vous n'avez pas encore d'amis !"
+  loading: "§7Chargement des amis..."
+  friend_not_found: "§cAmi introuvable !"
+  teleport_success: "§aVous avez été téléporté chez {ami} !"
+  teleport_failed: "§cImpossible de se téléporter chez {ami}"
+  teleport_offline: "§c{ami} n'est pas en ligne !"
+  teleport_same_server: "§c{ami} n'est pas sur le même serveur !"
+  teleport_disabled: "§c{ami} a désactivé la téléportation"
+  message_sent: "§aMessage envoyé à {ami} !"
+  message_failed: "§cImpossible d'envoyer le message"
+  friend_blocked_you: "§cCet ami vous a bloqué"
+
+placeholders:
+  - "{page}"
+  - "{total_pages}"
+  - "{page_precedente}"
+  - "{page_suivante}"
+  - "{total_amis}"
+  - "{tri_actuel}"
+  - "{filtre_en_ligne}"
+  - "{filtre_favoris}"
+  - "{filtre_absents}"
+  - "{filtre_occupes}"
+  - "{nom_joueur}"
+  - "{serveur_actuel}"
+  - "{date_amitie}"
+  - "{est_favori_text}"
+  - "{nb_messages}"
+  - "{dernier_message}"
+  - "{temps_en_ligne}"
+  - "{temps_hors_ligne}"
+  - "{derniere_co}"
+
+advanced:
+  max_friends_per_page: 28
+  head_cache_duration: 300
+  status_update_interval: 5
+  offline_head_grayscale: true
+  favorite_glow_effect: true
+  animate_status_changes: true
+
+integrations:
+  placeholderapi: true
+  headdatabase: true
+  bungee_messaging: true
+

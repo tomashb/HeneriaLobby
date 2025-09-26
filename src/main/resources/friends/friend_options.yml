@@ -1,0 +1,147 @@
+# ===============================
+# MENU OPTIONS POUR UN AMI
+# ===============================
+
+menu:
+  title: "§8» §7Options pour §a{nom_ami}"
+  size: 27
+
+decoration:
+  gray_glass:
+    material: "GRAY_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 18, 19, 20, 24, 25, 26]
+
+items:
+  teleport:
+    slot: 10
+    hdb_id: 2018
+    name: "§a🚀 Se Téléporter"
+    lore:
+      - "§7Téléportez-vous instantanément"
+      - "§7vers votre ami"
+      - ""
+      - "§7Statut: §e{teleport_status}"
+      - ""
+      - "§8» §aCliquez pour vous téléporter"
+    actions:
+      left_click: "teleport_to_friend"
+
+  send_message:
+    slot: 11
+    hdb_id: 5315
+    name: "§e💬 Envoyer un Message"
+    lore:
+      - "§7Envoyez un message privé"
+      - "§7à votre ami"
+      - ""
+      - "§e▸ Dernier message: §f{dernier_message}"
+      - "§7▸ Il y a: §8{temps_dernier_message}"
+      - ""
+      - "§8» §eCliquez pour écrire"
+    actions:
+      left_click: "send_private_message"
+
+  toggle_favorite:
+    slot: 12
+    hdb_id: 6156
+    name: "§6🏆 {favorite_action}"
+    lore:
+      - "§7Marquez cet ami comme favori"
+      - "§7pour un accès rapide"
+      - ""
+      - "§6▸ Statut actuel: §e{est_favori_text}"
+      - "§7▸ Favoris actuels: §8{nb_favoris}§7/§8{limite_favoris}"
+      - ""
+      - "§8» §6Cliquez pour {favorite_action_verb}"
+    actions:
+      left_click: "toggle_favorite"
+
+  view_profile:
+    slot: 13
+    hdb_id: 1452
+    name: "§b👤 Voir le Profil"
+    lore:
+      - "§7Consultez le profil détaillé"
+      - "§7de votre ami"
+      - ""
+      - "§b▸ Niveau: §3{niveau_ami}"
+      - "§b▸ Temps de jeu: §3{temps_jeu_ami}"
+      - "§b▸ Dernière connexion: §3{derniere_co_ami}"
+      - ""
+      - "§8» §bCliquez pour voir plus"
+    actions:
+      left_click: "view_friend_profile"
+
+  friendship_stats:
+    slot: 14
+    hdb_id: 2967
+    name: "§d📊 Statistiques d'Amitié"
+    lore:
+      - "§7Consultez vos statistiques"
+      - "§7avec cet ami"
+      - ""
+      - "§d▸ Amis depuis: §5{duree_amitie}"
+      - "§d▸ Messages échangés: §5{messages_total}"
+      - "§d▸ Temps joué ensemble: §5{temps_ensemble}"
+      - ""
+      - "§8» §dCliquez pour plus de détails"
+    actions:
+      left_click: "view_friendship_stats"
+
+  remove_friend:
+    slot: 15
+    hdb_id: 5464
+    name: "§c💔 Retirer des Amis"
+    lore:
+      - "§cRetirez cette personne"
+      - "§cde votre liste d'amis"
+      - ""
+      - "§c⚠ Cette action est irréversible !"
+      - "§7Vous devrez renvoyer une demande"
+      - "§7pour redevenir amis"
+      - ""
+      - "§8» §cCliquez pour confirmer"
+    actions:
+      left_click: "remove_friend"
+
+  block_player:
+    slot: 16
+    hdb_id: 8127
+    name: "§8🚫 Bloquer le Joueur"
+    lore:
+      - "§8Bloquez ce joueur pour:"
+      - "§7▸ Empêcher les messages"
+      - "§7▸ Masquer votre statut"
+      - "§7▸ Refuser les téléportations"
+      - ""
+      - "§8⚠ Cela retirera aussi l'amitié !"
+      - ""
+      - "§8» §8Cliquez pour bloquer"
+    actions:
+      left_click: "block_player"
+
+  back:
+    slot: 22
+    hdb_id: 3593
+    name: "§7◀ Retour à la Liste"
+    lore:
+      - "§7Revenir à la liste des amis"
+      - ""
+      - "§8» §7Cliquez pour retourner"
+    actions:
+      left_click: "back_to_friends_list"
+
+confirmations:
+  remove_friend:
+    title: "§c⚠ Confirmer la suppression"
+    message: "§7Êtes-vous sûr de vouloir retirer §c{nom_ami} §7de vos amis ?"
+    confirm_button: "§c✓ Oui, retirer"
+    cancel_button: "§a✗ Annuler"
+
+  block_player:
+    title: "§8⚠ Confirmer le blocage"
+    message: "§7Êtes-vous sûr de vouloir bloquer §8{nom_ami} §7?"
+    confirm_button: "§8✓ Oui, bloquer"
+    cancel_button: "§a✗ Annuler"
+
