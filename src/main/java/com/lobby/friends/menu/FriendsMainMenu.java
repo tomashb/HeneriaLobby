@@ -6,6 +6,7 @@ import com.lobby.friends.FriendsPlaceholderData;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.CloseableMenu;
 import com.lobby.menus.Menu;
+import com.lobby.menus.MenuManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -69,7 +70,7 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
         buildStaticLayout();
         refreshDynamicContent();
         scheduleUpdates();
-        playSound(player, configuration.getOpenSound());
+        playSound(player, configuration.getOpenSound(), 1.5f);
         player.openInventory(inventory);
     }
 
@@ -78,9 +79,16 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        event.setCancelled(true);
         final FriendsMenuItem item = itemBySlot.get(event.getSlot());
         if (item == null || item.getAction() == null || item.getAction().isBlank()) {
             playSound(player, configuration.getErrorSound());
+            return;
+        }
+        if ("back_to_profile".equalsIgnoreCase(item.getAction())) {
+            playSound(player, configuration.getClickSound());
+            player.closeInventory();
+            Bukkit.getScheduler().runTaskLater(plugin, () -> openProfileMenu(player), 1L);
             return;
         }
         final boolean handled = actionHandler != null && actionHandler.handle(player, item.getAction());
@@ -246,10 +254,25 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
     }
 
     private void playSound(final Player player, final Sound sound) {
+        playSound(player, sound, 1.0f);
+    }
+
+    private void playSound(final Player player, final Sound sound, final float pitch) {
         if (player == null || sound == null) {
             return;
         }
-        player.playSound(player.getLocation(), sound, 1.0f, 1.0f);
+        player.playSound(player.getLocation(), sound, 1.0f, pitch);
+    }
+
+    private void openProfileMenu(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final MenuManager menuManager = plugin.getMenuManager();
+        if (menuManager == null) {
+            return;
+        }
+        menuManager.openMenu(player, "profil_menu");
     }
 
     private String colorize(final String input) {

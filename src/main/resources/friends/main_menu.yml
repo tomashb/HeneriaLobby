@@ -3,6 +3,14 @@ menu:
   size: 54
   update_interval: 5
 
+# Layout (54 slots):
+# [V][V][V][ ][ ][ ][V][V][V]
+# [V][ ][ ][ ][ ][ ][ ][ ][V]
+# [ ][ ][ ][ ][ ][ ][ ][ ][ ]
+# [ ][ ][ ][ ][ ][ ][ ][ ][ ]
+# [ ][G][G][G][ ][ ][ ][ ][ ]
+# [V][V][V][ ][🏠][ ][V][V][V]
+
 decoration:
   green_glass:
     material: "GREEN_STAINED_GLASS_PANE"
@@ -14,7 +22,7 @@ decoration:
     slots: [39, 40, 41]
 
 sounds:
-  open_menu: "BLOCK_CHEST_OPEN"
+  open_menu: "ENTITY_EXPERIENCE_ORB_PICKUP"
   click_item: "UI_BUTTON_CLICK"
   error: "BLOCK_ANVIL_LAND"
 
@@ -119,3 +127,14 @@ items:
       - ""
       - "§8» §bCliquez pour plus de détails"
     action: "open_statistics"
+
+  back_to_profile:
+    slot: 49
+    hdb_id: 3593
+    name: "§e§l🏠 Retour au Profil"
+    lore:
+      - "§7Revenir au menu de"
+      - "§7votre profil"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    action: "back_to_profile"
