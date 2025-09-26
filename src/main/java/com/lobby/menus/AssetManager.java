@@ -177,7 +177,7 @@ public class AssetManager {
 
     private Set<String> scanConfiguredHeadIds() {
         final Set<String> collected = new HashSet<>();
-        final File menusDirectory = new File(plugin.getDataFolder(), "config/menus");
+        final File menusDirectory = new File(plugin.getDataFolder(), "menus");
         if (!menusDirectory.exists() || !menusDirectory.isDirectory()) {
             return collected;
         }

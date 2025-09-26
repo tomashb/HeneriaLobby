@@ -1,0 +1,42 @@
+title: '&8» &aMes Amis'
+size: 54
+design:
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53] }
+  secondary_border: { material: 'GRAY_STAINED_GLASS_PANE', slots: [39,40,41] }
+items:
+  add-friend:
+    slot: 3
+    material: 'hdb:23533'
+    name: '&a&lAjouter un Ami'
+    action: '[CHAT_PROMPT] &aVeuillez taper le pseudo de l''ami à ajouter.'
+  requests:
+    slot: 7
+    material: 'hdb:23528'
+    name: '&e&lDemandes Reçues'
+    action: '[MENU] amis_requests_menu'
+
+  send-gift:
+    slot: 48
+    material: 'hdb:12654'
+    name: '&d&lEnvoyer un Cadeau'
+    lore:
+      - '&r'
+      - '&7Faites plaisir à un ami en lui'
+      - '&7envoyant une surprise !'
+      - '&r'
+      - '&e▶ Cliquez pour choisir un ami'
+    action: '[MENU] amis_gift_friends_list_menu'
+
+  settings:
+    slot: 49
+    material: 'hdb:1218'
+    name: '&d&lConfidentialité & Social'
+    action: '[MENU] amis_settings_menu'
+
+  return-to-profile:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Profil'
+    action: '[MENU] profil_menu'
+
+  # La zone centrale (10-34) sera remplie par la liste paginée des amis.
