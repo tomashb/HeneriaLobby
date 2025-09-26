@@ -20,11 +20,15 @@ items:
     material: 'hdb:9945'
     name: '&a&lAmis'
     lore:
-      - '&7Cette section sociale est en cours de'
-      - '&7reconstruction complète.'
+      - '&7Gérez vos amis et'
+      - '&7vos relations sociales'
       - '&r'
-      - '&cFonctionnalité temporairement indisponible'
-    action: '[MESSAGE] &cLes fonctionnalités sociales sont momentanément désactivées.'
+      - '&a▸ Amis connectés: &2%amis_en_ligne%'
+      - '&c▸ Amis hors-ligne: &4%amis_hors_ligne%'
+      - '&e▸ Total: &6%total_amis%&7/&6%limite_amis%'
+      - '&r'
+      - '&8» &aCliquez pour ouvrir'
+    action: '[COMMAND] lobby friends'
 
   party-button:
     slot: 4
