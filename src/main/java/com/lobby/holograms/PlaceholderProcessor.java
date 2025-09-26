@@ -2,7 +2,6 @@ package com.lobby.holograms;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.economy.EconomyManager;
-import com.lobby.social.SocialPlaceholderManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -22,12 +21,10 @@ public class PlaceholderProcessor {
     private final HologramManager hologramManager;
     private final Map<String, Function<Player, String>> handlers = new HashMap<>();
     private static final Pattern SERVER_ONLINE_PATTERN = Pattern.compile("%server_online_([a-zA-Z0-9_-]+)%");
-    private final SocialPlaceholderManager socialPlaceholderManager;
 
     public PlaceholderProcessor(final LobbyPlugin plugin, final HologramManager hologramManager) {
         this.plugin = plugin;
         this.hologramManager = hologramManager;
-        this.socialPlaceholderManager = plugin.getSocialPlaceholderManager();
         registerHandlers();
     }
 
@@ -75,9 +72,6 @@ public class PlaceholderProcessor {
             } catch (final Exception exception) {
                 processed = processed.replace(placeholder, "ERROR");
             }
-        }
-        if (socialPlaceholderManager != null) {
-            processed = socialPlaceholderManager.replacePlaceholders(player, processed);
         }
         return handleServerSpecificPlaceholders(processed);
     }

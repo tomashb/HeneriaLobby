@@ -44,10 +44,6 @@ public final class PlaceholderUtils {
             }
         }
 
-        if (plugin.getSocialPlaceholderManager() != null) {
-            processed = plugin.getSocialPlaceholderManager().replacePlaceholders(player, processed);
-        }
-
         if (plugin.getConfirmationManager() != null) {
             processed = plugin.getConfirmationManager().applyPlaceholders(player, processed);
         }

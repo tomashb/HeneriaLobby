@@ -4,9 +4,7 @@ import com.google.common.io.ByteArrayDataInput;
 import com.google.common.io.ByteStreams;
 import com.lobby.LobbyPlugin;
 import com.lobby.economy.EconomyManager;
-import com.lobby.social.friends.FriendManager;
 import com.lobby.velocity.message.EconomyUpdateMessage;
-import com.lobby.velocity.message.FriendUpdateMessage;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 
@@ -33,7 +31,7 @@ public class SyncMessageListener implements PluginMessageListener {
         try {
             switch (type.toUpperCase()) {
                 case "ECONOMY_UPDATE" -> handleEconomyUpdate(data);
-                case "FRIEND_UPDATE" -> handleFriendUpdate(data);
+                case "FRIEND_UPDATE" -> handleDeprecatedSocialUpdate(data);
                 case "STATS_UPDATE" -> handleStatsUpdate(data);
                 case "SERVER_STATUS" -> handleServerStatusUpdate(data);
                 default -> plugin.getLogger().fine("Unknown sync message type received: " + type);
@@ -52,16 +50,8 @@ public class SyncMessageListener implements PluginMessageListener {
         economyManager.synchronizeBalances(message.getPlayerUuid(), message.getCoins(), message.getTokens());
     }
 
-    private void handleFriendUpdate(final String data) {
-        final FriendManager friendManager = plugin.getFriendManager();
-        if (friendManager == null) {
-            return;
-        }
-        final FriendUpdateMessage message = FriendUpdateMessage.deserialize(data);
-        // For now, simply invalidate caches by reloading the manager.
-        // Remote updates are processed asynchronously, so a full reload keeps data consistent.
-        friendManager.reload();
-        plugin.getLogger().fine("Processed friend update " + message.getAction() + " for " + message.getPlayerUuid());
+    private void handleDeprecatedSocialUpdate(final String data) {
+        plugin.getLogger().fine("Ignored deprecated social update payload: " + data);
     }
 
     private void handleStatsUpdate(final String data) {

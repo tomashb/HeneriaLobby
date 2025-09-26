@@ -20,36 +20,33 @@ items:
     material: 'hdb:9945'
     name: '&a&lAmis'
     lore:
-      - '&7Gérez votre liste d''amis, envoyez'
-      - '&7des invitations et rejoignez vos'
-      - '&7camarades en jeu.'
+      - '&7Cette section sociale est en cours de'
+      - '&7reconstruction complète.'
       - '&r'
-      - '&a▶ Cliquez pour ouvrir'
-    action: '[MENU] amis_menu'
+      - '&cFonctionnalité temporairement indisponible'
+    action: '[MESSAGE] &cLes fonctionnalités sociales sont momentanément désactivées.'
 
   party-button:
     slot: 4
     material: 'hdb:9723'
     name: '&e&lGroupe'
     lore:
-      - '&7Formez une équipe avec vos amis'
-      - '&7pour vous lancer ensemble dans'
-      - '&7les mini-jeux.'
+      - '&7La gestion des groupes revient bientôt'
+      - '&7avec une toute nouvelle interface.'
       - '&r'
-      - '&a▶ Cliquez pour gérer votre groupe'
-    action: '[MENU] groupe_menu'
+      - '&cFonctionnalité temporairement indisponible'
+    action: '[MESSAGE] &cLes fonctionnalités sociales sont momentanément désactivées.'
 
   clan-button:
     slot: 5
     material: 'hdb:8971'
     name: '&c&lClan'
     lore:
-      - '&7Rejoignez un clan, participez à'
-      - '&7des événements exclusifs et montrez'
-      - '&7la force de votre communauté.'
+      - '&7Les clans seront de retour avec un'
+      - '&7système entièrement repensé.'
       - '&r'
-      - '&a▶ Cliquez pour ouvrir'
-    action: '[MENU] clan_menu'
+      - '&cFonctionnalité temporairement indisponible'
+    action: '[MESSAGE] &cLes fonctionnalités sociales sont momentanément désactivées.'
 
   daily-reward:
     slot: 21

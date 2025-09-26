@@ -1,10 +1,7 @@
 package com.lobby;
 
 import com.lobby.commands.AdminCommands;
-import com.lobby.commands.ClanCommand;
 import com.lobby.commands.EconomyCommands;
-import com.lobby.commands.FriendCommand;
-import com.lobby.commands.GroupCommand;
 import com.lobby.commands.NPCCommands;
 import com.lobby.commands.PlayerCommands;
 import com.lobby.commands.ShopCommands;
@@ -30,11 +27,6 @@ import com.lobby.servers.ServerManager;
 import com.lobby.servers.ServerPlaceholderCache;
 import com.lobby.settings.PlayerSettingsManager;
 import com.lobby.shop.ShopManager;
-import com.lobby.social.ChatInputManager;
-import com.lobby.social.SocialPlaceholderManager;
-import com.lobby.social.clans.ClanManager;
-import com.lobby.social.friends.FriendManager;
-import com.lobby.social.groups.GroupManager;
 import com.lobby.stats.StatsManager;
 import com.lobby.tablist.TablistManager;
 import com.lobby.tablist.NametagManager;
@@ -63,13 +55,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private ShopManager shopManager;
     private ShopCommands shopCommands;
     private ServerManager serverManager;
-    private FriendManager friendManager;
-    private GroupManager groupManager;
-    private ClanManager clanManager;
     private VelocityManager velocityManager;
     private ServerPlaceholderCache serverPlaceholderCache;
-    private SocialPlaceholderManager socialPlaceholderManager;
-    private ChatInputManager chatInputManager;
     private StatsManager statsManager;
     private PlayerSettingsManager playerSettingsManager;
     private ScoreboardManager scoreboardManager;
@@ -108,10 +95,6 @@ public final class LobbyPlugin extends JavaPlugin {
         velocityManager = new VelocityManager(this);
         serverPlaceholderCache = new ServerPlaceholderCache(this);
         serverPlaceholderCache.start();
-        friendManager = new FriendManager(this);
-        groupManager = new GroupManager(this);
-        clanManager = new ClanManager(this);
-        socialPlaceholderManager = new SocialPlaceholderManager(this);
         hologramManager = new HologramManager(this);
         hologramManager.initialize();
         npcManager = new NPCManager(this);
@@ -125,7 +108,6 @@ public final class LobbyPlugin extends JavaPlugin {
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
-        chatInputManager = new ChatInputManager(this);
 
         scoreboardManager = new ScoreboardManager(this);
         getServer().getPluginManager().registerEvents(scoreboardManager, this);
@@ -257,28 +239,12 @@ public final class LobbyPlugin extends JavaPlugin {
         return serverManager;
     }
 
-    public FriendManager getFriendManager() {
-        return friendManager;
-    }
-
-    public GroupManager getGroupManager() {
-        return groupManager;
-    }
-
-    public ClanManager getClanManager() {
-        return clanManager;
-    }
-
     public VelocityManager getVelocityManager() {
         return velocityManager;
     }
 
     public ServerPlaceholderCache getServerPlaceholderCache() {
         return serverPlaceholderCache;
-    }
-
-    public SocialPlaceholderManager getSocialPlaceholderManager() {
-        return socialPlaceholderManager;
     }
 
     public StatsManager getStatsManager() {
@@ -330,15 +296,6 @@ public final class LobbyPlugin extends JavaPlugin {
         if (serverManager != null) {
             serverManager.reload();
         }
-        if (friendManager != null) {
-            friendManager.reload();
-        }
-        if (groupManager != null) {
-            groupManager.reload();
-        }
-        if (clanManager != null) {
-            clanManager.reload();
-        }
         if (statsManager != null) {
             statsManager.clearCache();
         }
@@ -370,15 +327,6 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("tokens", economyCommands);
         registerCommand("pay", economyCommands);
         registerCommand("top", economyCommands);
-
-        final FriendCommand friendCommand = new FriendCommand(friendManager);
-        registerCommand("friend", friendCommand);
-
-        final GroupCommand groupCommand = new GroupCommand(groupManager);
-        registerCommand("group", groupCommand);
-
-        final ClanCommand clanCommand = new ClanCommand(clanManager);
-        registerCommand("clan", clanCommand);
 
         final AdminCommands adminCommands = new AdminCommands(this, economyManager, hologramManager, npcManager, lobbyManager, shopCommands);
         registerCommand("lobbyadmin", adminCommands);
