@@ -1,0 +1,38 @@
+# ===============================
+# NOTIFICATIONS AMIS EN TEMPS RÉEL
+# ===============================
+
+notifications:
+  friend_online:
+    enabled: true
+    message: "§a{ami} §7vient de se connecter !"
+    sound: "ENTITY_PLAYER_LEVELUP"
+    volume: 1.0
+    pitch: 1.5
+    actionbar: "§a▶ §7{ami} est maintenant en ligne"
+    duration: 3
+
+  friend_offline:
+    enabled: false
+    message: "§c{ami} §7s'est déconnecté"
+    sound: "BLOCK_NOTE_BLOCK_BASS"
+    actionbar: "§c◀ §7{ami} s'est déconnecté"
+
+  friend_server_change:
+    enabled: true
+    message: "§e{ami} §7a changé de serveur: §e{nouveau_serveur}"
+    actionbar: "§e↔ §7{ami} → {nouveau_serveur}"
+
+  message_received:
+    enabled: true
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    actionbar: "§d💬 §7Message de {ami}"
+    chat_notification: "§d[✉] {ami} §8» §f{apercu_message}"
+
+auto_update:
+  enabled: true
+  interval: 5
+  update_offline_status: true
+  update_server_status: true
+  refresh_heads: true
+
