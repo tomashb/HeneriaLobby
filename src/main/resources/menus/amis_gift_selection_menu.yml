@@ -1,0 +1,63 @@
+title: '&8» &dCadeau à Envoyer'
+size: 27
+design:
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,18,26] }
+items:
+  header:
+    slot: 4
+    material: 'PLAYER_HEAD'
+    name: '&d&l%gift_target_name%'
+    lore:
+      - '&7Sélectionnez un montant à offrir'
+      - '&7à cet ami.'
+    player-head: true
+
+  return-to-list:
+    slot: 18
+    material: 'hdb:9334'
+    name: '&c&lRetour'
+    action: '[MENU] amis_gift_friends_list_menu'
+
+  gift-100:
+    slot: 10
+    material: 'GOLD_INGOT'
+    name: '&6&l100 coins'
+    lore:
+      - '&7Envoyer &6 100 coins'
+      - '&7à %gift_target_name%'
+      - '&r'
+      - '&e▶ Cliquez pour confirmer'
+    action: '[COMMAND] friends gift %gift_target_name% 100'
+
+  gift-500:
+    slot: 11
+    material: 'GOLD_INGOT'
+    name: '&6&l500 coins'
+    lore:
+      - '&7Envoyer &6 500 coins'
+      - '&7à %gift_target_name%'
+      - '&r'
+      - '&e▶ Cliquez pour confirmer'
+    action: '[COMMAND] friends gift %gift_target_name% 500'
+
+  gift-1000:
+    slot: 12
+    material: 'GOLD_INGOT'
+    name: '&6&l1000 coins'
+    lore:
+      - '&7Envoyer &6 1 000 coins'
+      - '&7à %gift_target_name%'
+      - '&r'
+      - '&e▶ Cliquez pour confirmer'
+    action: '[COMMAND] friends gift %gift_target_name% 1000'
+
+  gift-2500:
+    slot: 13
+    material: 'GOLD_INGOT'
+    name: '&6&l2500 coins'
+    lore:
+      - '&7Envoyer &6 2 500 coins'
+      - '&7à %gift_target_name%'
+      - '&r'
+      - '&e▶ Cliquez pour confirmer'
+    action: '[COMMAND] friends gift %gift_target_name% 2500'

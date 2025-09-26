@@ -332,16 +332,16 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
     }
 
     private static File resolveMenuFile(final LobbyPlugin plugin, final String menuId) {
-        final File menusDirectory = new File(plugin.getDataFolder(), "config/menus");
+        final File menusDirectory = new File(plugin.getDataFolder(), "menus");
         if (!menusDirectory.exists() && !menusDirectory.mkdirs()) {
-            plugin.getLogger().warning("Unable to create config/menus directory for menu configurations.");
+            plugin.getLogger().warning("Unable to create menus directory for menu configurations.");
         }
         final File menuFile = new File(menusDirectory, menuId + ".yml");
         if (menuFile.exists()) {
             return menuFile;
         }
         try {
-            plugin.saveResource("config/menus/" + menuId + ".yml", false);
+            plugin.saveResource("menus/" + menuId + ".yml", false);
         } catch (final IllegalArgumentException ignored) {
             // No default resource available, continue with potential custom file.
         }

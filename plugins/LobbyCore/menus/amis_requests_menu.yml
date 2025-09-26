@@ -1,0 +1,27 @@
+title: '&8» &eDemandes d''Amis'
+size: 54
+design:
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53] }
+  secondary_border: { material: 'GRAY_STAINED_GLASS_PANE', slots: [39,40,41] }
+items:
+  back-to-friends:
+    slot: 45
+    material: 'hdb:9334'
+    name: '&c&lRetour'
+    lore:
+      - '&7Retourner à la liste principale'
+    action: '[MENU] amis_menu'
+
+  previous-page:
+    slot: 48
+    material: 'hdb:31405'
+    name: '&e&lPage Précédente'
+    action: '[MENU] amis_requests_menu'
+
+  next-page:
+    slot: 51
+    material: 'hdb:31406'
+    name: '&e&lPage Suivante'
+    action: '[MENU] amis_requests_menu'
+
+  # Les emplacements centraux sont remplis par les demandes paginées.
