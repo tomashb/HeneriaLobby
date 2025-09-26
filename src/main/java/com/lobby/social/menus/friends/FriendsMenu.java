@@ -383,7 +383,7 @@ public final class FriendsMenu implements Menu, InventoryHolder {
         meta.setDisplayName(prefix + (online ? "§a" : "§7") + info.getName());
         meta.setLore(buildFriendLore(info));
         if (favorite) {
-            meta.addEnchant(org.bukkit.enchantments.Enchantment.LUCK, 1, true);
+            meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
             meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
         }
         head.setItemMeta(meta);
