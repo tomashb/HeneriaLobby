@@ -10,10 +10,12 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.heads.HeadDatabaseManager;
+import com.lobby.friends.FriendManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.GlobalListener;
 import com.lobby.menus.MenuManager;
+import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
@@ -50,6 +52,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private LobbyManager lobbyManager;
     private AssetManager assetManager;
     private MenuManager menuManager;
+    private FriendManager friendManager;
+    private ChatPromptManager chatPromptManager;
     private ConfirmationManager confirmationManager;
     private HeadDatabaseManager headDatabaseManager;
     private ShopManager shopManager;
@@ -101,9 +105,12 @@ public final class LobbyPlugin extends JavaPlugin {
         npcManager.initialize();
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
+        friendManager = new FriendManager(this);
         assetManager = new AssetManager(this);
-        menuManager = new MenuManager(this, assetManager);
+        chatPromptManager = new ChatPromptManager(this);
+        menuManager = new MenuManager(this, assetManager, friendManager);
         getServer().getPluginManager().registerEvents(new GlobalListener(menuManager), this);
+        getServer().getPluginManager().registerEvents(chatPromptManager, this);
         confirmationManager = new ConfirmationManager(this);
         shopManager = new ShopManager(this);
         shopManager.initialize();
@@ -181,6 +188,8 @@ public final class LobbyPlugin extends JavaPlugin {
         if (assetManager != null) {
             assetManager.shutdown();
         }
+        chatPromptManager = null;
+        friendManager = null;
         if (confirmationManager != null) {
             confirmationManager.clearAll();
         }
@@ -217,6 +226,14 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public MenuManager getMenuManager() {
         return menuManager;
+    }
+
+    public FriendManager getFriendManager() {
+        return friendManager;
+    }
+
+    public ChatPromptManager getChatPromptManager() {
+        return chatPromptManager;
     }
 
     public AssetManager getAssetManager() {
