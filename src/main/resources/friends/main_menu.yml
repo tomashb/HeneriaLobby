@@ -28,8 +28,8 @@ sounds:
 
 items:
   friends_list:
-    slot: 10
-    hdb_id: 1452
+    slot: 12
+    hdb_id: 10296
     name: "§a§l📋 Liste de mes Amis"
     lore:
       - "§7Consultez votre liste d'amis"
@@ -43,8 +43,8 @@ items:
     action: "open_friends_list"
 
   add_friend:
-    slot: 11
-    hdb_id: 5694
+    slot: 13
+    hdb_id: 9885
     name: "§a§l➕ Ajouter un Ami"
     lore:
       - "§7Envoyez une demande d'ami"
@@ -57,8 +57,8 @@ items:
     action: "open_add_friend"
 
   requests:
-    slot: 12
-    hdb_id: 3583
+    slot: 14
+    hdb_id: 84079
     name: "§e§l📨 Demandes d'Amitié"
     enchanted: true
     lore:
@@ -72,8 +72,8 @@ items:
     action: "open_requests"
 
   blocked:
-    slot: 13
-    hdb_id: 5464
+    slot: 21
+    hdb_id: 8817
     name: "§c§l🚫 Joueurs Bloqués"
     lore:
       - "§7Gérez votre liste de"
@@ -85,9 +85,9 @@ items:
     action: "open_blocked"
 
   settings:
-    slot: 14
-    hdb_id: 1275
-    name: "§6§l⚙️ Paramètres d'Amitié"
+    slot: 22
+    hdb_id: 106742
+    name: "&6&l⚙️ Paramètres d'Amitié"
     lore:
       - "§7Configurez vos préférences"
       - "§7concernant les amis"
@@ -100,8 +100,8 @@ items:
     action: "open_settings"
 
   favorites:
-    slot: 15
-    hdb_id: 6156
+    slot: 23
+    hdb_id: 10480
     name: "§e§l🏆 Amis Favoris"
     lore:
       - "§7Vos amis les plus proches"
@@ -114,9 +114,9 @@ items:
     action: "open_favorites"
 
   statistics:
-    slot: 16
-    hdb_id: 2967
-    name: "§b§l📊 Statistiques"
+    slot: 31
+    hdb_id: 9345
+    name: "§b§lStatistiques"
     lore:
       - "§7Consultez vos statistiques"
       - "§7d'amitié détaillées"
@@ -130,11 +130,11 @@ items:
 
   back_to_profile:
     slot: 49
-    hdb_id: 3593
-    name: "§e§l🏠 Retour au Profil"
+    hdb_id: 9334
+    name: "§a§lRetour au Profil"
     lore:
       - "§7Revenir au menu de"
       - "§7votre profil"
       - ""
-      - "§8» §eCliquez pour retourner"
+      - "&a▶ Cliquez pour retourner"
     action: "back_to_profile"
