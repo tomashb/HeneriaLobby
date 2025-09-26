@@ -16,6 +16,9 @@ import com.lobby.menus.GlobalListener;
 import com.lobby.menus.MenuManager;
 import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
+import com.lobby.friends.DefaultFriendsDataProvider;
+import com.lobby.friends.menu.FriendsMenuController;
+import com.lobby.friends.menu.NoopFriendsMenuActionHandler;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -64,6 +67,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private ScoreboardManager scoreboardManager;
     private NametagManager nametagManager;
     private TablistManager tablistManager;
+    private DefaultFriendsDataProvider friendsDataProvider;
+    private FriendsMenuController friendsMenuController;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -109,6 +114,9 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new GlobalListener(menuManager), this);
         getServer().getPluginManager().registerEvents(chatPromptManager, this);
         confirmationManager = new ConfirmationManager(this);
+        friendsDataProvider = new DefaultFriendsDataProvider();
+        friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
+                new NoopFriendsMenuActionHandler());
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
@@ -189,6 +197,8 @@ public final class LobbyPlugin extends JavaPlugin {
         if (confirmationManager != null) {
             confirmationManager.clearAll();
         }
+        friendsMenuController = null;
+        friendsDataProvider = null;
         instance = null;
     }
 
@@ -276,6 +286,14 @@ public final class LobbyPlugin extends JavaPlugin {
         return tablistManager;
     }
 
+    public FriendsMenuController getFriendsMenuController() {
+        return friendsMenuController;
+    }
+
+    public DefaultFriendsDataProvider getFriendsDataProvider() {
+        return friendsDataProvider;
+    }
+
     public void reloadLobbyConfig() {
         if (configManager != null) {
             configManager.reloadConfigs();
@@ -302,6 +320,9 @@ public final class LobbyPlugin extends JavaPlugin {
             menuManager.closeAll();
             menuManager.reloadMenus();
         }
+        if (friendsMenuController != null) {
+            friendsMenuController.reload();
+        }
         if (serverManager != null) {
             serverManager.reload();
         }
@@ -320,7 +341,7 @@ public final class LobbyPlugin extends JavaPlugin {
     }
 
     private void registerCommands() {
-        final PlayerCommands playerCommands = new PlayerCommands(lobbyManager, menuManager);
+        final PlayerCommands playerCommands = new PlayerCommands(lobbyManager, menuManager, friendsMenuController);
         registerCommand("lobby", playerCommands);
         registerCommand("serveurs", playerCommands);
         registerCommand("profil", playerCommands);
