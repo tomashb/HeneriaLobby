@@ -3,6 +3,7 @@ package com.lobby.lobby.items;
 import com.lobby.LobbyPlugin;
 import com.lobby.heads.HeadDatabaseManager;
 import com.lobby.lobby.LobbyManager;
+import com.lobby.utils.ItemStackUtils;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -319,8 +320,7 @@ public class LobbyItemManager {
             }
 
             if (lobbyItem.glow()) {
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                meta.addEnchant(org.bukkit.enchantments.Enchantment.UNBREAKING, 1, true);
+                ItemStackUtils.addGlowEffect(baseItem, meta);
             }
 
             baseItem.setItemMeta(meta);
