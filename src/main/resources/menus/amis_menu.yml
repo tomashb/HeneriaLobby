@@ -1,0 +1,62 @@
+title: '&8» &aMes Amis'
+size: 54
+design:
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53] }
+  secondary_border: { material: 'GRAY_STAINED_GLASS_PANE', slots: [39,40,41] }
+items:
+  add-friend:
+    slot: 3
+    material: 'hdb:23533'
+    name: '&a&lAjouter un Ami'
+    lore:
+      - '&r'
+      - '&7Envoyez une demande d''ami'
+      - '&7à un autre joueur.'
+      - '&r'
+      - '&e▶ Cliquez pour taper un pseudo'
+    action: '[CHAT_PROMPT] &aVeuillez taper le pseudo de l''ami à ajouter.'
+
+  requests:
+    slot: 7
+    material: 'hdb:23528'
+    name: '&e&lDemandes Reçues'
+    enchanted: '%friend_requests_count% > 0'
+    lore:
+      - '&r'
+      - '&7Gérez les demandes d''ami que'
+      - '&7vous avez reçues.'
+      - '&r'
+      - '&b▸ En attente : &6%friend_requests_count%'
+      - '&r'
+      - '&e▶ Cliquez pour voir'
+    action: '[MENU] amis_requests_menu'
+
+  friend-list-template:
+    material: 'PLAYER_HEAD'
+    name: '&a%friend_name%'
+    lore:
+      - '&r'
+      - '&7Statut: %friend_status%'
+      - '&r'
+      - '&b▸ Ami depuis: &f%friend_since_date%'
+      - '&r'
+      - '&e▶ Clic-gauche : Message'
+      - '&d▶ Maj-clic : Gérer Favori'
+
+  prev-page:
+    slot: 48
+    material: 'hdb:31405'
+    name: '&c&lPage Précédente'
+    action: '[PAGE] previous'
+
+  return-to-profile:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour au Profil'
+    action: '[MENU] profil_menu'
+
+  next-page:
+    slot: 52
+    material: 'hdb:31406'
+    name: '&a&lPage Suivante'
+    action: '[PAGE] next'

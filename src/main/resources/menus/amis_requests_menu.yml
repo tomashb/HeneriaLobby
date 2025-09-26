@@ -1,0 +1,11 @@
+title: '&8» &eDemandes d''Amis'
+size: 54
+design:
+  primary_border: { material: 'LIME_STAINED_GLASS_PANE', slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53] }
+  secondary_border: { material: 'GRAY_STAINED_GLASS_PANE', slots: [39,40,41] }
+items:
+  return-to-friends:
+    slot: 50
+    material: 'hdb:9334'
+    name: '&c&lRetour'
+    action: '[MENU] amis_menu'
