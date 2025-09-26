@@ -9,13 +9,6 @@ import com.lobby.settings.PlayerSettings;
 import com.lobby.settings.PlayerSettingsManager;
 import com.lobby.settings.SettingType;
 import com.lobby.settings.VisibilitySetting;
-import com.lobby.social.ChatInputManager;
-import com.lobby.social.clans.Clan;
-import com.lobby.social.clans.ClanManager;
-import com.lobby.social.friends.FriendManager;
-import com.lobby.social.groups.GroupManager;
-import com.lobby.social.menus.ClanMenus;
-import com.lobby.social.menus.SocialHeavyMenus;
 import com.lobby.utils.LogUtils;
 import com.lobby.utils.MessageUtils;
 import com.lobby.utils.PlaceholderUtils;
@@ -72,50 +65,8 @@ public class ActionProcessor {
             MessageUtils.sendPrefixedMessage(player, message);
             return;
         }
-        if (trimmed.equalsIgnoreCase("[FRIENDS_ONLINE]")) {
-            final MenuManager menuManager = plugin.getMenuManager();
-            if (menuManager != null) {
-                SocialHeavyMenus.openFriendsMenu(menuManager, player, 0, null);
-            }
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[FRIEND_REQUESTS]")) {
-            final MenuManager menuManager = plugin.getMenuManager();
-            if (menuManager != null) {
-                SocialHeavyMenus.openFriendRequestsMenu(menuManager, player, 0);
-            }
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[FRIEND_ADD]")) {
-            handleFriendAdd(player, extractArgument(processed, "[FRIEND_ADD]"));
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[FRIEND_ACCEPT]")) {
-            handleFriendAccept(player, extractArgument(processed, "[FRIEND_ACCEPT]"));
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[FRIEND_REMOVE]")) {
-            handleFriendRemove(player, extractArgument(processed, "[FRIEND_REMOVE]"));
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_NOTIFICATIONS]")) {
-            toggleAndRefresh(player, "friend_notifications", "amis_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_REQUESTS]")) {
-            cycleAndRefresh(player, "friend_requests", "amis_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CYCLE_FRIEND_VISIBILITY]")) {
-            cycleAndRefresh(player, "friend_visibility", "amis_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_AUTO_FAVORITES]")) {
-            toggleAndRefresh(player, "friend_auto_favorites", "amis_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[TOGGLE_FRIEND_MESSAGES]")) {
-            toggleAndRefresh(player, "friend_messages", "amis_settings_menu");
+        if (isDeprecatedSocialAction(trimmed)) {
+            MessageUtils.sendPrefixedMessage(player, "§cLes fonctionnalités sociales sont actuellement indisponibles.");
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[SETTING_TOGGLE]")) {
@@ -138,86 +89,6 @@ public class ActionProcessor {
         }
         if (trimmed.equalsIgnoreCase("[CONFIRM_CANCEL]")) {
             handleConfirmationExecution(player, false);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[GROUP_CREATE]")) {
-            ChatInputManager.startGroupCreateFlow(player);
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[GROUP_INVITE]")) {
-            handleGroupInvite(player, extractArgument(processed, "[GROUP_INVITE]"));
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[GROUP_KICK]")) {
-            handleGroupKick(player, extractArgument(processed, "[GROUP_KICK]"));
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[TOGGLE_GROUP_AUTO_ACCEPT]")) {
-            toggleAndRefresh(player, "group_auto_accept", "group_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CYCLE_GROUP_VISIBILITY]")) {
-            cycleAndRefresh(player, "group_visibility", "group_settings_menu");
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_MEMBERS]")) {
-            final MenuManager menuManager = plugin.getMenuManager();
-            if (menuManager != null) {
-                SocialHeavyMenus.openClanMembersMenu(menuManager, player);
-            }
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_VAULT]")) {
-            final MenuManager menuManager = plugin.getMenuManager();
-            if (menuManager != null) {
-                SocialHeavyMenus.openClanBankMenu(menuManager, player);
-            }
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_PROMOTE_MEMBER]")) {
-            handleClanRankChange(player, true);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_DEMOTE_MEMBER]")) {
-            handleClanRankChange(player, false);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_KICK_MEMBER]")) {
-            handleClanRemoval(player, false);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_BAN_MEMBER]")) {
-            handleClanRemoval(player, true);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_TRANSFER_LEADERSHIP]")) {
-            handleClanLeadershipTransfer(player);
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[TOGGLE_MEMBER_PERMISSION]")) {
-            final String value = processed.substring("[TOGGLE_MEMBER_PERMISSION]".length()).trim();
-            toggleMemberPermission(player, value);
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[APPLY_MEMBER_PERMISSION_PRESET]")) {
-            final String value = processed.substring("[APPLY_MEMBER_PERMISSION_PRESET]".length()).trim();
-            applyMemberPreset(player, value);
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_INVITE]")) {
-            handleClanInvite(player, extractArgument(processed, "[CLAN_INVITE]"));
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[CLAN_PROMOTE]")) {
-            handleClanPromote(player, extractArgument(processed, "[CLAN_PROMOTE]"));
-            return;
-        }
-        if (startsWithIgnoreCase(trimmed, "[CLAN_KICK]")) {
-            handleClanKick(player, extractArgument(processed, "[CLAN_KICK]"));
-            return;
-        }
-        if (trimmed.equalsIgnoreCase("[CLAN_DELETE_CONFIRM]")) {
-            handleClanDeleteConfirmation(player);
             return;
         }
         if (startsWithIgnoreCase(trimmed, "[SOUND]")) {
@@ -299,78 +170,9 @@ public class ActionProcessor {
     }
 
     public static void openClanDeleteConfirmation(final Player player) {
-        final LobbyPlugin plugin = LobbyPlugin.getInstance();
-        if (plugin == null) {
-            return;
+        if (player != null) {
+            MessageUtils.sendPrefixedMessage(player, "§cLes fonctionnalités de clan sont actuellement indisponibles.");
         }
-        final var npcManager = plugin.getNpcManager();
-        if (npcManager == null) {
-            return;
-        }
-        final ActionProcessor processor = npcManager.getActionProcessor();
-        if (processor == null) {
-            return;
-        }
-        processor.handleClanDeleteConfirmation(player);
-    }
-
-    private void handleClanDeleteConfirmation(final Player player) {
-        if (player == null) {
-            return;
-        }
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            return;
-        }
-        final Clan clan = clanManager.getPlayerClan(player.getUniqueId());
-        if (clan == null) {
-            player.sendMessage("§cVous n'êtes dans aucun clan.");
-            return;
-        }
-        if (!clan.isLeader(player.getUniqueId())) {
-            player.sendMessage("§cSeul le leader peut supprimer le clan.");
-            return;
-        }
-
-        player.closeInventory();
-        player.sendMessage("§c§l⚠ SUPPRESSION DE CLAN ⚠");
-        player.sendMessage("§7Vous êtes sur le point de supprimer définitivement votre clan.");
-        player.sendMessage("§7Cette action est §cIRRÉVERSIBLE§7 !");
-        player.sendMessage("§r");
-        player.sendMessage("§7Conséquences :");
-        player.sendMessage("§8▸ §7Tous les membres seront expulsés");
-        player.sendMessage("§8▸ §7Le trésor du clan sera perdu");
-        player.sendMessage("§8▸ §7Toutes les données seront supprimées");
-        player.sendMessage("§r");
-        player.sendMessage("§7Tapez §c'SUPPRIMER'§7 pour confirmer");
-        player.sendMessage("§7Tapez §a'annuler'§7 pour annuler");
-
-        final var menuManager = plugin.getMenuManager();
-        ChatInputManager.startInputFlow(player, inputRaw -> {
-            final String input = inputRaw.trim();
-            if (input.equalsIgnoreCase("SUPPRIMER")) {
-                final boolean success = clanManager.deleteClan(player.getUniqueId());
-                if (success) {
-                    player.sendMessage("§c§lClan supprimé avec succès !");
-                    player.sendMessage("§7Toutes les données ont été effacées.");
-                } else {
-                    player.sendMessage("§cErreur lors de la suppression du clan.");
-                }
-            } else if (input.equalsIgnoreCase("annuler")) {
-                player.sendMessage("§aSuppression annulée.");
-            } else {
-                player.sendMessage("§cCommande non reconnue - Suppression annulée.");
-            }
-
-            if (menuManager != null) {
-                Bukkit.getScheduler().runTaskLater(plugin, (Runnable) () -> menuManager.openMenu(player, "clan_menu"), 40L);
-            }
-        }, () -> {
-            player.sendMessage("§cTemps écoulé - Suppression annulée.");
-            if (menuManager != null) {
-                menuManager.openMenu(player, "clan_menu");
-            }
-        });
     }
 
     private void handleConfirmationExecution(final Player player, final boolean confirmed) {
@@ -466,164 +268,24 @@ public class ActionProcessor {
         return null;
     }
 
-    private void toggleAndRefresh(final Player player, final String key, final String menuId) {
-        if (player == null || key == null) {
-            return;
+    private boolean isDeprecatedSocialAction(final String action) {
+        if (action == null || action.isBlank()) {
+            return false;
         }
-        switch (key) {
-            case "friend_notifications" -> {
-                final var friendManager = plugin.getFriendManager();
-                if (friendManager == null) {
-                    return;
-                }
-                final boolean enabled = friendManager.toggleNotifications(player.getUniqueId());
-                player.sendMessage(enabled
-                        ? "§aNotifications d'amis activées"
-                        : "§cNotifications d'amis désactivées");
-                reopenMenu(player, menuId);
-            }
-            case "friend_auto_favorites" -> {
-                final var friendManager = plugin.getFriendManager();
-                if (friendManager == null) {
-                    return;
-                }
-                final boolean enabled = friendManager.toggleAutoAcceptFavorites(player.getUniqueId());
-                player.sendMessage(enabled
-                        ? "§aAcceptation auto des favoris activée"
-                        : "§cAcceptation auto des favoris désactivée");
-                reopenMenu(player, menuId);
-            }
-            case "friend_messages" -> {
-                final var friendManager = plugin.getFriendManager();
-                if (friendManager == null) {
-                    return;
-                }
-                final boolean enabled = friendManager.togglePrivateMessages(player.getUniqueId());
-                player.sendMessage(enabled
-                        ? "§aMessages privés autorisés"
-                        : "§cMessages privés désactivés");
-                reopenMenu(player, menuId);
-            }
-            case "group_auto_accept" -> {
-                final var groupManager = plugin.getGroupManager();
-                if (groupManager == null) {
-                    return;
-                }
-                final boolean enabled = groupManager.toggleAutoAccept(player.getUniqueId());
-                player.sendMessage(enabled
-                        ? "§aInvitations automatiques activées"
-                        : "§cInvitations automatiques désactivées");
-                reopenMenu(player, menuId);
-            }
-            default -> {
-            }
-        }
+        final String upper = action.toUpperCase(Locale.ROOT);
+        return upper.startsWith("[FRIEND")
+                || upper.startsWith("[TOGGLE_FRIEND")
+                || upper.startsWith("[CYCLE_FRIEND")
+                || upper.startsWith("[GROUP")
+                || upper.startsWith("[TOGGLE_GROUP")
+                || upper.startsWith("[CLAN")
+                || upper.startsWith("[TOGGLE_MEMBER")
+                || upper.startsWith("[APPLY_MEMBER");
     }
 
-    private void cycleAndRefresh(final Player player, final String key, final String menuId) {
-        if (player == null || key == null) {
-            return;
-        }
-        switch (key) {
-            case "friend_requests" -> {
-                final var friendManager = plugin.getFriendManager();
-                if (friendManager == null) {
-                    return;
-                }
-                final String mode = friendManager.cycleRequestAcceptance(player.getUniqueId());
-                player.sendMessage("§aDemandes d'amis: §f" + mode);
-                reopenMenu(player, menuId);
-            }
-            case "friend_visibility" -> {
-                final var friendManager = plugin.getFriendManager();
-                if (friendManager == null) {
-                    return;
-                }
-                final String visibility = friendManager.cycleFriendVisibility(player.getUniqueId());
-                player.sendMessage("§aVisibilité: §f" + visibility);
-                reopenMenu(player, menuId);
-            }
-            case "group_visibility" -> {
-                final var groupManager = plugin.getGroupManager();
-                if (groupManager == null) {
-                    return;
-                }
-                final String visibility = groupManager.cycleGroupVisibility(player.getUniqueId());
-                player.sendMessage("§aVisibilité du groupe: §f" + visibility);
-                reopenMenu(player, menuId);
-            }
-            default -> {
-            }
-        }
-    }
 
-    private void toggleMemberPermission(final Player player, final String actionValue) {
-        if (player == null || actionValue == null || actionValue.isBlank()) {
-            return;
-        }
-        final String[] parts = actionValue.split("\\|");
-        if (parts.length < 2) {
-            player.sendMessage("§cAction de permission invalide.");
-            return;
-        }
-        final UUID memberUuid = parseUuid(parts[0]);
-        if (memberUuid == null) {
-            player.sendMessage("§cMembre introuvable.");
-            return;
-        }
-        final String permissionKey = parts[1].trim();
-        if (permissionKey.isEmpty()) {
-            player.sendMessage("§cPermission invalide.");
-            return;
-        }
-        final String menuId = parts.length > 2 && !parts[2].trim().isEmpty()
-                ? parts[2].trim()
-                : "clan_member_permissions_menu";
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            return;
-        }
-        final boolean enabled = clanManager.toggleMemberPermission(player.getUniqueId(), memberUuid, permissionKey);
-        final String name = formatPermissionName(permissionKey);
-        player.sendMessage(enabled
-                ? "§aPermission activée: §f" + name
-                : "§cPermission désactivée: §f" + name);
-        reopenMenu(player, menuId);
-    }
 
-    private void applyMemberPreset(final Player player, final String actionValue) {
-        if (player == null || actionValue == null || actionValue.isBlank()) {
-            return;
-        }
-        final String[] parts = actionValue.split("\\|");
-        if (parts.length < 2) {
-            player.sendMessage("§cPreset de permissions invalide.");
-            return;
-        }
-        final UUID memberUuid = parseUuid(parts[0]);
-        if (memberUuid == null) {
-            player.sendMessage("§cMembre introuvable.");
-            return;
-        }
-        final String presetKey = parts[1].trim();
-        if (presetKey.isEmpty()) {
-            player.sendMessage("§cPreset invalide.");
-            return;
-        }
-        final String menuId = parts.length > 2 && !parts[2].trim().isEmpty()
-                ? parts[2].trim()
-                : "clan_member_permissions_menu";
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            return;
-        }
-        final boolean success = clanManager.applyPermissionPreset(player.getUniqueId(), memberUuid, presetKey);
-        final String name = formatPresetName(presetKey);
-        player.sendMessage(success
-                ? "§aPreset appliqué: §f" + name
-                : "§cImpossible d'appliquer le preset: §f" + name);
-        reopenMenu(player, menuId);
-    }
+
 
     private void handleSettingToggle(final Player player, final String value) {
         final PlayerSettingsManager manager = plugin.getPlayerSettingsManager();
@@ -692,7 +354,6 @@ public class ActionProcessor {
             return;
         }
 
-        final FriendManager friendManager = plugin.getFriendManager();
         switch (setting) {
             case EVERYONE -> {
                 for (Player online : Bukkit.getOnlinePlayers()) {
@@ -703,14 +364,7 @@ public class ActionProcessor {
             }
             case FRIENDS_ONLY -> {
                 for (Player online : Bukkit.getOnlinePlayers()) {
-                    if (online.equals(player)) {
-                        continue;
-                    }
-                    final boolean isFriend = friendManager != null
-                            && friendManager.areFriends(player.getUniqueId(), online.getUniqueId());
-                    if (isFriend) {
-                        player.showPlayer(plugin, online);
-                    } else {
+                    if (!online.equals(player)) {
                         player.hidePlayer(plugin, online);
                     }
                 }
@@ -725,128 +379,13 @@ public class ActionProcessor {
         }
     }
 
-    private void handleFriendAdd(final Player player, final String targetName) {
-        final FriendManager friendManager = plugin.getFriendManager();
-        if (friendManager == null) {
-            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            ChatInputManager.startFriendAddFlow(player);
-            return;
-        }
-        friendManager.sendFriendRequest(player, targetName);
-    }
 
-    private void handleFriendAccept(final Player player, final String targetName) {
-        final FriendManager friendManager = plugin.getFriendManager();
-        if (friendManager == null) {
-            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun joueur spécifié.");
-            return;
-        }
-        friendManager.acceptFriendRequest(player, targetName);
-    }
 
-    private void handleFriendRemove(final Player player, final String targetName) {
-        final FriendManager friendManager = plugin.getFriendManager();
-        if (friendManager == null) {
-            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun joueur spécifié.");
-            return;
-        }
-        friendManager.removeFriend(player, targetName);
-    }
 
-    private void handleGroupInvite(final Player player, final String targetName) {
-        final GroupManager groupManager = plugin.getGroupManager();
-        if (groupManager == null) {
-            player.sendMessage("§cLe système de groupes est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun joueur spécifié.");
-            return;
-        }
-        groupManager.inviteToGroup(player, targetName);
-    }
 
-    private void handleGroupKick(final Player player, final String targetName) {
-        final GroupManager groupManager = plugin.getGroupManager();
-        if (groupManager == null) {
-            player.sendMessage("§cLe système de groupes est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun joueur spécifié.");
-            return;
-        }
-        groupManager.kickMember(player, targetName);
-    }
 
-    private void handleClanInvite(final Player player, final String targetName) {
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            ChatInputManager.startClanInviteFlow(player);
-            return;
-        }
-        clanManager.inviteToClan(player, targetName, "");
-    }
 
-    private void handleClanPromote(final Player player, final String targetName) {
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun membre sélectionné.");
-            return;
-        }
-        final UUID targetUuid = resolvePlayerUuidByName(targetName);
-        if (targetUuid == null) {
-            player.sendMessage("§cJoueur introuvable.");
-            return;
-        }
-        final boolean success = clanManager.promoteMember(player.getUniqueId(), targetUuid);
-        final String resolved = resolvePlayerName(targetUuid);
-        if (success) {
-            player.sendMessage("§a" + (resolved != null ? resolved : targetName) + " a été promu dans le clan.");
-        } else {
-            player.sendMessage("§cImpossible de promouvoir " + (resolved != null ? resolved : targetName) + ".");
-        }
-    }
 
-    private void handleClanKick(final Player player, final String targetName) {
-        final ClanManager clanManager = plugin.getClanManager();
-        if (clanManager == null) {
-            player.sendMessage("§cLe système de clans est indisponible pour le moment.");
-            return;
-        }
-        if (targetName == null || targetName.isBlank()) {
-            player.sendMessage("§cAucun membre sélectionné.");
-            return;
-        }
-        final UUID targetUuid = resolvePlayerUuidByName(targetName);
-        if (targetUuid == null) {
-            player.sendMessage("§cJoueur introuvable.");
-            return;
-        }
-        if (!clanManager.kickMember(player.getUniqueId(), targetUuid)) {
-            final String resolved = resolvePlayerName(targetUuid);
-            player.sendMessage("§cImpossible d'expulser " + (resolved != null ? resolved : targetName) + ".");
-        }
-    }
 
     private String extractArgument(final String processed, final String token) {
         if (processed == null || token == null) {
@@ -909,110 +448,10 @@ public class ActionProcessor {
                 Bukkit.getScheduler().runTask(plugin, () -> menu.open(player)));
     }
 
-    private void handleClanRankChange(final Player player, final boolean promote) {
-        if (player == null) {
-            return;
-        }
-        final ClanManager clanManager = plugin.getClanManager();
-        final var placeholderManager = plugin.getSocialPlaceholderManager();
-        if (clanManager == null || placeholderManager == null) {
-            player.sendMessage("§cAction indisponible pour le moment.");
-            return;
-        }
-        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
-        if (target == null) {
-            player.sendMessage("§cAucun membre sélectionné.");
-            return;
-        }
-        final boolean success = promote
-                ? clanManager.promotePlayer(player.getUniqueId(), target)
-                : clanManager.demotePlayer(player.getUniqueId(), target);
-        final String targetName = resolvePlayerName(target);
-        if (success) {
-            player.sendMessage(promote
-                    ? "§a" + targetName + " a été promu."
-                    : "§e" + targetName + " a été rétrogradé.");
-        } else {
-            player.sendMessage(promote
-                    ? "§cImpossible de promouvoir " + targetName + "."
-                    : "§cImpossible de rétrograder " + targetName + ".");
-        }
-        reopenClanManagementMenu(player);
-    }
 
-    private void handleClanRemoval(final Player player, final boolean ban) {
-        if (player == null) {
-            return;
-        }
-        final ClanManager clanManager = plugin.getClanManager();
-        final var placeholderManager = plugin.getSocialPlaceholderManager();
-        if (clanManager == null || placeholderManager == null) {
-            player.sendMessage("§cAction indisponible pour le moment.");
-            return;
-        }
-        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
-        if (target == null) {
-            player.sendMessage("§cAucun membre sélectionné.");
-            return;
-        }
-        final boolean success = ban
-                ? clanManager.banMember(player.getUniqueId(), target)
-                : clanManager.kickMember(player.getUniqueId(), target);
-        final String targetName = resolvePlayerName(target);
-        if (success) {
-            player.sendMessage(ban
-                    ? "§c" + targetName + " a été banni du clan."
-                    : "§c" + targetName + " a été expulsé du clan.");
-            placeholderManager.clearClanPermissionTarget(player.getUniqueId());
-            openClanMembersMenu(player);
-        } else {
-            player.sendMessage(ban
-                    ? "§cImpossible de bannir " + targetName + "."
-                    : "§cImpossible d'expulser " + targetName + ".");
-            reopenClanManagementMenu(player);
-        }
-    }
 
-    private void handleClanLeadershipTransfer(final Player player) {
-        if (player == null) {
-            return;
-        }
-        final ClanManager clanManager = plugin.getClanManager();
-        final var placeholderManager = plugin.getSocialPlaceholderManager();
-        if (clanManager == null || placeholderManager == null) {
-            player.sendMessage("§cAction indisponible pour le moment.");
-            return;
-        }
-        final UUID target = placeholderManager.getClanPermissionTarget(player.getUniqueId());
-        if (target == null) {
-            player.sendMessage("§cAucun membre sélectionné.");
-            return;
-        }
-        final boolean success = clanManager.transferLeadership(player.getUniqueId(), target);
-        final String targetName = resolvePlayerName(target);
-        if (success) {
-            player.sendMessage("§aLe leadership a été transféré à §e" + targetName + "§a.");
-            placeholderManager.clearClanPermissionTarget(player.getUniqueId());
-            openClanMembersMenu(player);
-        } else {
-            player.sendMessage("§cImpossible de transférer le leadership à " + targetName + ".");
-            reopenClanManagementMenu(player);
-        }
-    }
 
-    private void reopenClanManagementMenu(final Player player) {
-        reopenMenu(player, "clan_member_management_menu");
-    }
 
-    private void openClanMembersMenu(final Player player) {
-        if (player == null) {
-            return;
-        }
-        final MenuManager menuManager = plugin.getMenuManager();
-        if (menuManager != null) {
-            Bukkit.getScheduler().runTask(plugin, () -> SocialHeavyMenus.openClanMembersMenu(menuManager, player));
-        }
-    }
 
     private void reopenMenu(final Player player, final String menuId) {
         if (player == null || menuId == null || menuId.isBlank()) {
