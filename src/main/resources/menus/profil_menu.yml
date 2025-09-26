@@ -61,7 +61,7 @@ items:
 
   stats-button:
     slot: 22
-    material: 'hdb:25442'
+    material: 'hdb:62255'
     name: '&b&lStatistiques Détaillées'
     lore:
       - '&7Suivez votre progression ! Consultez'
@@ -72,7 +72,7 @@ items:
 
   language-button:
     slot: 23
-    material: 'hdb:2736'
+    material: 'hdb:21905'
     name: '&f&lVotre Langue'
     lore:
       - '&7Choisissez la langue d''affichage'
@@ -83,7 +83,7 @@ items:
 
   settings-button:
     slot: 31
-    material: 'hdb:1218'
+    material: 'hdb:11276'
     name: '&d&lParamètres'
     lore:
       - '&7Personnalisez votre expérience de jeu'
