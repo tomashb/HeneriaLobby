@@ -53,10 +53,6 @@ public class MenuManager {
             return buildAndOpenSimpleMenu(player, menuId, placeholders, context);
         }
 
-        if (isHeavyMenu(menuId)) {
-            return buildAndOpenHeavyMenu(player, menuId, placeholders, context);
-        }
-
         final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
         if (menu == null) {
             return false;
@@ -113,39 +109,10 @@ public class MenuManager {
         };
     }
 
-    private boolean isHeavyMenu(final String menuId) {
-        return switch (menuId) {
-            case "stats_detailed_menu", "amis_menu", "amis_requests_menu", "amis_settings_menu",
-                    "amis_gift_menu", "groupe_menu", "party_invites_menu", "clan_menu",
-                    "clan_list_menu", "clan_members_menu", "clan_bank_menu", "clan_management_menu" -> true;
-            default -> false;
-        };
-    }
-
     private boolean buildAndOpenSimpleMenu(final Player player,
                                            final String menuId,
                                            final Map<String, String> placeholders,
                                            final MenuRenderContext context) {
-        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
-        if (menu == null) {
-            return false;
-        }
-        displayMenu(player, menu);
-        return true;
-    }
-
-    private boolean buildAndOpenHeavyMenu(final Player player,
-                                          final String menuId,
-                                          final Map<String, String> placeholders,
-                                          final MenuRenderContext context) {
-        return com.lobby.social.menus.SocialHeavyMenus.open(menuId, this, player, placeholders, context)
-                || openConfiguredMenu(player, menuId, placeholders, context);
-    }
-
-    private boolean openConfiguredMenu(final Player player,
-                                       final String menuId,
-                                       final Map<String, String> placeholders,
-                                       final MenuRenderContext context) {
         final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
         if (menu == null) {
             return false;

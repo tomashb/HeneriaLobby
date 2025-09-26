@@ -2,7 +2,6 @@ package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.servers.ServerManager;
-import com.lobby.social.ChatInputManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -206,7 +205,6 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
                 }
             }
             case COMMAND -> executeCommand(player, action.argument);
-            case CHAT_PROMPT -> startChatPrompt(player, action);
         }
     }
 
@@ -247,32 +245,6 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         }
         player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> player.performCommand(command));
-    }
-
-    private void startChatPrompt(final Player player, final MenuAction action) {
-        if (player == null || action == null) {
-            return;
-        }
-        try {
-            final String flow = action.flow();
-            if (flow != null && !flow.isBlank()) {
-                if ("clan_create".equalsIgnoreCase(flow)) {
-                    ChatInputManager.startClanCreationFlow(player, action.argument(), action.reopenMenu());
-                    return;
-                }
-            }
-            if (action.command() != null && !action.command().isBlank()) {
-                ChatInputManager.startCommandPrompt(player, action.argument(), action.command(), action.reopenMenu());
-                return;
-            }
-        } catch (final IllegalStateException exception) {
-            player.sendMessage("§cLes actions de chat sont indisponibles pour le moment.");
-            return;
-        }
-        if (action.argument() != null && !action.argument().isBlank()) {
-            player.closeInventory();
-            player.sendMessage(colorize(action.argument()));
-        }
     }
 
     private Map<String, String> buildPlaceholderMap(final Player player) {
@@ -379,17 +351,12 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         MENU,
         CLOSE_MENU,
         MESSAGE,
-        COMMAND,
-        CHAT_PROMPT
+        COMMAND
     }
 
-    private record MenuAction(ActionType type,
-                              String argument,
-                              String command,
-                              String reopenMenu,
-                              String flow) {
+    private record MenuAction(ActionType type, String argument) {
 
-        private static final MenuAction NONE = new MenuAction(ActionType.NONE, "", null, null, null);
+        private static final MenuAction NONE = new MenuAction(ActionType.NONE, "");
 
         private static MenuAction parse(final String raw, final ConfigurationSection section) {
             if (raw == null || raw.isBlank()) {
@@ -403,31 +370,13 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
             final String typeName = trimmed.substring(1, closingIndex).trim().toUpperCase(Locale.ROOT);
             final String argument = trimmed.substring(closingIndex + 1).trim();
             return switch (typeName) {
-                case "SERVER_SEND" -> new MenuAction(ActionType.SERVER_SEND, argument, null, null, null);
-                case "MENU" -> new MenuAction(ActionType.MENU, argument, null, null, null);
-                case "CLOSE_MENU" -> new MenuAction(ActionType.CLOSE_MENU, argument, null, null, null);
-                case "MESSAGE" -> new MenuAction(ActionType.MESSAGE, argument, null, null, null);
-                case "COMMAND" -> new MenuAction(ActionType.COMMAND, argument, null, null, null);
-                case "CHAT_PROMPT" -> {
-                    final String command = readChatPromptValue(section, "command");
-                    final String reopenMenu = readChatPromptValue(section, "reopen_menu");
-                    final String flow = readChatPromptValue(section, "flow");
-                    yield new MenuAction(ActionType.CHAT_PROMPT, argument, command, reopenMenu, flow);
-                }
+                case "SERVER_SEND" -> new MenuAction(ActionType.SERVER_SEND, argument);
+                case "MENU" -> new MenuAction(ActionType.MENU, argument);
+                case "CLOSE_MENU" -> new MenuAction(ActionType.CLOSE_MENU, argument);
+                case "MESSAGE" -> new MenuAction(ActionType.MESSAGE, argument);
+                case "COMMAND" -> new MenuAction(ActionType.COMMAND, argument);
                 default -> NONE;
             };
-        }
-
-        private static String readChatPromptValue(final ConfigurationSection section, final String key) {
-            if (section == null || key == null || key.isBlank()) {
-                return null;
-            }
-            final ConfigurationSection promptSection = section.getConfigurationSection("chat_prompt");
-            if (promptSection == null) {
-                return null;
-            }
-            final String value = promptSection.getString(key);
-            return (value == null || value.isBlank()) ? null : value;
         }
     }
 

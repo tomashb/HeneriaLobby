@@ -5,7 +5,6 @@ import com.google.common.io.ByteStreams;
 import com.lobby.LobbyPlugin;
 import com.lobby.economy.EconomyManager;
 import com.lobby.velocity.message.EconomyUpdateMessage;
-import com.lobby.velocity.message.FriendUpdateMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -333,8 +332,7 @@ public class VelocityManager {
         if (!enabled || !syncFriends) {
             return;
         }
-        final FriendUpdateMessage message = new FriendUpdateMessage(playerUuid, action, targetUuid);
-        sendSyncMessage("FRIEND_UPDATE", message.serialize());
+        plugin.getLogger().fine("Skipping deprecated friend sync update: " + action + " for " + playerUuid);
     }
 
     public void broadcastStatsUpdate(final UUID playerUuid, final String serializedData) {
