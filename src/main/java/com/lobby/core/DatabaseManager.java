@@ -612,13 +612,11 @@ public class DatabaseManager {
                     CREATE TABLE IF NOT EXISTS player_settings (
                         player_uuid VARCHAR(36) PRIMARY KEY,
                         private_messages BOOLEAN DEFAULT TRUE,
-                        friend_requests VARCHAR(20) DEFAULT 'EVERYONE',
                         group_requests VARCHAR(20) DEFAULT 'EVERYONE',
                         visibility VARCHAR(20) DEFAULT 'EVERYONE',
                         ui_sounds BOOLEAN DEFAULT TRUE,
                         particles BOOLEAN DEFAULT TRUE,
                         music BOOLEAN DEFAULT FALSE,
-                        friend_notifications BOOLEAN DEFAULT TRUE,
                         clan_notifications BOOLEAN DEFAULT TRUE,
                         system_notifications BOOLEAN DEFAULT TRUE,
                         language VARCHAR(5) DEFAULT 'fr',
@@ -632,13 +630,11 @@ public class DatabaseManager {
                 CREATE TABLE IF NOT EXISTS player_settings (
                     player_uuid TEXT PRIMARY KEY,
                     private_messages INTEGER DEFAULT 1,
-                    friend_requests TEXT DEFAULT 'EVERYONE',
                     group_requests TEXT DEFAULT 'EVERYONE',
                     visibility TEXT DEFAULT 'EVERYONE',
                     ui_sounds INTEGER DEFAULT 1,
                     particles INTEGER DEFAULT 1,
                     music INTEGER DEFAULT 0,
-                    friend_notifications INTEGER DEFAULT 1,
                     clan_notifications INTEGER DEFAULT 1,
                     system_notifications INTEGER DEFAULT 1,
                     language TEXT DEFAULT 'fr',
@@ -891,10 +887,6 @@ public class DatabaseManager {
     }
 
     private void createSocialTablesWithoutFK() throws SQLException {
-        createFriendSettingsTable();
-        createFriendsTable();
-        createFriendRequestsTable();
-        createFriendNotesTable();
         createGroupSettingsTable();
         createGroupsTable();
         createGroupMembersTable();
@@ -907,118 +899,6 @@ public class DatabaseManager {
         createClanTransactionsTable();
     }
 
-    private void createFriendsTable() throws SQLException {
-        if (databaseType == DatabaseType.MYSQL) {
-            final String sql = """
-                    CREATE TABLE IF NOT EXISTS friends (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        player_uuid VARCHAR(36) NOT NULL,
-                        friend_uuid VARCHAR(36) NOT NULL,
-                        status ENUM('PENDING','ACCEPTED','BLOCKED') DEFAULT 'PENDING' NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                        accepted_at TIMESTAMP NULL,
-                        blocked_at TIMESTAMP NULL,
-                        is_favorite BOOLEAN DEFAULT FALSE NOT NULL,
-                        UNIQUE KEY unique_friendship (player_uuid, friend_uuid),
-                        KEY idx_friends_player_uuid (player_uuid),
-                        KEY idx_friends_friend_uuid (friend_uuid),
-                        KEY idx_friends_status (status),
-                        KEY idx_friends_created_at (created_at)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    """;
-            executeSQL(sql);
-            addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
-            addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
-            return;
-        }
-
-        final String sql = """
-                CREATE TABLE IF NOT EXISTS friends (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_uuid VARCHAR(36) NOT NULL,
-                    friend_uuid VARCHAR(36) NOT NULL,
-                    status TEXT DEFAULT 'PENDING',
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    accepted_at TIMESTAMP NULL,
-                    blocked_at TIMESTAMP NULL,
-                    is_favorite BOOLEAN DEFAULT 0,
-                    UNIQUE (player_uuid, friend_uuid)
-                )
-                """;
-        executeSQL(sql);
-        if (createIndexes) {
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_player_uuid ON friends(player_uuid)");
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_friend_uuid ON friends(friend_uuid)");
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_status ON friends(status)");
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friends_created_at ON friends(created_at)");
-        }
-        addColumnIfNotExists("friends", "blocked_at", "TIMESTAMP NULL");
-        addColumnIfNotExists("friends", "is_favorite", "BOOLEAN DEFAULT FALSE NOT NULL");
-    }
-
-    private void createFriendRequestsTable() throws SQLException {
-        if (databaseType == DatabaseType.MYSQL) {
-            final String sql = """
-                    CREATE TABLE IF NOT EXISTS friend_requests (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        sender_uuid VARCHAR(36) NOT NULL,
-                        target_uuid VARCHAR(36) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                        UNIQUE KEY unique_request (sender_uuid, target_uuid),
-                        INDEX idx_friend_requests_sender_uuid (sender_uuid),
-                        INDEX idx_friend_requests_target_uuid (target_uuid)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    """;
-            executeSQL(sql);
-            return;
-        }
-
-        final String sql = """
-                CREATE TABLE IF NOT EXISTS friend_requests (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    sender_uuid VARCHAR(36) NOT NULL,
-                    target_uuid VARCHAR(36) NOT NULL,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    UNIQUE (sender_uuid, target_uuid)
-                )
-                """;
-        executeSQL(sql);
-        if (createIndexes) {
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_uuid ON friend_requests(sender_uuid)");
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_target_uuid ON friend_requests(target_uuid)");
-        }
-    }
-
-    private void createFriendNotesTable() throws SQLException {
-        if (databaseType == DatabaseType.MYSQL) {
-            final String sql = """
-                    CREATE TABLE IF NOT EXISTS friend_notes (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        player_uuid VARCHAR(36) NOT NULL,
-                        friend_uuid VARCHAR(36) NOT NULL,
-                        note TEXT,
-                        UNIQUE KEY unique_friend_note (player_uuid, friend_uuid),
-                        INDEX idx_friend_notes_player (player_uuid)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    """;
-            executeSQL(sql);
-            return;
-        }
-
-        final String sql = """
-                CREATE TABLE IF NOT EXISTS friend_notes (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    player_uuid VARCHAR(36) NOT NULL,
-                    friend_uuid VARCHAR(36) NOT NULL,
-                    note TEXT,
-                    UNIQUE (player_uuid, friend_uuid)
-                )
-                """;
-        executeSQL(sql);
-        if (createIndexes) {
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_notes_player ON friend_notes(player_uuid)");
-        }
-    }
 
     private void createGroupSettingsTable() throws SQLException {
         if (databaseType == DatabaseType.MYSQL) {
@@ -1079,64 +959,6 @@ public class DatabaseManager {
         }
     }
 
-    private void createFriendSettingsTable() throws SQLException {
-        if (databaseType == DatabaseType.MYSQL) {
-            final String sql = """
-                    CREATE TABLE IF NOT EXISTS friend_settings (
-                        player_uuid VARCHAR(36) PRIMARY KEY,
-                        accept_requests ENUM('ALL','FRIENDS_OF_FRIENDS','NONE') DEFAULT 'ALL' NOT NULL,
-                        show_online_status BOOLEAN DEFAULT TRUE NOT NULL,
-                        allow_notifications BOOLEAN DEFAULT TRUE NOT NULL,
-                        receive_notifications BOOLEAN DEFAULT TRUE NOT NULL,
-                        auto_accept_favorites BOOLEAN DEFAULT FALSE NOT NULL,
-                        auto_accept_friends BOOLEAN DEFAULT FALSE NOT NULL,
-                        allow_private_messages BOOLEAN DEFAULT TRUE NOT NULL,
-                        max_friends INT DEFAULT 100 NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                        INDEX idx_friend_settings_accept_requests (accept_requests)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-                    """;
-            executeSQL(sql);
-            addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT TRUE NOT NULL");
-            addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT FALSE NOT NULL");
-            addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT FALSE NOT NULL");
-            addColumnIfNotExists("friend_settings", "allow_private_messages", "BOOLEAN DEFAULT TRUE NOT NULL");
-            addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100 NOT NULL");
-            addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-            addColumnIfNotExists("friend_settings", "updated_at",
-                    "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP");
-            return;
-        }
-
-        final String sql = """
-                CREATE TABLE IF NOT EXISTS friend_settings (
-                    player_uuid VARCHAR(36) PRIMARY KEY,
-                    accept_requests TEXT DEFAULT 'ALL',
-                    show_online_status BOOLEAN DEFAULT 1,
-                    allow_notifications BOOLEAN DEFAULT 1,
-                    receive_notifications BOOLEAN DEFAULT 1,
-                    auto_accept_favorites BOOLEAN DEFAULT 0,
-                    auto_accept_friends BOOLEAN DEFAULT 0,
-                    allow_private_messages BOOLEAN DEFAULT 1,
-                    max_friends INT DEFAULT 100,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-                """;
-        executeSQL(sql);
-        if (createIndexes) {
-            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_settings_accept_requests ON friend_settings(accept_requests)");
-        }
-        addColumnIfNotExists("friend_settings", "allow_notifications", "BOOLEAN DEFAULT 1");
-        addColumnIfNotExists("friend_settings", "auto_accept_favorites", "BOOLEAN DEFAULT 0");
-        addColumnIfNotExists("friend_settings", "auto_accept_friends", "BOOLEAN DEFAULT 0");
-        addColumnIfNotExists("friend_settings", "allow_private_messages", "BOOLEAN DEFAULT 1");
-        addColumnIfNotExists("friend_settings", "max_friends", "INT DEFAULT 100");
-        addColumnIfNotExists("friend_settings", "created_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-        addColumnIfNotExists("friend_settings", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-    }
-
     private void addAllForeignKeys() {
         if (!enableForeignKeys) {
             plugin.getLogger().info("Foreign keys are disabled - skipping constraint creation");
@@ -1149,14 +971,6 @@ public class DatabaseManager {
         }
 
         plugin.getLogger().info("Adding foreign key constraints...");
-
-        addForeignKeyIfNotExists("friend_settings", "fk_friend_settings_player",
-                "player_uuid", "players", "uuid", "CASCADE");
-
-        addForeignKeyIfNotExists("friends", "fk_friends_player",
-                "player_uuid", "players", "uuid", "CASCADE");
-        addForeignKeyIfNotExists("friends", "fk_friends_friend",
-                "friend_uuid", "players", "uuid", "CASCADE");
 
         addForeignKeyIfNotExists("groups_table", "fk_groups_leader",
                 "leader_uuid", "players", "uuid", "CASCADE");
@@ -1465,7 +1279,7 @@ public class DatabaseManager {
         plugin.getLogger().info("Verifying database integrity...");
 
         final String[] requiredTables = {
-                "players", "friend_settings", "friends",
+                "players",
                 "groups_table", "group_members", "group_invitations",
                 "clans", "clan_members", "clan_ranks", "clan_invitations", "clan_transactions",
                 "shop_categories", "shop_items", "transactions"
@@ -1478,7 +1292,6 @@ public class DatabaseManager {
         }
 
         verifyTableStructure("players", "uuid", "username");
-        verifyTableStructure("friends", "player_uuid", "friend_uuid");
         verifyTableStructure("groups_table", "leader_uuid");
         verifyTableStructure("clans", "name", "tag");
 
@@ -1526,7 +1339,7 @@ public class DatabaseManager {
         final String[] tables = {
                 "clan_invitations", "clan_ranks", "clan_members", "clans",
                 "group_invitations", "group_members", "groups_table",
-                "friends", "friend_settings", "transactions",
+                "transactions",
                 "shop_items", "shop_categories", "players"
         };
 

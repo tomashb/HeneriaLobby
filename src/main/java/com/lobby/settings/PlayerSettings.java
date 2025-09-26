@@ -5,13 +5,11 @@ import java.util.Locale;
 public class PlayerSettings {
 
     private boolean privateMessages = true;
-    private FriendRequestSetting friendRequestSetting = FriendRequestSetting.EVERYONE;
     private GroupRequestSetting groupRequestSetting = GroupRequestSetting.EVERYONE;
     private VisibilitySetting visibilitySetting = VisibilitySetting.EVERYONE;
     private boolean uiSounds = true;
     private boolean particles = true;
     private boolean music = false;
-    private boolean friendNotifications = true;
     private boolean clanNotifications = true;
     private boolean systemNotifications = true;
     private String language = "fr";
@@ -20,24 +18,20 @@ public class PlayerSettings {
     }
 
     public PlayerSettings(final boolean privateMessages,
-                          final FriendRequestSetting friendRequestSetting,
                           final GroupRequestSetting groupRequestSetting,
                           final VisibilitySetting visibilitySetting,
                           final boolean uiSounds,
                           final boolean particles,
                           final boolean music,
-                          final boolean friendNotifications,
                           final boolean clanNotifications,
                           final boolean systemNotifications,
                           final String language) {
         this.privateMessages = privateMessages;
-        this.friendRequestSetting = friendRequestSetting == null ? FriendRequestSetting.EVERYONE : friendRequestSetting;
         this.groupRequestSetting = groupRequestSetting == null ? GroupRequestSetting.EVERYONE : groupRequestSetting;
         this.visibilitySetting = visibilitySetting == null ? VisibilitySetting.EVERYONE : visibilitySetting;
         this.uiSounds = uiSounds;
         this.particles = particles;
         this.music = music;
-        this.friendNotifications = friendNotifications;
         this.clanNotifications = clanNotifications;
         this.systemNotifications = systemNotifications;
         this.language = language == null || language.isBlank() ? "fr" : language.toLowerCase(Locale.ROOT);
@@ -49,16 +43,6 @@ public class PlayerSettings {
 
     public void setPrivateMessages(final boolean privateMessages) {
         this.privateMessages = privateMessages;
-    }
-
-    public FriendRequestSetting getFriendRequestSetting() {
-        return friendRequestSetting;
-    }
-
-    public void setFriendRequestSetting(final FriendRequestSetting friendRequestSetting) {
-        this.friendRequestSetting = friendRequestSetting == null
-                ? FriendRequestSetting.EVERYONE
-                : friendRequestSetting;
     }
 
     public GroupRequestSetting getGroupRequestSetting() {
@@ -105,14 +89,6 @@ public class PlayerSettings {
         this.music = music;
     }
 
-    public boolean isFriendNotifications() {
-        return friendNotifications;
-    }
-
-    public void setFriendNotifications(final boolean friendNotifications) {
-        this.friendNotifications = friendNotifications;
-    }
-
     public boolean isClanNotifications() {
         return clanNotifications;
     }
@@ -143,10 +119,6 @@ public class PlayerSettings {
         return privateMessages ? "&aActivé" : "&cDésactivé";
     }
 
-    public String getFriendRequestsDisplay() {
-        return friendRequestSetting.getColoredDisplay();
-    }
-
     public String getGroupRequestsDisplay() {
         return groupRequestSetting.getColoredDisplay();
     }
@@ -165,10 +137,6 @@ public class PlayerSettings {
 
     public String getMusicDisplay() {
         return music ? "&aActivé" : "&cDésactivé";
-    }
-
-    public String getFriendNotificationsDisplay() {
-        return friendNotifications ? "&aActivé" : "&cDésactivé";
     }
 
     public String getClanNotificationsDisplay() {

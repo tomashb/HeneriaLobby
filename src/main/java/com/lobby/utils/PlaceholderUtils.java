@@ -167,13 +167,11 @@ public final class PlaceholderUtils {
 
         String processed = text
                 .replace("%setting_private_messages_display%", settings.getPrivateMessagesDisplay())
-                .replace("%setting_friend_requests_display%", settings.getFriendRequestsDisplay())
                 .replace("%setting_group_requests_display%", settings.getGroupRequestsDisplay())
                 .replace("%setting_visibility_display%", settings.getVisibilityDisplay())
                 .replace("%setting_ui_sounds_display%", settings.getUiSoundsDisplay())
                 .replace("%setting_particles_display%", settings.getParticlesDisplay())
                 .replace("%setting_music_display%", settings.getMusicDisplay())
-                .replace("%setting_friend_notifications_display%", settings.getFriendNotificationsDisplay())
                 .replace("%setting_clan_notifications_display%", settings.getClanNotificationsDisplay())
                 .replace("%setting_system_notifications_display%", settings.getSystemNotificationsDisplay())
                 .replace("%setting_language_flag%", settings.getLanguageFlag())
