@@ -40,7 +40,6 @@ public class VelocityManager {
     private final boolean enabled;
     private final boolean syncEconomy;
     private final boolean syncStats;
-    private final boolean syncFriends;
     private final int syncIntervalSeconds;
     private BukkitTask syncTask;
 
@@ -55,7 +54,6 @@ public class VelocityManager {
             enabled = false;
             syncEconomy = false;
             syncStats = false;
-            syncFriends = false;
             syncIntervalSeconds = 0;
             velocityMessageListener = new VelocityMessageListener(this);
             syncMessageListener = new SyncMessageListener(this);
@@ -65,7 +63,6 @@ public class VelocityManager {
         this.enabled = configuration.getBoolean("velocity.enabled", true);
         this.syncEconomy = configuration.getBoolean("sync.economy", true);
         this.syncStats = configuration.getBoolean("sync.stats", false);
-        this.syncFriends = configuration.getBoolean("sync.friends", true);
         this.syncIntervalSeconds = Math.max(0, configuration.getInt("sync.interval_seconds", 30));
         this.velocityMessageListener = new VelocityMessageListener(this);
         this.syncMessageListener = new SyncMessageListener(this);
@@ -326,13 +323,6 @@ public class VelocityManager {
         }
         final EconomyUpdateMessage message = new EconomyUpdateMessage(player.getUniqueId(), player.getName(), coins, tokens);
         sendSyncMessage("ECONOMY_UPDATE", message.serialize());
-    }
-
-    public void broadcastFriendUpdate(final UUID playerUuid, final String action, final UUID targetUuid) {
-        if (!enabled || !syncFriends) {
-            return;
-        }
-        plugin.getLogger().fine("Skipping deprecated friend sync update: " + action + " for " + playerUuid);
     }
 
     public void broadcastStatsUpdate(final UUID playerUuid, final String serializedData) {

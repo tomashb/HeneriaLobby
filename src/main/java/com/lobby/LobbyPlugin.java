@@ -2,7 +2,6 @@ package com.lobby;
 
 import com.lobby.commands.AdminCommands;
 import com.lobby.commands.EconomyCommands;
-import com.lobby.commands.FriendsCommand;
 import com.lobby.commands.NPCCommands;
 import com.lobby.commands.PlayerCommands;
 import com.lobby.commands.ShopCommands;
@@ -11,7 +10,6 @@ import com.lobby.core.DatabaseManager;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.heads.HeadDatabaseManager;
-import com.lobby.friends.FriendManager;
 import com.lobby.holograms.HologramManager;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.GlobalListener;
@@ -53,7 +51,6 @@ public final class LobbyPlugin extends JavaPlugin {
     private LobbyManager lobbyManager;
     private AssetManager assetManager;
     private MenuManager menuManager;
-    private FriendManager friendManager;
     private ChatPromptManager chatPromptManager;
     private ConfirmationManager confirmationManager;
     private HeadDatabaseManager headDatabaseManager;
@@ -106,10 +103,9 @@ public final class LobbyPlugin extends JavaPlugin {
         npcManager.initialize();
         lobbyManager = new LobbyManager(this);
         lobbyManager.applyWorldSettings();
-        friendManager = new FriendManager(this);
         assetManager = new AssetManager(this);
         chatPromptManager = new ChatPromptManager(this);
-        menuManager = new MenuManager(this, assetManager, friendManager);
+        menuManager = new MenuManager(this, assetManager);
         getServer().getPluginManager().registerEvents(new GlobalListener(menuManager), this);
         getServer().getPluginManager().registerEvents(chatPromptManager, this);
         confirmationManager = new ConfirmationManager(this);
@@ -190,7 +186,6 @@ public final class LobbyPlugin extends JavaPlugin {
             assetManager.shutdown();
         }
         chatPromptManager = null;
-        friendManager = null;
         if (confirmationManager != null) {
             confirmationManager.clearAll();
         }
@@ -227,10 +222,6 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public MenuManager getMenuManager() {
         return menuManager;
-    }
-
-    public FriendManager getFriendManager() {
-        return friendManager;
     }
 
     public ChatPromptManager getChatPromptManager() {
@@ -335,7 +326,6 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("profil", playerCommands);
         registerCommand("discord", playerCommands);
         registerCommand("jeux", playerCommands);
-        registerCommand("amis", new FriendsCommand(menuManager));
 
         if (shopCommands != null) {
             registerCommand("shop", shopCommands);

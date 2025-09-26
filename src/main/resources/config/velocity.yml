@@ -27,5 +27,4 @@ servers:
 sync:
   economy: true
   stats: true
-  friends: true
   interval_seconds: 30

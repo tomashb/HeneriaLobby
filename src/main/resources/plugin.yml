@@ -27,9 +27,6 @@ commands:
   jeux:
     description: Ouvre le menu des jeux
     permission: lobby.use
-  amis:
-    description: Ouvre le menu des amis
-    permission: lobby.use
   serveurs:
     description: Ouvre le sélecteur de serveurs
     aliases: [server]

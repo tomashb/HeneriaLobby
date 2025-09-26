@@ -273,10 +273,7 @@ public class ActionProcessor {
             return false;
         }
         final String upper = action.toUpperCase(Locale.ROOT);
-        return upper.startsWith("[FRIEND")
-                || upper.startsWith("[TOGGLE_FRIEND")
-                || upper.startsWith("[CYCLE_FRIEND")
-                || upper.startsWith("[GROUP")
+        return upper.startsWith("[GROUP")
                 || upper.startsWith("[TOGGLE_GROUP")
                 || upper.startsWith("[CLAN")
                 || upper.startsWith("[TOGGLE_MEMBER")
@@ -333,20 +330,15 @@ public class ActionProcessor {
         final String prefix = "&8[&dParamètres&8] &7";
         final String message = switch (type) {
             case PRIVATE_MESSAGES -> prefix + "Messages privés " + settings.getPrivateMessagesDisplay() + "&7 !";
-            case FRIEND_REQUESTS -> prefix + "Demandes d'amis : " + settings.getFriendRequestsDisplay() + "&7 !";
             case GROUP_REQUESTS -> prefix + "Demandes de groupe : " + settings.getGroupRequestsDisplay() + "&7 !";
             case PLAYER_VISIBILITY -> prefix + "Visibilité : " + settings.getVisibilityDisplay() + "&7 !";
             case UI_SOUNDS -> prefix + "Sons d'interface " + settings.getUiSoundsDisplay() + "&7 !";
             case PARTICLES -> prefix + "Effets de particules " + settings.getParticlesDisplay() + "&7 !";
             case MUSIC -> prefix + "Musique d'ambiance " + settings.getMusicDisplay() + "&7 !";
-            case FRIEND_NOTIFICATIONS -> prefix + "Notifications d'amis " + settings.getFriendNotificationsDisplay() + "&7 !";
             case CLAN_NOTIFICATIONS -> prefix + "Notifications de clan " + settings.getClanNotificationsDisplay() + "&7 !";
             case SYSTEM_NOTIFICATIONS -> prefix + "Notifications système " + settings.getSystemNotificationsDisplay() + "&7 !";
         };
         player.sendMessage(MessageUtils.colorize(message));
-        if (type == SettingType.FRIEND_REQUESTS) {
-            player.sendMessage(MessageUtils.colorize("&7Cette restriction est maintenant active pour toutes les futures demandes."));
-        }
     }
 
     private void applyVisibilitySetting(final Player player, final VisibilitySetting setting) {

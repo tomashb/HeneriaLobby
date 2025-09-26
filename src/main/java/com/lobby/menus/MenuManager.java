@@ -7,12 +7,8 @@ import org.bukkit.entity.Player;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Lightweight menu manager responsible for instantiating menus and tracking
@@ -23,15 +19,12 @@ public class MenuManager {
 
     private final LobbyPlugin plugin;
     private final AssetManager assetManager;
-    private final com.lobby.friends.FriendManager friendManager;
     private final Map<UUID, Menu> openMenus = new ConcurrentHashMap<>();
 
     public MenuManager(final LobbyPlugin plugin,
-                       final AssetManager assetManager,
-                       final com.lobby.friends.FriendManager friendManager) {
+                       final AssetManager assetManager) {
         this.plugin = plugin;
         this.assetManager = assetManager;
-        this.friendManager = friendManager;
     }
 
     public AssetManager getAssetManager() {
@@ -56,13 +49,6 @@ public class MenuManager {
             return false;
         }
         final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
-
-        if (menuId.equals("amis_menu")) {
-            return openFriendsMenu(player, 0);
-        }
-        if (menuId.equals("amis_requests_menu")) {
-            return openFriendRequestsMenu(player);
-        }
 
         if (isSimpleMenu(menuId)) {
             return buildAndOpenSimpleMenu(player, menuId, placeholders, context);
@@ -154,150 +140,4 @@ public class MenuManager {
         }
     }
 
-    public boolean openFriendsMenu(final Player player, final int page) {
-        if (player == null) {
-            return false;
-        }
-        if (friendManager == null) {
-            player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cLe menu des amis est indisponible."));
-            return false;
-        }
-        final UUID playerUuid = player.getUniqueId();
-        final Set<UUID> onlineSnapshot = Bukkit.getOnlinePlayers().stream()
-                .map(Player::getUniqueId)
-                .collect(Collectors.toUnmodifiableSet());
-        return buildAndOpenHeavyMenu(player,
-                () -> new FriendMenuContext(friendManager.loadMenuData(playerUuid, onlineSnapshot), page),
-                (viewer, context) -> new com.lobby.menus.friends.FriendsMenu(plugin, this, assetManager,
-                        context.data().friends(), Math.max(0, context.page()), context.data().requests().size()));
-    }
-
-    public boolean openFriendRequestsMenu(final Player player) {
-        if (player == null) {
-            return false;
-        }
-        if (friendManager == null) {
-            player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cLes demandes d'amis sont indisponibles."));
-            return false;
-        }
-        final UUID playerUuid = player.getUniqueId();
-        return buildAndOpenHeavyMenu(player,
-                () -> friendManager.loadIncomingRequests(playerUuid),
-                (viewer, requests) -> new com.lobby.menus.friends.FriendRequestsMenu(plugin, this, assetManager, requests));
-    }
-
-    public void toggleFriendFavorite(final Player player, final UUID friendUuid, final int currentPage) {
-        if (player == null || friendUuid == null) {
-            return;
-        }
-        if (friendManager == null) {
-            player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cLe système d'amis est indisponible."));
-            return;
-        }
-        final UUID playerUuid = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final boolean updated = friendManager.toggleFavorite(playerUuid, friendUuid);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) {
-                    return;
-                }
-                if (updated) {
-                    player.sendMessage(com.lobby.utils.MessageUtils.colorize("&aFavori mis à jour."));
-                } else {
-                    player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cImpossible de mettre à jour ce favori."));
-                }
-                openFriendsMenu(player, currentPage);
-            });
-        });
-    }
-
-    public void handleFriendPrompt(final Player player, final String input) {
-        if (player == null) {
-            return;
-        }
-        if (friendManager == null) {
-            player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cLe système d'amis est indisponible."));
-            return;
-        }
-        final UUID playerUuid = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final com.lobby.friends.FriendOperationResult result = friendManager.sendFriendRequest(playerUuid, input);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) {
-                    return;
-                }
-                player.sendMessage(result.message());
-                openFriendsMenu(player, 0);
-            });
-        });
-    }
-
-    public void handleFriendRequestDecision(final Player player, final UUID senderUuid, final boolean accept) {
-        if (player == null || senderUuid == null) {
-            return;
-        }
-        if (friendManager == null) {
-            player.sendMessage(com.lobby.utils.MessageUtils.colorize("&cLe système d'amis est indisponible."));
-            return;
-        }
-        final UUID playerUuid = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final boolean success = accept
-                    ? friendManager.acceptRequest(playerUuid, senderUuid)
-                    : friendManager.declineRequest(playerUuid, senderUuid);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (!player.isOnline()) {
-                    return;
-                }
-                if (accept) {
-                    player.sendMessage(com.lobby.utils.MessageUtils.colorize(success
-                            ? "&aDemande d'ami acceptée !"
-                            : "&cImpossible d'accepter cette demande."));
-                } else {
-                    player.sendMessage(com.lobby.utils.MessageUtils.colorize(success
-                            ? "&eDemande d'ami refusée."
-                            : "&cImpossible de refuser cette demande."));
-                }
-                openFriendRequestsMenu(player);
-            });
-        });
-    }
-
-    public <T> boolean buildAndOpenHeavyMenu(final Player player,
-                                             final Supplier<T> dataSupplier,
-                                             final BiFunction<Player, T, Menu> menuFactory) {
-        if (player == null || dataSupplier == null || menuFactory == null) {
-            return false;
-        }
-        final UUID uuid = player.getUniqueId();
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            final T data;
-            try {
-                data = dataSupplier.get();
-            } catch (final Exception exception) {
-                plugin.getLogger().warning("Failed to prepare heavy menu: " + exception.getMessage());
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    final Player target = Bukkit.getPlayer(uuid);
-                    if (target != null && target.isOnline()) {
-                        target.sendMessage(com.lobby.utils.MessageUtils.colorize("&cCe menu est temporairement indisponible."));
-                    }
-                });
-                return;
-            }
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                final Player target = Bukkit.getPlayer(uuid);
-                if (target == null || !target.isOnline()) {
-                    return;
-                }
-                final Menu menu = menuFactory.apply(target, data);
-                if (menu != null) {
-                    displayMenu(target, menu);
-                }
-            });
-        });
-        return true;
-    }
-
-    private record FriendMenuContext(com.lobby.friends.FriendMenuData data, int page) {
-    }
 }
