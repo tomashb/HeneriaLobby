@@ -1,9 +1,12 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.friends.FriendsDataProvider;
+import com.lobby.friends.FriendsPlaceholderData;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -49,12 +52,17 @@ public class MenuManager {
             return false;
         }
         final String menuId = rawMenuId.toLowerCase(Locale.ROOT);
+        final Map<String, String> resolvedPlaceholders = new HashMap<>();
+        if (placeholders != null && !placeholders.isEmpty()) {
+            resolvedPlaceholders.putAll(placeholders);
+        }
+        populateMenuSpecificPlaceholders(player, menuId, resolvedPlaceholders);
 
         if (isSimpleMenu(menuId)) {
-            return buildAndOpenSimpleMenu(player, menuId, placeholders, context);
+            return buildAndOpenSimpleMenu(player, menuId, resolvedPlaceholders, context);
         }
 
-        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, placeholders, context);
+        final Menu menu = ConfiguredMenu.fromConfiguration(plugin, this, assetManager, menuId, resolvedPlaceholders, context);
         if (menu == null) {
             return false;
         }
@@ -123,6 +131,31 @@ public class MenuManager {
         }
         displayMenu(player, menu);
         return true;
+    }
+
+    private void populateMenuSpecificPlaceholders(final Player player,
+                                                  final String menuId,
+                                                  final Map<String, String> placeholders) {
+        if (player == null || menuId == null || placeholders == null) {
+            return;
+        }
+        if (!"profil_menu".equals(menuId)) {
+            return;
+        }
+        final FriendsDataProvider dataProvider = plugin.getFriendsDataProvider();
+        if (dataProvider == null) {
+            return;
+        }
+        final FriendsPlaceholderData data = dataProvider.resolve(player);
+        if (data == null) {
+            return;
+        }
+        data.toPlaceholderMap().forEach((key, value) -> {
+            if (key == null || key.isBlank()) {
+                return;
+            }
+            placeholders.put('%' + key + '%', value == null ? "" : value);
+        });
     }
 
     public void displayMenu(final Player player, final Menu menu) {
