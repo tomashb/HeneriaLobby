@@ -17,8 +17,8 @@ import com.lobby.menus.MenuManager;
 import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
+import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
-import com.lobby.friends.menu.NoopFriendsMenuActionHandler;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -116,7 +116,7 @@ public final class LobbyPlugin extends JavaPlugin {
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
-                new NoopFriendsMenuActionHandler());
+                new DefaultFriendsMenuActionHandler(this));
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
