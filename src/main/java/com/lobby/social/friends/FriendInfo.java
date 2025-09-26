@@ -11,6 +11,7 @@ public class FriendInfo {
     private final long friendsSince;
     private final long lastSeen;
     private final boolean favorite;
+    private final String note;
 
     public FriendInfo(final UUID uuid,
                       final String name,
@@ -18,7 +19,8 @@ public class FriendInfo {
                       final String server,
                       final long friendsSince,
                       final long lastSeen,
-                      final boolean favorite) {
+                      final boolean favorite,
+                      final String note) {
         this.uuid = uuid;
         this.name = name;
         this.online = online;
@@ -26,6 +28,7 @@ public class FriendInfo {
         this.friendsSince = friendsSince;
         this.lastSeen = lastSeen;
         this.favorite = favorite;
+        this.note = note;
     }
 
     public UUID getUuid() {
@@ -54,5 +57,9 @@ public class FriendInfo {
 
     public boolean isFavorite() {
         return favorite;
+    }
+
+    public String getNote() {
+        return note;
     }
 }

@@ -894,6 +894,7 @@ public class DatabaseManager {
         createFriendSettingsTable();
         createFriendsTable();
         createFriendRequestsTable();
+        createFriendNotesTable();
         createGroupSettingsTable();
         createGroupsTable();
         createGroupMembersTable();
@@ -985,6 +986,37 @@ public class DatabaseManager {
         if (createIndexes) {
             executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_sender_uuid ON friend_requests(sender_uuid)");
             executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_requests_target_uuid ON friend_requests(target_uuid)");
+        }
+    }
+
+    private void createFriendNotesTable() throws SQLException {
+        if (databaseType == DatabaseType.MYSQL) {
+            final String sql = """
+                    CREATE TABLE IF NOT EXISTS friend_notes (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        player_uuid VARCHAR(36) NOT NULL,
+                        friend_uuid VARCHAR(36) NOT NULL,
+                        note TEXT,
+                        UNIQUE KEY unique_friend_note (player_uuid, friend_uuid),
+                        INDEX idx_friend_notes_player (player_uuid)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                    """;
+            executeSQL(sql);
+            return;
+        }
+
+        final String sql = """
+                CREATE TABLE IF NOT EXISTS friend_notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    player_uuid VARCHAR(36) NOT NULL,
+                    friend_uuid VARCHAR(36) NOT NULL,
+                    note TEXT,
+                    UNIQUE (player_uuid, friend_uuid)
+                )
+                """;
+        executeSQL(sql);
+        if (createIndexes) {
+            executeSQL("CREATE INDEX IF NOT EXISTS idx_friend_notes_player ON friend_notes(player_uuid)");
         }
     }
 

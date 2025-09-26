@@ -38,6 +38,7 @@ public class FriendManager {
     private final Map<UUID, Set<UUID>> favoritesCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> pendingRequests = new ConcurrentHashMap<>();
     private final Map<UUID, FriendSettings> settingsCache = new ConcurrentHashMap<>();
+    private final Map<UUID, Map<UUID, String>> friendNotesCache = new ConcurrentHashMap<>();
     private final FriendRequestValidator friendRequestValidator;
     private final PlayerSettingsManager playerSettingsManager;
 
@@ -55,6 +56,7 @@ public class FriendManager {
         favoritesCache.clear();
         pendingRequests.clear();
         settingsCache.clear();
+        friendNotesCache.clear();
     }
 
     public boolean sendFriendRequest(final Player sender, final String targetName) {
@@ -297,6 +299,7 @@ public class FriendManager {
         if (velocityEnabled) {
             velocityManager.requestServerInfo();
         }
+        final Map<UUID, String> notes = friendNotesCache.computeIfAbsent(playerUUID, this::loadFriendNotes);
         final String query = "SELECT friend_uuid, accepted_at, is_favorite FROM friends WHERE player_uuid = ? AND status = 'ACCEPTED'";
         try (Connection connection = databaseManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
@@ -321,13 +324,112 @@ public class FriendManager {
                     final long acceptedAt = acceptedTimestamp != null ? acceptedTimestamp.getTime() : System.currentTimeMillis();
                     final long lastSeen = getLastSeen(friendUUID);
                     final boolean favorite = resultSet.getBoolean("is_favorite");
-                    friends.add(new FriendInfo(friendUUID, name, online, serverName, acceptedAt, lastSeen, favorite));
+                    final String note = notes.getOrDefault(friendUUID, null);
+                    friends.add(new FriendInfo(friendUUID, name, online, serverName, acceptedAt, lastSeen, favorite, note));
                 }
             }
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to load friend list for " + playerUUID, exception);
         }
         return friends;
+    }
+
+    public Map<UUID, String> getFriendNotes(final UUID playerUUID) {
+        if (playerUUID == null) {
+            return Map.of();
+        }
+        return Map.copyOf(friendNotesCache.computeIfAbsent(playerUUID, this::loadFriendNotes));
+    }
+
+    public String getFriendNote(final UUID playerUUID, final UUID friendUUID) {
+        if (playerUUID == null || friendUUID == null) {
+            return null;
+        }
+        return friendNotesCache.computeIfAbsent(playerUUID, this::loadFriendNotes)
+                .get(friendUUID);
+    }
+
+    public void setFriendNote(final UUID playerUUID, final UUID friendUUID, final String note) {
+        if (playerUUID == null || friendUUID == null) {
+            return;
+        }
+        final String sanitized = note == null ? null : note.trim();
+        final String query;
+        if (sanitized == null || sanitized.isEmpty()) {
+            deleteFriendNote(playerUUID, friendUUID);
+            return;
+        }
+        if (databaseManager.getDatabaseType() == DatabaseManager.DatabaseType.MYSQL) {
+            query = "INSERT INTO friend_notes (player_uuid, friend_uuid, note) VALUES (?, ?, ?) "
+                    + "ON DUPLICATE KEY UPDATE note = VALUES(note)";
+        } else {
+            query = "INSERT INTO friend_notes (player_uuid, friend_uuid, note) VALUES (?, ?, ?) "
+                    + "ON CONFLICT(player_uuid, friend_uuid) DO UPDATE SET note = excluded.note";
+        }
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, friendUUID.toString());
+            statement.setString(3, sanitized);
+            statement.executeUpdate();
+            friendNotesCache.compute(playerUUID, (uuid, map) -> {
+                final Map<UUID, String> updated = map == null ? new ConcurrentHashMap<>() : new ConcurrentHashMap<>(map);
+                updated.put(friendUUID, sanitized);
+                return updated;
+            });
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Failed to store friend note for " + playerUUID + " -> " + friendUUID, exception);
+        }
+    }
+
+    public void deleteFriendNote(final UUID playerUUID, final UUID friendUUID) {
+        if (playerUUID == null || friendUUID == null) {
+            return;
+        }
+        final String query = "DELETE FROM friend_notes WHERE player_uuid = ? AND friend_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            statement.setString(2, friendUUID.toString());
+            statement.executeUpdate();
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Failed to delete friend note for " + playerUUID + " -> " + friendUUID, exception);
+        }
+        friendNotesCache.computeIfPresent(playerUUID, (uuid, map) -> {
+            map.remove(friendUUID);
+            return map;
+        });
+    }
+
+    private void deleteFriendNotePair(final UUID playerOne, final UUID playerTwo) {
+        deleteFriendNote(playerOne, playerTwo);
+        deleteFriendNote(playerTwo, playerOne);
+    }
+
+    private Map<UUID, String> loadFriendNotes(final UUID playerUUID) {
+        final Map<UUID, String> notes = new ConcurrentHashMap<>();
+        if (playerUUID == null) {
+            return notes;
+        }
+        final String query = "SELECT friend_uuid, note FROM friend_notes WHERE player_uuid = ?";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerUUID.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    final String friend = resultSet.getString("friend_uuid");
+                    if (friend == null || friend.isBlank()) {
+                        continue;
+                    }
+                    notes.put(UUID.fromString(friend), resultSet.getString("note"));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to load friend notes for " + playerUUID, exception);
+        }
+        return notes;
     }
 
     public List<UUID> getPendingRequests(final UUID playerUUID) {
@@ -461,6 +563,7 @@ public class FriendManager {
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Failed to remove friendship", exception);
         }
+        deleteFriendNotePair(playerOne, playerTwo);
     }
 
     private Set<UUID> loadFriendsFromDatabase(final UUID playerUUID) {
@@ -1083,6 +1186,10 @@ public class FriendManager {
         favoritesCache.computeIfPresent(owner, (uuid, set) -> {
             set.remove(target);
             return set;
+        });
+        friendNotesCache.computeIfPresent(owner, (uuid, map) -> {
+            map.remove(target);
+            return map;
         });
     }
 

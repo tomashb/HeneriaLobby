@@ -129,6 +129,10 @@ public class SocialPlaceholderManager {
         replacements.put("%friends_free_slots%", "Illimité");
         replacements.put("%friend_requests%", "0");
         replacements.put("%friend_status%", "Disponible");
+        replacements.put("%friend_requests_count%", "0");
+        replacements.put("%friends_sort_mode%", "Priorité intelligente");
+        replacements.put("%messaging_status%", "Autorisés");
+        replacements.put("%visibility_status%", "Visible");
 
         if (player == null) {
             return replaceAll(text, replacements);
@@ -183,6 +187,7 @@ public class SocialPlaceholderManager {
         final int requestsReceived = friendManager.getPendingRequests(player.getUniqueId()).size();
         replacements.put("%friend_requests_received%", String.valueOf(requestsReceived));
         replacements.put("%friend_requests%", String.valueOf(requestsReceived));
+        replacements.put("%friend_requests_count%", String.valueOf(requestsReceived));
 
         final int requestsSent = friendManager.countSentRequests(player.getUniqueId());
         replacements.put("%friend_requests_sent%", String.valueOf(requestsSent));
@@ -198,6 +203,7 @@ public class SocialPlaceholderManager {
                 : formatAcceptMode(settings.getAcceptRequests()));
         replacements.put("%friend_request_mode%", formatDetailedAcceptMode(settings.getAcceptRequests()));
         replacements.put("%friend_requests_status%", formatAcceptMode(settings.getAcceptRequests()));
+        replacements.put("%friends_sort_mode%", "Priorité intelligente");
 
         final boolean notificationsEnabled = settings.isAllowNotifications();
         replacements.put("%friend_notifications%", notificationsEnabled ? "Activées" : "Désactivées");
@@ -207,6 +213,7 @@ public class SocialPlaceholderManager {
         replacements.put("%friend_visibility%", visible ? "Visible" : "Caché");
         replacements.put("%friend_visibility_mode%", formatVisibilityMode(visible));
         replacements.put("%friend_status%", visible ? "Disponible" : "Invisible");
+        replacements.put("%visibility_status%", visible ? "Visible" : "Invisible");
         replacements.put("%friend_jump_status%", visible ? "Autorisé" : "Bloqué");
 
         final boolean autoFavorites = settings.isAutoAcceptFavorites();
@@ -215,6 +222,7 @@ public class SocialPlaceholderManager {
 
         final boolean pmEnabled = settings.isAllowPrivateMessages();
         replacements.put("%friend_private_messages_status%", pmEnabled ? "Autorisés" : "Désactivés");
+        replacements.put("%messaging_status%", pmEnabled ? "Autorisés" : "Bloqués");
 
         final int maxFriends = settings.getMaxFriends();
         if (maxFriends <= 0) {
