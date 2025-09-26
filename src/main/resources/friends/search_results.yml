@@ -1,0 +1,73 @@
+# ===============================
+# RÉSULTATS DE RECHERCHE
+# ===============================
+
+menu:
+  title: "§8» §aRésultats: §f{recherche} §8({resultats})"
+  size: 54
+  
+# Slots pour les résultats (21 joueurs par page)
+result_slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34]
+
+# Navigation
+navigation:
+  previous_page:
+    slot: 47
+    hdb_id: 7827
+    name: "§c◀ Page Précédente"
+    
+  new_search:
+    slot: 49
+    hdb_id: 8726 # Loupe
+    name: "§a🔍 Nouvelle Recherche"
+    lore:
+      - "§7Effectuer une nouvelle recherche"
+      - ""
+      - "§8» §aCliquez pour rechercher"
+      
+  next_page:
+    slot: 51
+    hdb_id: 7828
+    name: "§a▶ Page Suivante"
+
+# Format d'un résultat de recherche
+search_result:
+  item: "PLAYER_HEAD"
+  name: "§e§l{nom_joueur}"
+  lore:
+    - "§7Informations du joueur:"
+    - "§8▸ §7Statut: {statut_en_ligne}"
+    - "§8▸ §7Niveau: §a{niveau}"
+    - "§8▸ §7Temps de jeu: §b{temps_jeu}"
+    - "§8▸ §7Dernière connexion: §e{derniere_co}"
+    - "§8▸ §7Amis en commun: §d{amis_communs}"
+    - "§8▸ §7Réputation: §6{reputation}/5 ⭐"
+    - ""
+    - "§7Compatibilité: §a{score_compatibilite}%"
+    - ""
+    - "§8▸ §aClique gauche §8: §7Envoyer demande"
+    - "§8▸ §eClique milieu §8: §7Voir profil détaillé"
+    - "§8▸ §cClique droit §8: §7Ajouter aux suggestions"
+  actions:
+    left_click: "send_friend_request"
+    middle_click: "view_detailed_profile"
+    right_click: "add_to_suggestions"
+
+# Messages spéciaux selon le statut
+status_formats:
+  online:
+    color: "§a"
+    text: "En ligne"
+    suffix: " §2●"
+  offline:
+    color: "§c"
+    text: "Hors ligne"
+    suffix: " §8●"
+  away:
+    color: "§e"
+    text: "Absent"
+    suffix: " §e◐"
+  busy:
+    color: "§c"
+    text: "Occupé"
+    suffix: " §c◐"

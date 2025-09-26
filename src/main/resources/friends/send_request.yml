@@ -1,0 +1,176 @@
+# ===============================
+# ENVOI DE DEMANDE D'AMITIÉ
+# ===============================
+
+menu:
+  title: "§8» §aEnvoyer à §e{target_player}"
+  size: 27
+
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 3, 5, 6, 7, 8, 9, 17, 18, 19, 25, 26]
+
+# Profil du joueur cible
+target_profile:
+  slot: 4
+  item: "PLAYER_HEAD" # Tête du joueur cible
+  name: "§e§l{target_player}"
+  lore:
+    - "§7Profil du joueur:"
+    - "§8▸ §7Statut: {statut_en_ligne}"
+    - "§8▸ §7Niveau: §a{niveau}"
+    - "§8▸ §7Temps de jeu: §b{temps_jeu}"
+    - "§8▸ §7Amis en commun: §d{amis_communs}"
+    - "§8▸ §7Réputation: §6{reputation}/5 ⭐"
+    - ""
+    - "§7Compatibilité estimée: {compatibilite_color}{compatibilite}%"
+
+# Messages prédéfinis
+predefined_messages:
+  message1:
+    slot: 10
+    hdb_id: 5315 # Livre
+    name: "§a📝 Message Amical"
+    message: "Salut ! J'aimerais t'ajouter en ami !"
+    lore:
+      - "§7Message prédéfini:"
+      - "§f\"Salut ! J'aimerais t'ajouter en ami !\""
+      - ""
+      - "§8» §aCliquez pour envoyer"
+      
+  message2:
+    slot: 11
+    hdb_id: 5315
+    name: "§e📝 Message Décontracté"
+    message: "Salut, on pourrait être amis ?"
+    lore:
+      - "§7Message prédéfini:"
+      - "§f\"Salut, on pourrait être amis ?\""
+      - ""
+      - "§8» §eCliquez pour envoyer"
+      
+  message3:
+    slot: 12
+    hdb_id: 5315
+    name: "§b📝 Message Contexte"
+    message: "Je t'ai vu sur le serveur, tu as l'air sympa !"
+    lore:
+      - "§7Message prédéfini:"
+      - "§f\"Je t'ai vu sur le serveur, tu as l'air sympa !\""
+      - ""
+      - "§8» §bCliquez pour envoyer"
+      
+  message4:
+    slot: 13
+    hdb_id: 5315
+    name: "§d📝 Message Amis Communs"
+    message: "On a des amis en commun, ça te dit d'être amis ?"
+    lore:
+      - "§7Message prédéfini:"
+      - "§f\"On a des amis en communs, ça te dit d'être amis ?\""
+      - ""
+      - "§7Visible uniquement si vous avez"
+      - "§7des amis en commun"
+      - ""
+      - "§8» §dCliquez pour envoyer"
+    visible_when: "{amis_communs} > 0"
+
+# Message personnalisé
+custom_message:
+  slot: 15
+  hdb_id: 1396 # Parchemin
+  name: "§6📝 Message Personnalisé"
+  lore:
+    - "§7Écrivez votre propre message"
+    - "§7personnalisé"
+    - ""
+    - "§6▸ Longueur max: §e120 caractères"
+    - "§6▸ Filtrage automatique activé"
+    - ""
+    - "§8» §6Cliquez pour écrire"
+  actions:
+    left_click: "write_custom_message"
+
+# Envoi sans message
+no_message:
+  slot: 16
+  hdb_id: 8127 # Simple
+  name: "§7📝 Sans Message"
+  lore:
+    - "§7Envoyer une demande simple"
+    - "§7sans message personnalisé"
+    - ""
+    - "§7Le joueur recevra une demande"
+    - "§7avec le message par défaut"
+    - ""
+    - "§8» §7Cliquez pour envoyer"
+  actions:
+    left_click: "send_without_message"
+
+# Navigation
+navigation:
+  cancel:
+    slot: 21
+    hdb_id: 5464 # X
+    name: "§c✗ Annuler"
+    lore:
+      - "§7Annuler l'envoi de la demande"
+      - "§7et revenir au menu précédent"
+      - ""
+      - "§8» §cCliquez pour annuler"
+    actions:
+      left_click: "cancel_request"
+      
+  back:
+    slot: 22
+    hdb_id: 3593 # Retour
+    name: "§e◀ Retour"
+    lore:
+      - "§7Revenir au menu précédent"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    actions:
+      left_click: "go_back"
+
+# Configuration des messages
+message_config:
+  max_length: 120
+  min_length: 5
+  enable_filter: true
+  blocked_words: ["spam", "noob", "sale"] # Exemple
+  auto_capitalize: true
+  trim_whitespace: true
+
+# Validation avant envoi
+validation:
+  check_friendship_status: true
+  check_block_status: true
+  check_friend_limit: true
+  check_request_cooldown: true
+  cooldown_duration: 300 # 5 minutes entre demandes au même joueur
+
+# Messages de confirmation
+confirmations:
+  request_sent: "§aDemande d'amitié envoyée à {player} !"
+  request_failed: "§cImpossible d'envoyer la demande à {player}"
+  already_friends: "§6Vous êtes déjà amis avec {player}"
+  player_blocked_you: "§c{player} vous a bloqué"
+  you_blocked_player: "§cVous avez bloqué {player}"
+  cooldown_active: "§cVeuillez attendre {time} avant de renvoyer une demande"
+  friend_limit_reached: "§c{player} a atteint sa limite d'amis"
+  your_limit_reached: "§cVous avez atteint votre limite d'amis ({limit})"
+  message_too_long: "§cMessage trop long (max {max} caractères)"
+  message_too_short: "§cMessage trop court (min {min} caractères)"
+  message_filtered: "§cVotre message contient des mots interdits"
+  player_offline: "§7{player} est hors ligne, la demande sera reçue à sa connexion"
+
+# Sons
+sounds:
+  open_menu: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  message_select: "UI_BUTTON_CLICK"
+  request_sent: "ENTITY_PLAYER_LEVELUP"
+  request_failed: "BLOCK_ANVIL_LAND"
+  cancel: "BLOCK_NOTE_BLOCK_BASS"
+  typing: "BLOCK_NOTE_BLOCK_PLING"
