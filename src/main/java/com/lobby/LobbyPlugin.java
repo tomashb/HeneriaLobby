@@ -2,6 +2,7 @@ package com.lobby;
 
 import com.lobby.commands.AdminCommands;
 import com.lobby.commands.EconomyCommands;
+import com.lobby.commands.FriendsCommand;
 import com.lobby.commands.NPCCommands;
 import com.lobby.commands.PlayerCommands;
 import com.lobby.commands.ShopCommands;
@@ -334,6 +335,7 @@ public final class LobbyPlugin extends JavaPlugin {
         registerCommand("profil", playerCommands);
         registerCommand("discord", playerCommands);
         registerCommand("jeux", playerCommands);
+        registerCommand("amis", new FriendsCommand(menuManager));
 
         if (shopCommands != null) {
             registerCommand("shop", shopCommands);

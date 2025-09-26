@@ -50,13 +50,6 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
             }
             return true;
         }
-        if (commandName.equals("amis")) {
-            final boolean opened = menuManager != null && menuManager.openFriendsMenu(player, 0);
-            if (!opened) {
-                MessageUtils.sendConfigMessage(player, "menus.not_found", Map.of("menu", "amis"));
-            }
-            return true;
-        }
         final String messagePath = COMMAND_MESSAGES.getOrDefault(commandName, "commands.unavailable");
         MessageUtils.sendConfigMessage(player, messagePath, Map.of("command", "/" + label));
         return true;
