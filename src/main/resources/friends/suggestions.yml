@@ -1,0 +1,171 @@
+# ===============================
+# SUGGESTIONS INTELLIGENTES
+# ===============================
+
+menu:
+  title: "§8» §eJoueurs Suggérés §8({suggestions})"
+  size: 54
+  auto_refresh: true
+  refresh_interval: 300 # 5 minutes
+
+# Décoration
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 53]
+
+# Slots pour suggestions (28 suggestions par page)
+suggestion_slots: [10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43]
+
+# Navigation et options
+navigation:
+  refresh_suggestions:
+    slot: 46
+    hdb_id: 1420 # Actualiser
+    name: "§b🔄 Actualiser les Suggestions"
+    lore:
+      - "§7Recalculer les suggestions"
+      - "§7basées sur vos dernières activités"
+      - ""
+      - "§b▸ Dernière mise à jour: §3{derniere_maj}"
+      - "§b▸ Prochaine MAJ auto: §3{prochaine_maj}"
+      - ""
+      - "§8» §bCliquez pour actualiser"
+    actions:
+      left_click: "refresh_suggestions"
+      
+  suggestion_settings:
+    slot: 47
+    hdb_id: 1275 # Engrenage
+    name: "§6⚙️ Paramètres des Suggestions"
+    lore:
+      - "§7Configurez les critères"
+      - "§7de suggestion d'amis"
+      - ""
+      - "§6▸ Amis mutuels: §e{critere_amis_mutuels}"
+      - "§6▸ Serveurs communs: §e{critere_serveurs}"
+      - "§6▸ Activités similaires: §e{critere_activites}"
+      - "§6▸ Compatibilité horaire: §e{critere_horaires}"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "open_suggestion_settings"
+      
+  back_to_add:
+    slot: 49
+    hdb_id: 3593 # Retour
+    name: "§e◀ Retour Ajout d'Amis"
+    lore:
+      - "§7Revenir au menu"
+      - "§7d'ajout d'amis"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    actions:
+      left_click: "back_to_add_friends"
+
+# Format d'une suggestion
+suggestion_item:
+  item: "PLAYER_HEAD"
+  name: "§e§l{nom_joueur} §7({score_suggestion}%)"
+  lore:
+    - "§7Joueur suggéré pour vous"
+    - ""
+    - "§7Informations générales:"
+    - "§8▸ §7Statut: {statut_en_ligne}"
+    - "§8▸ §7Niveau: §a{niveau}"
+    - "§8▸ §7Temps de jeu: §b{temps_jeu}"
+    - "§8▸ §7Réputation: §6{reputation}/5 ⭐"
+    - ""
+    - "§7Raisons de la suggestion:"
+    - "{raisons_suggestion}"
+    - ""
+    - "§7Score de compatibilité: {score_color}{score_suggestion}%"
+    - ""
+    - "§8▸ §aClique gauche §8: §7Envoyer demande"
+    - "§8▸ §eClique milieu §8: §7Voir profil détaillé"
+    - "§8▸ §cClique droit §8: §7Masquer cette suggestion"
+  actions:
+    left_click: "send_friend_request"
+    middle_click: "view_detailed_profile"
+    right_click: "hide_suggestion"
+
+# Types de raisons de suggestion
+suggestion_reasons:
+  mutual_friends:
+    icon: "§d◆"
+    format: "§d◆ §7{count} amis en commun: §d{noms_amis}"
+    weight_display: true
+    
+  common_servers:
+    icon: "§b◆"
+    format: "§b◆ §7Joue souvent sur: §b{serveurs_communs}"
+    weight_display: true
+    
+  similar_activities:
+    icon: "§a◆"
+    format: "§a◆ §7Activités similaires: §a{activites_communes}"
+    weight_display: true
+    
+  compatible_schedule:
+    icon: "§e◆"
+    format: "§e◆ §7Horaires compatibles (§e{compatibilite_horaire}%§7)"
+    weight_display: false
+    
+  high_reputation:
+    icon: "§6◆"
+    format: "§6◆ §7Joueur bien noté par la communauté"
+    weight_display: false
+    
+  new_player_friendly:
+    icon: "§2◆"
+    format: "§2◆ §7Accueillant envers les nouveaux joueurs"
+    weight_display: false
+
+# Scores et couleurs
+score_colors:
+  excellent: # 80-100%
+    color: "§a"
+    description: "Excellente compatibilité"
+  good: # 60-79%
+    color: "§e"
+    description: "Bonne compatibilité"
+  average: # 40-59%
+    color: "§6"
+    description: "Compatibilité moyenne"
+  low: # 20-39%
+    color: "§c"
+    description: "Faible compatibilité"
+
+# Paramètres de suggestion
+suggestion_settings:
+  min_score_display: 30 # Score minimum pour afficher
+  max_suggestions_total: 50 # Maximum stocké
+  max_suggestions_display: 28 # Par page
+  exclude_recent_rejections: true
+  exclude_timeout_days: 7 # Jours avant de re-suggérer après refus
+  
+  # Pondération des critères (total = 100%)
+  weights:
+    mutual_friends: 35
+    common_servers: 25
+    similar_activities: 20
+    compatible_schedule: 15
+    reputation_bonus: 5
+
+# Messages système
+messages:
+  no_suggestions: "§7Aucune suggestion disponible pour le moment"
+  suggestions_loading: "§7Calcul des suggestions en cours..."
+  suggestion_hidden: "§7Suggestion masquée pour {player}"
+  suggestions_refreshed: "§aSuggestions actualisées ! ({count} nouvelles)"
+  refresh_cooldown: "§cVeuillez attendre {time} avant d'actualiser"
+  suggestion_expired: "§7Cette suggestion n'est plus disponible"
+
+# Sons
+sounds:
+  open_suggestions: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  refresh_suggestions: "BLOCK_ENCHANTMENT_TABLE_USE"
+  send_request: "ENTITY_PLAYER_LEVELUP"
+  hide_suggestion: "BLOCK_NOTE_BLOCK_BASS"
+  settings: "UI_BUTTON_CLICK"

@@ -1,0 +1,203 @@
+# ===============================
+# CONFIGURATION AJOUT D'AMIS
+# ===============================
+
+menu:
+  title: "§8» §aAjouter un Ami"
+  size: 36
+  
+# Décoration avec vitres
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 28, 29, 33, 34, 35]
+
+items:
+  search_player:
+    slot: 10
+    hdb_id: 8726 # Loupe
+    name: "§a§l🔍 Rechercher un Joueur"
+    lore:
+      - "§7Tapez le nom exact du joueur"
+      - "§7que vous voulez ajouter"
+      - ""
+      - "§a▸ Recherches récentes: §2{recherches_recentes}"
+      - "§7▸ Dernière recherche: §8{derniere_recherche}"
+      - "§e▸ Réussite: §6{taux_reussite}%"
+      - ""
+      - "§8» §aCliquez pour rechercher"
+    actions:
+      left_click: "open_search_gui"
+      
+  suggestions:
+    slot: 11
+    hdb_id: 5315 # Livre ouvert
+    name: "§e§l📝 Joueurs Suggérés"
+    lore:
+      - "§7Suggestions intelligentes basées sur:"
+      - "§8▸ §7Amis en commun"
+      - "§8▸ §7Serveurs fréquentés"
+      - "§8▸ §7Activités similaires"
+      - "§8▸ §7Compatibilité horaire"
+      - ""
+      - "§e▸ Suggestions disponibles: §6{nb_suggestions}"
+      - "§7▸ Dernière mise à jour: §8{derniere_maj_suggestions}"
+      - ""
+      - "§8» §eCliquez pour voir les suggestions"
+    actions:
+      left_click: "open_suggestions"
+      
+  nearby_players:
+    slot: 12
+    hdb_id: 2975 # Boussole
+    name: "§b§l📍 Joueurs Proches"
+    lore:
+      - "§7Joueurs actuellement détectés:"
+      - ""
+      - "§b▸ À proximité (<100m): §3{joueurs_proches}"
+      - "§7▸ Dans votre monde: §8{joueurs_monde}"
+      - "§6▸ Sur le serveur: §e{joueurs_serveur}"
+      - "§d▸ Sur le réseau: §5{joueurs_reseau}"
+      - ""
+      - "§8» §bCliquez pour voir la liste"
+    actions:
+      left_click: "open_nearby"
+      
+  search_history:
+    slot: 13
+    hdb_id: 1396 # Parchemin
+    name: "§7§l📋 Historique & Statistiques"
+    lore:
+      - "§7Consultez vos données d'ajout d'amis"
+      - ""
+      - "§7▸ Recherches effectuées: §8{total_recherches}"
+      - "§7▸ Demandes envoyées: §8{demandes_envoyees_total}"
+      - "§7▸ Taux d'acceptation: §8{taux_acceptation}%"
+      - "§7▸ Dernière activité: §8{derniere_activite}"
+      - ""
+      - "§8» §7Cliquez pour consulter l'historique"
+    actions:
+      left_click: "open_history"
+      
+  import_friends:
+    slot: 14
+    hdb_id: 3621 # Dossier
+    name: "§d§l💾 Importer des Amis"
+    lore:
+      - "§7Importez vos amis depuis:"
+      - "§8▸ §7Autres serveurs du réseau"
+      - "§8▸ §7Fichiers de sauvegarde"
+      - "§8▸ §7Listes externes (Discord, etc.)"
+      - "§8▸ §7Anciens pseudos"
+      - ""
+      - "§d▸ Sources disponibles: §5{sources_import}"
+      - ""
+      - "§8» §dCliquez pour importer"
+    actions:
+      left_click: "open_import"
+      
+  back_to_main:
+    slot: 31
+    hdb_id: 3593 # Maison
+    name: "§e🏠 Retour Menu Principal"
+    lore:
+      - "§7Revenir au menu principal"
+      - "§7des amis"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    actions:
+      left_click: "back_to_main"
+
+# Configuration système de recherche
+search_system:
+  min_characters: 3
+  max_characters: 16
+  max_results_per_page: 21 # 3x7 dans un inventaire 54
+  search_timeout: 8000 # ms
+  cache_duration: 300 # secondes (5 minutes)
+  allow_partial_names: true
+  search_offline_players: true
+  exclude_banned_players: true
+  exclude_already_friends: true
+  
+  # Critères de recherche avancée
+  advanced_search:
+    by_uuid: true
+    by_display_name: true
+    by_previous_names: true
+    fuzzy_matching: true # Recherche approximative
+    
+# Système de suggestions intelligentes
+suggestion_system:
+  enabled: true
+  max_suggestions: 15
+  refresh_interval: 3600 # secondes (1 heure)
+  
+  # Critères et pondération
+  criteria:
+    mutual_friends:
+      weight: 35
+      min_mutual: 2
+      max_mutual_bonus: 15
+    common_servers:
+      weight: 25
+      days_lookback: 30
+    similar_activities:
+      weight: 20
+      activity_types: ["minigames", "survival", "creative", "pvp"]
+    playtime_compatibility:
+      weight: 15
+      timezone_tolerance: 3 # heures
+    reputation_score:
+      weight: 5
+      min_reputation: 3.0 # sur 5
+      
+  # Exclusions
+  exclusions:
+    recently_rejected: true # Si refusé dans les 7 derniers jours
+    blocked_players: true
+    banned_players: true
+    inactive_players: 90 # jours d'inactivité max
+
+# Système joueurs à proximité
+proximity_system:
+  enabled: true
+  max_distance: 150 # blocs
+  update_interval: 15 # secondes
+  include_same_world: true
+  include_same_server: true
+  include_bungee_network: true
+  
+  # Filtres
+  filters:
+    exclude_vanished: true
+    exclude_staff: false
+    exclude_afk: true # Si plugin AFK détecté
+    min_level: 0 # Niveau minimum requis
+    
+# Messages système
+messages:
+  search_prompt: "§aTapez le nom du joueur à rechercher dans le chat:"
+  search_cancel: "§cRecherche annulée (timeout ou 'cancel')"
+  search_cancelled_by_user: "§7Recherche annulée"
+  player_not_found: "§cAucun joueur trouvé avec ce nom"
+  too_many_results: "§eTrop de résultats ({count}), soyez plus précis"
+  already_friend: "§6{player} est déjà votre ami !"
+  request_already_sent: "§eVous avez déjà envoyé une demande à {player}"
+  request_sent_success: "§aDemande d'amitié envoyée à {player} !"
+  cannot_add_self: "§cVous ne pouvez pas vous ajouter vous-même"
+  player_blocked_you: "§cCe joueur vous a bloqué"
+  you_blocked_player: "§cVous avez bloqué ce joueur (débloquez-le d'abord)"
+  player_offline: "§7{player} est actuellement hors ligne"
+  target_friends_full: "§c{player} a atteint sa limite d'amis"
+  your_friends_full: "§cVous avez atteint votre limite d'amis ({limit})"
+  
+# Sons
+sounds:
+  open_menu: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  search_start: "BLOCK_NOTE_BLOCK_PLING"
+  player_found: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  request_sent: "ENTITY_PLAYER_LEVELUP"
+  error: "BLOCK_ANVIL_LAND"
+  suggestion_refresh: "BLOCK_ENCHANTMENT_TABLE_USE"
