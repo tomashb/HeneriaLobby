@@ -73,7 +73,10 @@ public class MenuManager {
         if (player == null) {
             return;
         }
-        openMenus.remove(player.getUniqueId());
+        final Menu menu = openMenus.remove(player.getUniqueId());
+        if (menu instanceof CloseableMenu closeableMenu) {
+            closeableMenu.handleClose(player);
+        }
     }
 
     public void closeAll() {

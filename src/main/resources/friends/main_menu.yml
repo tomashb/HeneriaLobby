@@ -1,0 +1,121 @@
+menu:
+  title: "§8» §aMenu des Amis"
+  size: 54
+  update_interval: 5
+
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+  gray_glass:
+    material: "GRAY_STAINED_GLASS_PANE"
+    name: " "
+    slots: [39, 40, 41]
+
+sounds:
+  open_menu: "BLOCK_CHEST_OPEN"
+  click_item: "UI_BUTTON_CLICK"
+  error: "BLOCK_ANVIL_LAND"
+
+items:
+  friends_list:
+    slot: 10
+    hdb_id: 1452
+    name: "§a§l📋 Liste de mes Amis"
+    lore:
+      - "§7Consultez votre liste d'amis"
+      - "§7et interagissez avec eux"
+      - ""
+      - "§a▸ Amis connectés: §2{amis_en_ligne}"
+      - "§c▸ Amis hors-ligne: §4{amis_hors_ligne}"
+      - "§e▸ Total: §6{total_amis}§7/§6{limite_amis}"
+      - ""
+      - "§8» §aCliquez pour ouvrir"
+    action: "open_friends_list"
+
+  add_friend:
+    slot: 11
+    hdb_id: 5694
+    name: "§a§l➕ Ajouter un Ami"
+    lore:
+      - "§7Envoyez une demande d'ami"
+      - "§7à un autre joueur"
+      - ""
+      - "§a▸ Demandes envoyées: §2{demandes_envoyees}"
+      - "§e▸ En attente: §6{demandes_en_attente}"
+      - ""
+      - "§8» §aCliquez pour ajouter"
+    action: "open_add_friend"
+
+  requests:
+    slot: 12
+    hdb_id: 3583
+    name: "§e§l📨 Demandes d'Amitié"
+    enchanted: true
+    lore:
+      - "§7Gérez vos demandes d'amitié"
+      - "§7en attente de réponse"
+      - ""
+      - "§e▸ Nouvelles demandes: §6{nouvelles_demandes}"
+      - "§7▸ Total en attente: §8{total_demandes}"
+      - ""
+      - "§8» §eCliquez pour gérer"
+    action: "open_requests"
+
+  blocked:
+    slot: 13
+    hdb_id: 5464
+    name: "§c§l🚫 Joueurs Bloqués"
+    lore:
+      - "§7Gérez votre liste de"
+      - "§7joueurs bloqués"
+      - ""
+      - "§c▸ Joueurs bloqués: §4{joueurs_bloques}"
+      - ""
+      - "§8» §cCliquez pour gérer"
+    action: "open_blocked"
+
+  settings:
+    slot: 14
+    hdb_id: 1275
+    name: "§6§l⚙️ Paramètres d'Amitié"
+    lore:
+      - "§7Configurez vos préférences"
+      - "§7concernant les amis"
+      - ""
+      - "§6▸ Demandes auto: §e{demandes_auto}"
+      - "§6▸ Notifications: §e{notifications}"
+      - "§6▸ Visibilité: §e{visibilite}"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    action: "open_settings"
+
+  favorites:
+    slot: 15
+    hdb_id: 6156
+    name: "§e§l🏆 Amis Favoris"
+    lore:
+      - "§7Vos amis les plus proches"
+      - "§7marqués comme favoris"
+      - ""
+      - "§e▸ Amis favoris: §6{amis_favoris}"
+      - "§a▸ En ligne: §2{favoris_en_ligne}"
+      - ""
+      - "§8» §eCliquez pour voir"
+    action: "open_favorites"
+
+  statistics:
+    slot: 16
+    hdb_id: 2967
+    name: "§b§l📊 Statistiques"
+    lore:
+      - "§7Consultez vos statistiques"
+      - "§7d'amitié détaillées"
+      - ""
+      - "§b▸ Temps total en jeu ensemble: §3{temps_total}"
+      - "§b▸ Messages échangés: §3{messages_total}"
+      - "§b▸ Ami depuis le plus longtemps: §3{ami_ancien}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    action: "open_statistics"

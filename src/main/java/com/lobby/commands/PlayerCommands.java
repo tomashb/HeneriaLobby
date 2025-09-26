@@ -3,6 +3,7 @@ package com.lobby.commands;
 import com.lobby.lobby.LobbyManager;
 import com.lobby.menus.MenuManager;
 import com.lobby.utils.MessageUtils;
+import com.lobby.friends.menu.FriendsMenuController;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -24,10 +25,14 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
 
     private final LobbyManager lobbyManager;
     private final MenuManager menuManager;
+    private final FriendsMenuController friendsMenuController;
 
-    public PlayerCommands(final LobbyManager lobbyManager, final MenuManager menuManager) {
+    public PlayerCommands(final LobbyManager lobbyManager,
+                          final MenuManager menuManager,
+                          final FriendsMenuController friendsMenuController) {
         this.lobbyManager = lobbyManager;
         this.menuManager = menuManager;
+        this.friendsMenuController = friendsMenuController;
     }
 
     @Override
@@ -63,7 +68,14 @@ public class PlayerCommands implements CommandExecutor, TabExecutor {
     private void handleLobbyCommand(final Player player, final String[] args) {
         if (args != null && args.length > 0) {
             final String argument = args[0].toLowerCase(Locale.ROOT);
-            if (argument.equals("clan") || argument.equals("friends") || argument.equals("groups")) {
+            if (argument.equals("friends")) {
+                if (friendsMenuController != null && friendsMenuController.openMainMenu(player)) {
+                    return;
+                }
+                MessageUtils.sendConfigMessage(player, "commands.unavailable", Map.of("command", "/lobby " + argument));
+                return;
+            }
+            if (argument.equals("clan") || argument.equals("groups")) {
                 MessageUtils.sendConfigMessage(player, "commands.unavailable", Map.of("command", "/lobby " + argument));
                 return;
             }

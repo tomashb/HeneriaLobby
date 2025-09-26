@@ -55,7 +55,14 @@ public class AssetManager {
             "hdb:13389",
             "hdb:1455",
             "hdb:32010",
-            "hdb:176"
+            "hdb:176",
+            "hdb:1452",
+            "hdb:5694",
+            "hdb:3583",
+            "hdb:5464",
+            "hdb:1275",
+            "hdb:6156",
+            "hdb:2967"
     );
     private static final Map<String, String> SERVER_PLACEHOLDER_KEYS = Map.of(
             "%lobby_online_bedwars%", "bedwars",
@@ -177,25 +184,29 @@ public class AssetManager {
 
     private Set<String> scanConfiguredHeadIds() {
         final Set<String> collected = new HashSet<>();
-        final File menusDirectory = new File(plugin.getDataFolder(), "menus");
-        if (!menusDirectory.exists() || !menusDirectory.isDirectory()) {
-            return collected;
+        scanDirectory(new File(plugin.getDataFolder(), "menus"), collected);
+        scanDirectory(new File(plugin.getDataFolder(), "friends"), collected);
+        return collected;
+    }
+
+    private void scanDirectory(final File directory, final Set<String> sink) {
+        if (directory == null || sink == null || !directory.exists() || !directory.isDirectory()) {
+            return;
         }
-        final File[] files = menusDirectory.listFiles((dir, name) -> name != null && name.endsWith(".yml"));
+        final File[] files = directory.listFiles((dir, name) -> name != null && name.endsWith(".yml"));
         if (files == null || files.length == 0) {
-            return collected;
+            return;
         }
         for (File file : files) {
             final YamlConfiguration configuration = new YamlConfiguration();
             try {
                 configuration.load(file);
-                collectHeadIdentifiers(configuration, collected);
+                collectHeadIdentifiers(configuration, sink);
             } catch (IOException | InvalidConfigurationException exception) {
                 plugin.getLogger().warning("Unable to parse menu configuration '" + file.getName() + "': "
                         + exception.getMessage());
             }
         }
-        return collected;
     }
 
     private void collectHeadIdentifiers(final ConfigurationSection section, final Set<String> sink) {
