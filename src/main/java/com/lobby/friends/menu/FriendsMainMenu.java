@@ -163,14 +163,45 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
             }
             final boolean shouldEnchant = shouldApplyEnchantment(definition, placeholders);
             if (shouldEnchant) {
-                meta.addEnchant(Enchantment.DURABILITY, 1, true);
-                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                boolean applied = addEnchantment(meta, Enchantment.UNBREAKING);
+                if (!applied) {
+                    final Enchantment legacy = Enchantment.getByName("DURABILITY");
+                    if (legacy != null) {
+                        applied = addEnchantment(meta, legacy);
+                    }
+                }
+                if (!applied) {
+                    for (Enchantment fallback : Enchantment.values()) {
+                        if (addEnchantment(meta, fallback)) {
+                            applied = true;
+                            break;
+                        }
+                    }
+                }
+                if (applied) {
+                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+                }
             } else {
-                meta.removeEnchant(Enchantment.DURABILITY);
+                meta.removeEnchant(Enchantment.UNBREAKING);
+                final Enchantment legacy = Enchantment.getByName("DURABILITY");
+                if (legacy != null) {
+                    meta.removeEnchant(legacy);
+                }
             }
             base.setItemMeta(meta);
         }
         return base;
+    }
+
+    private boolean addEnchantment(final ItemMeta meta, final Enchantment enchantment) {
+        if (meta == null || enchantment == null) {
+            return false;
+        }
+        try {
+            return meta.addEnchant(enchantment, 1, true);
+        } catch (RuntimeException exception) {
+            return false;
+        }
     }
 
     private boolean shouldApplyEnchantment(final FriendsMenuItem definition, final Map<String, String> placeholders) {
