@@ -173,7 +173,7 @@ public class FriendsMenu implements Menu, InventoryHolder {
         if (entry.favorite()) {
             final ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
                 item.setItemMeta(meta);
             }
@@ -224,7 +224,7 @@ public class FriendsMenu implements Menu, InventoryHolder {
                 }
             }
             if (evaluateEnchant && shouldEnchant(definition.enchantExpression(), placeholders)) {
-                meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
             base.setItemMeta(meta);
