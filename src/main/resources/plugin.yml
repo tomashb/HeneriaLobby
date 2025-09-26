@@ -44,15 +44,6 @@ commands:
   npc:
     description: Gestion des PNJ
     permission: lobby.admin.npc
-  friend:
-    description: Gestion des amis
-    permission: lobby.social.friend
-  group:
-    description: Gestion des groupes
-    permission: lobby.social.group
-  clan:
-    description: Gestion des clans
-    permission: lobby.social.clan
 permissions:
   lobby.use:
     default: true
@@ -78,9 +69,3 @@ permissions:
     default: op
   lobby.admin.shop:
     default: op
-  lobby.social.friend:
-    default: true
-  lobby.social.group:
-    default: true
-  lobby.social.clan:
-    default: true
