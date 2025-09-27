@@ -8,6 +8,7 @@ import com.lobby.menus.AssetManager;
 import com.lobby.menus.CloseableMenu;
 import com.lobby.menus.Menu;
 import com.lobby.menus.MenuManager;
+import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
@@ -89,13 +90,18 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
             playSound(player, configuration.getErrorSound());
             return;
         }
-        if ("back_to_profile".equalsIgnoreCase(item.getAction())) {
+        final String action = item.getAction();
+        if ("back_to_profile".equalsIgnoreCase(action)) {
             playSound(player, configuration.getClickSound());
             player.closeInventory();
             Bukkit.getScheduler().runTaskLater(plugin, () -> openProfileMenu(player), 1L);
             return;
         }
-        final boolean handled = actionHandler != null && actionHandler.handle(player, item.getAction());
+        if (handleInternalAction(player, action)) {
+            playSound(player, configuration.getClickSound());
+            return;
+        }
+        final boolean handled = actionHandler != null && actionHandler.handle(player, action);
         playSound(player, handled ? configuration.getClickSound() : configuration.getErrorSound());
     }
 
@@ -277,6 +283,79 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
             return;
         }
         menuManager.openMenu(player, "profil_menu");
+    }
+
+    private boolean handleInternalAction(final Player player, final String action) {
+        if (action == null || action.isBlank()) {
+            return false;
+        }
+        return switch (action.toLowerCase(Locale.ROOT)) {
+            case "open_settings" -> {
+                openSettings(player);
+                yield true;
+            }
+            case "open_statistics" -> {
+                openStatistics(player);
+                yield true;
+            }
+            case "open_blocked" -> {
+                openBlocked(player);
+                yield true;
+            }
+            case "open_favorites" -> {
+                openFavorites(player);
+                yield true;
+            }
+            default -> false;
+        };
+    }
+
+    private void openSettings(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                    new FriendSettingsMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des paramètres");
+            exception.printStackTrace();
+        }
+    }
+
+    private void openStatistics(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                    new FriendStatisticsMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des statistiques");
+            exception.printStackTrace();
+        }
+    }
+
+    private void openBlocked(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                    new BlockedPlayersMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture de la liste des bloqués");
+            exception.printStackTrace();
+        }
+    }
+
+    private void openFavorites(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                    new FavoriteFriendsMenu(plugin, friendsManager, player), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des favoris");
+            exception.printStackTrace();
+        }
     }
 
     private String colorize(final String input) {

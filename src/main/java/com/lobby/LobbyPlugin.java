@@ -17,6 +17,7 @@ import com.lobby.menus.MenuManager;
 import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
+import com.lobby.friends.commands.FriendsTestCommand;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
@@ -373,6 +374,8 @@ public final class LobbyPlugin extends JavaPlugin {
 
         final NPCCommands npcCommands = new NPCCommands(this);
         registerCommand("npc", npcCommands);
+
+        registerCommand("friendstest", new FriendsTestCommand(this, friendsManager));
     }
 
     private void registerCommand(final String name, final CommandExecutor executor) {

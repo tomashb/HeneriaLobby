@@ -44,6 +44,10 @@ commands:
   npc:
     description: Gestion des PNJ
     permission: lobby.admin.npc
+  friendstest:
+    description: Ouvre les menus d'amis pour les tests
+    permission: lobby.friends.test
+    usage: /friendstest <menu>
 permissions:
   lobby.use:
     default: true
@@ -68,4 +72,6 @@ permissions:
   lobby.admin.bypass:
     default: op
   lobby.admin.shop:
+    default: op
+  lobby.friends.test:
     default: op
