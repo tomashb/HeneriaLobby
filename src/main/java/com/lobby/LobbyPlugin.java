@@ -18,6 +18,7 @@ import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
 import com.lobby.friends.commands.FriendsTestCommand;
+import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
@@ -121,6 +122,7 @@ public final class LobbyPlugin extends JavaPlugin {
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
         friendsManager = new FriendsManager(this);
+        new FriendsConfigGenerator(this).generate();
         friendsMenuManager = new FriendsMenuManager(this);
         getServer().getPluginManager().registerEvents(friendsMenuManager, this);
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,

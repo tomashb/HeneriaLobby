@@ -1,0 +1,78 @@
+menu:
+  title: "§8» §a➕ Ajouter un Ami"
+  size: 54
+
+glass_slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+
+glass_item:
+  material: "LIME_STAINED_GLASS_PANE"
+  name: "§7"
+  lore: []
+
+navigation:
+  back:
+    slot: 45
+    material: "ARROW"
+    name: "§c« Retour"
+    actions:
+      left_click: "back_to_main"
+  close:
+    slot: 53
+    material: "BARRIER"
+    name: "§c✕ Fermer"
+    actions:
+      left_click: "close_menu"
+
+items:
+  search_input:
+    slot: 22
+    material: "NAME_TAG"
+    name: "§e🔍 Rechercher un Joueur"
+    lore:
+      - "§7Tapez le nom du joueur"
+      - "§7à ajouter"
+      - ""
+      - "§8» §eCliquez pour lancer la recherche"
+    actions:
+      left_click: "prompt_search"
+  recent_players:
+    slot: 20
+    material: "CLOCK"
+    name: "§b⏰ Joueurs Récents"
+    lore:
+      - "§7Derniers joueurs rencontrés"
+      - ""
+      - "§8» §bCliquez pour afficher"
+    actions:
+      left_click: "show_recent"
+  suggested_friends:
+    slot: 24
+    material: "COMPASS"
+    name: "§d💫 Suggestions"
+    lore:
+      - "§7Recommandations personnalisées"
+      - ""
+      - "§8» §dCliquez pour voir"
+    actions:
+      left_click: "show_suggestions"
+
+search_results_area:
+  start_slot: 28
+  end_slot: 34
+  empty_message:
+    material: "GRAY_STAINED_GLASS_PANE"
+    name: "§7Aucun résultat"
+    lore:
+      - "§7Utilisez la recherche ci-dessus"
+      - "§7pour trouver des joueurs"
+
+help:
+  slot: 40
+  material: "BOOK"
+  name: "§f📖 Comment ajouter un ami"
+  lore:
+    - "§7Guide rapide:" 
+    - "§8• §eCherchez un joueur par son nom"
+    - "§8• §eConsultez vos rencontres récentes"
+    - "§8• §eDécouvrez nos suggestions"
+    - "§8• §eCliquez sur un joueur pour inviter"

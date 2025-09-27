@@ -17,7 +17,7 @@ import java.util.Map;
 
 public final class FriendsMenuConfigurationLoader {
 
-    private static final String RESOURCE_PATH = "friends/main_menu.yml";
+    private static final String RESOURCE_PATH = "friends/friends_main_menu.yml";
 
     private FriendsMenuConfigurationLoader() {
     }
@@ -28,7 +28,7 @@ public final class FriendsMenuConfigurationLoader {
         if (!directory.exists() && !directory.mkdirs()) {
             plugin.getLogger().warning("Impossible de créer le dossier des menus d'amis.");
         }
-        final File file = new File(directory, "main_menu.yml");
+        final File file = new File(directory, "friends_main_menu.yml");
         if (!file.exists()) {
             try {
                 plugin.saveResource(RESOURCE_PATH, false);
