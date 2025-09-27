@@ -36,6 +36,7 @@ public class FriendRequestsMenu extends BaseFriendsMenu {
     private static final int[] GLASS_SLOTS = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
 
     private Inventory inventory;
+    private String currentTitle = TITLE_PREFIX;
     private List<FriendRequest> allRequests = new ArrayList<>();
 
     public FriendRequestsMenu(final LobbyPlugin plugin,
@@ -66,8 +67,8 @@ public class FriendRequestsMenu extends BaseFriendsMenu {
     }
 
     private void createMenu() {
-        final String title = TITLE_PREFIX + " (" + allRequests.size() + ")";
-        inventory = Bukkit.createInventory(null, INVENTORY_SIZE, title);
+        currentTitle = TITLE_PREFIX + " (" + allRequests.size() + ")";
+        inventory = Bukkit.createInventory(null, INVENTORY_SIZE, currentTitle);
         setupMenu();
         final Player viewer = getPlayer();
         if (viewer != null && viewer.isOnline()) {
@@ -287,6 +288,6 @@ public class FriendRequestsMenu extends BaseFriendsMenu {
 
     @Override
     public String getTitle() {
-        return inventory != null ? inventory.getTitle() : TITLE_PREFIX;
+        return currentTitle;
     }
 }

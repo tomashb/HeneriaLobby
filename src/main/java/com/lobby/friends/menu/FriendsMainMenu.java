@@ -31,12 +31,6 @@ public class FriendsMainMenu extends BaseFriendsMenu {
     private int onlineFriends;
     private int pendingRequests;
 
-    public FriendsMainMenu(final LobbyPlugin plugin, final FriendsManager friendsManager) {
-        this.plugin = plugin;
-        this.friendsManager = friendsManager;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
-    }
-
     public FriendsMainMenu(final LobbyPlugin plugin,
                            final FriendsManager friendsManager,
                            final FriendsMenuManager menuManager,
