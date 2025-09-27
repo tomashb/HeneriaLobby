@@ -18,6 +18,7 @@ import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
 import com.lobby.friends.commands.FriendsTestCommand;
+import com.lobby.friends.listeners.FriendAddChatListener;
 import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
@@ -75,6 +76,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private FriendsManager friendsManager;
     private FriendsMenuController friendsMenuController;
     private FriendsMenuManager friendsMenuManager;
+    private FriendAddChatListener friendAddChatListener;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -122,6 +124,9 @@ public final class LobbyPlugin extends JavaPlugin {
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
         friendsManager = new FriendsManager(this);
+        friendAddChatListener = new FriendAddChatListener(this);
+        getServer().getPluginManager().registerEvents(friendAddChatListener, this);
+        getLogger().info("Listener d'ajout d'amis enregistré !");
         new FriendsConfigGenerator(this).generate();
         friendsMenuManager = new FriendsMenuManager(this);
         getServer().getPluginManager().registerEvents(friendsMenuManager, this);
@@ -212,6 +217,7 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         friendsMenuController = null;
         friendsDataProvider = null;
+        friendAddChatListener = null;
         instance = null;
     }
 
@@ -313,6 +319,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendsMenuManager getFriendsMenuManager() {
         return friendsMenuManager;
+    }
+
+    public FriendAddChatListener getFriendAddChatListener() {
+        return friendAddChatListener;
     }
 
     public void reloadLobbyConfig() {
