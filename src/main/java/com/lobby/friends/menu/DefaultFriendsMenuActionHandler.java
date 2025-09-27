@@ -18,8 +18,6 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
-    private AddFriendMenu addFriendMenu;
-
     public DefaultFriendsMenuActionHandler(final LobbyPlugin plugin, final FriendsManager friendsManager) {
         this.plugin = plugin;
         this.friendsManager = friendsManager;
@@ -52,24 +50,13 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openAddFriend(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            if (addFriendMenu == null) {
-                addFriendMenu = new AddFriendMenu(plugin);
-            }
-            addFriendMenu.open(player);
-        });
+        runLater(player, () -> new AddFriendMenu(plugin, friendsManager, player).open());
         return true;
     }
 
     private boolean openFriendRequests(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu demandes d'amitié ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bfriend_requests.yml §7disponible");
-            // TODO: Implémenter FriendRequestsMenu.java
-        });
+        runLater(player, () -> new FriendRequestsMenu(plugin, friendsManager, player));
         return true;
     }
 
