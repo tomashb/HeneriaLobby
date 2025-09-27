@@ -62,12 +62,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openBlockedList(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu joueurs bloqués ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bblocked.yml §7disponible");
-        });
+        runLater(player, () -> new BlockedPlayersMenu(plugin, friendsManager, player).open());
         return true;
     }
 
