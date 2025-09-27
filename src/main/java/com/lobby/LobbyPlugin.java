@@ -17,6 +17,7 @@ import com.lobby.menus.MenuManager;
 import com.lobby.menus.prompt.ChatPromptManager;
 import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
+import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
 import com.lobby.npcs.NPCInteractionHandler;
@@ -68,6 +69,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private NametagManager nametagManager;
     private TablistManager tablistManager;
     private DefaultFriendsDataProvider friendsDataProvider;
+    private FriendsManager friendsManager;
     private FriendsMenuController friendsMenuController;
 
     public static LobbyPlugin getInstance() {
@@ -115,8 +117,9 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(chatPromptManager, this);
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
+        friendsManager = new FriendsManager(this);
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
-                new DefaultFriendsMenuActionHandler(this));
+                friendsManager, new DefaultFriendsMenuActionHandler(this, friendsManager));
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
@@ -196,6 +199,9 @@ public final class LobbyPlugin extends JavaPlugin {
         chatPromptManager = null;
         if (confirmationManager != null) {
             confirmationManager.clearAll();
+        }
+        if (friendsManager != null) {
+            friendsManager.shutdown();
         }
         friendsMenuController = null;
         friendsDataProvider = null;
@@ -288,6 +294,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendsMenuController getFriendsMenuController() {
         return friendsMenuController;
+    }
+
+    public FriendsManager getFriendsManager() {
+        return friendsManager;
     }
 
     public DefaultFriendsDataProvider getFriendsDataProvider() {
