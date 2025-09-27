@@ -1,0 +1,383 @@
+# ===============================
+# CONFIGURATION JOUEURS BLOQUÉS
+# ===============================
+
+menu:
+  title: "§8» §cJoueurs Bloqués ({count})"
+  size: 54
+  auto_refresh: true
+  refresh_interval: 30
+
+# Décoration
+decoration:
+  red_glass:
+    material: "RED_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,36,44,45,53]
+
+# Slots pour joueurs bloqués (28 par page)
+blocked_slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+
+# Actions groupées
+group_actions:
+  unblock_all:
+    slot: 46
+    hdb_id: 5694 # Débloquer
+    name: "§a§l✓ Débloquer Tous"
+    lore:
+      - "§7Débloquer tous les joueurs"
+      - "§7actuellement bloqués"
+      - ""
+      - "§a▸ Joueurs à débloquer: §2{blocked_count}"
+      - ""
+      - "§7Cette action:"
+      - "§8▸ §7Supprimera tous les blocages"
+      - "§8▸ §7Permettra les interactions"
+      - "§8▸ §7Ne restaurera PAS les amitiés"
+      - ""
+      - "§8» §aCliquez pour débloquer tous"
+    actions:
+      left_click: "unblock_all_players"
+      
+  block_history:
+    slot: 47
+    hdb_id: 1396 # Historique
+    name: "§7📋 Historique des Blocages"
+    lore:
+      - "§7Consultez l'historique complet"
+      - "§7de vos blocages et déblocages"
+      - ""
+      - "§7▸ Blocages totaux: §8{total_blocks_ever}"
+      - "§7▸ Déblocages: §8{total_unblocks}"
+      - "§7▸ Premier blocage: §8{first_block_date}"
+      - ""
+      - "§8» §7Cliquez pour voir l'historique"
+    actions:
+      left_click: "view_block_history"
+
+# Navigation
+navigation:
+  back_to_main:
+    slot: 49
+    hdb_id: 3593
+    name: "§e🏠 Retour Menu Principal"
+    actions:
+      left_click: "back_to_main"
+
+# Format d'un joueur bloqué
+blocked_player:
+  item: "PLAYER_HEAD"
+  head_effect: "grayscale" # Effet gris sur la tête
+  name: "§8§l{nom_joueur} §c🚫"
+  lore:
+    - "§7Joueur bloqué"
+    - ""
+    - "§7Informations du blocage:"
+    - "§8▸ §7Date du blocage: §c{date_blocage}"
+    - "§8▸ §7Raison: §e{raison_blocage}"
+    - "§8▸ §7Durée: §c{duree_blocage}"
+    - "§8▸ §7Bloqué par: §7{blocked_by}"
+    - ""
+    - "§7Restrictions actives:"
+    - "§8▸ §c✗ Messages privés"
+    - "§8▸ §c✗ Demandes d'amitié"
+    - "§8▸ §c✗ Téléportations"
+    - "§8▸ §c✗ Visibilité de votre statut"
+    - ""
+    - "§7Dernière interaction: §8{derniere_interaction}"
+    - ""
+    - "§8▸ §aClique gauche §8: §2Débloquer"
+    - "§8▸ §eClique milieu §8: §6Modifier la raison"
+    - "§8▸ §cClique droit §8: §4Options avancées"
+  actions:
+    left_click: "unblock_player"
+    middle_click: "edit_block_reason"
+    right_click: "open_block_options"
+
+# Types de blocage
+block_types:
+  manual:
+    name: "Blocage manuel"
+    description: "Bloqué manuellement par le joueur"
+    color: "§e"
+    icon: "👤"
+    
+  automatic:
+    name: "Blocage automatique"
+    description: "Bloqué automatiquement (spam détecté)"
+    color: "§c"
+    icon: "🤖"
+    
+  temporary:
+    name: "Blocage temporaire"
+    description: "Blocage avec expiration automatique"
+    color: "§6"
+    icon: "⏰"
+    
+  permanent:
+    name: "Blocage permanent"
+    description: "Blocage sans expiration"
+    color: "§4"
+    icon: "🚫"
+    
+  mutual:
+    name: "Blocage mutuel"
+    description: "Vous vous bloquez mutuellement"
+    color: "§8"
+    icon: "⚔"
+
+# Raisons de blocage prédéfinies
+predefined_reasons:
+  spam:
+    name: "Spam de messages"
+    description: "Envoie trop de messages répétitifs"
+    severity: "medium"
+    
+  harassment:
+    name: "Harcèlement"
+    description: "Comportement harcelant ou agressif"
+    severity: "high"
+    
+  inappropriate:
+    name: "Contenu inapproprié"
+    description: "Messages ou comportement inapproprié"
+    severity: "medium"
+    
+  unwanted_contact:
+    name: "Contact non désiré"
+    description: "Continue à contacter malgré les refus"
+    severity: "low"
+    
+  toxic_behavior:
+    name: "Comportement toxique"
+    description: "Attitude négative et toxique"
+    severity: "high"
+    
+  custom:
+    name: "Raison personnalisée"
+    description: "Raison spécifiée par l'utilisateur"
+    severity: "variable"
+
+# Menu options de blocage
+block_options_menu:
+  title: "§8» §cOptions pour §4{player_name}"
+  size: 27
+  
+  items:
+    edit_reason:
+      slot: 10
+      hdb_id: 1396 # Éditer
+      name: "§e✏️ Modifier la Raison"
+      lore:
+        - "§7Changez la raison du blocage"
+        - ""
+        - "§e▸ Raison actuelle: §6{current_reason}"
+        - ""
+        - "§8» §eCliquez pour modifier"
+      actions:
+        left_click: "edit_block_reason"
+        
+    extend_block:
+      slot: 11
+      hdb_id: 8127 # Étendre
+      name: "§6⏰ Étendre le Blocage"
+      lore:
+        - "§7Prolongez la durée du blocage"
+        - ""
+        - "§6▸ Expiration actuelle: §e{current_expiry}"
+        - ""
+        - "§7Options d'extension:"
+        - "§8▸ §7+1 jour"
+        - "§8▸ §7+1 semaine"
+        - "§8▸ §7+1 mois"
+        - "§8▸ §7Permanent"
+        - ""
+        - "§8» §6Cliquez pour étendre"
+      actions:
+        left_click: "extend_block_duration"
+        
+    view_history:
+      slot: 12
+      hdb_id: 2967 # Historique
+      name: "§b📊 Historique avec ce Joueur"
+      lore:
+        - "§7Consultez l'historique complet"
+        - "§7de vos interactions"
+        - ""
+        - "§b▸ Messages échangés: §3{messages_exchanged}"
+        - "§b▸ Durée d'amitié: §3{friendship_duration}"
+        - "§b▸ Dernière interaction: §3{last_interaction}"
+        - "§b▸ Nombre de blocages: §3{block_count}"
+        - ""
+        - "§8» §bCliquez pour voir l'historique"
+      actions:
+        left_click: "view_player_history"
+        
+    report_player:
+      slot: 13
+      hdb_id: 5464 # Signaler
+      name: "§c🚨 Signaler aux Modérateurs"
+      lore:
+        - "§7Signalez ce joueur aux"
+        - "§7modérateurs du serveur"
+        - ""
+        - "§c▸ Signalements précédents: §4{previous_reports}"
+        - ""
+        - "§7Raisons de signalement:"
+        - "§8▸ §7Harcèlement"
+        - "§8▸ §7Contenu inapproprié"
+        - "§8▸ §7Spam persistant"
+        - "§8▸ §7Autre..."
+        - ""
+        - "§8» §cCliquez pour signaler"
+      actions:
+        left_click: "report_to_staff"
+        
+    unblock_player:
+      slot: 15
+      hdb_id: 5694 # Débloquer
+      name: "§a✓ Débloquer ce Joueur"
+      lore:
+        - "§aDébloquez ce joueur pour"
+        - "§apermettre les interactions"
+        - ""
+        - "§7Cela permettra:"
+        - "§8▸ §aMessages privés"
+        - "§8▸ §aDemandes d'amitié"
+        - "§8▸ §aTéléportations"
+        - "§8▸ §aVisibilité du statut"
+        - ""
+        - "§8» §aCliquez pour débloquer"
+      actions:
+        left_click: "unblock_player"
+        
+    back:
+      slot: 22
+      hdb_id: 3593
+      name: "§7◀ Retour à la Liste"
+      actions:
+        left_click: "back_to_blocked_list"
+
+# Filtres de vue
+view_filters:
+  filter_by_type:
+    slot: 48
+    hdb_id: 1619 # Filtre
+    name: "§6🔍 Filtrer par Type"
+    lore:
+      - "§7Filtrez les joueurs bloqués"
+      - "§7par type de blocage"
+      - ""
+      - "§6▸ Filtre actuel: §e{current_filter}"
+      - ""
+      - "§7Options:"
+      - "§8▸ §7Tous les blocages"
+      - "§8▸ §eManuels uniquement"
+      - "§8▸ §cAutomatiques uniquement"
+      - "§8▸ §6Temporaires uniquement"
+      - "§8▸ §4Permanents uniquement"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    actions:
+      left_click: "cycle_block_filter"
+      
+  sort_blocked:
+    slot: 50
+    hdb_id: 2967 # Tri
+    name: "§b📋 Trier par"
+    lore:
+      - "§7Triez la liste des"
+      - "§7joueurs bloqués"
+      - ""
+      - "§b▸ Tri actuel: §3{current_sort}"
+      - ""
+      - "§7Options de tri:"
+      - "§8▸ §7Date de blocage (récent)"
+      - "§8▸ §7Date de blocage (ancien)"
+      - "§8▸ §7Nom alphabétique"
+      - "§8▸ §7Type de blocage"
+      - "§8▸ §7Durée restante"
+      - ""
+      - "§8» §bCliquez pour changer"
+    actions:
+      left_click: "cycle_sort_method"
+
+# Statistiques des blocages
+block_statistics:
+  stats_panel:
+    slot: 52
+    hdb_id: 2967 # Stats
+    name: "§d📊 Statistiques de Blocage"
+    lore:
+      - "§7Statistiques de vos blocages"
+      - ""
+      - "§d▸ Total bloqués actuellement: §5{current_blocked}"
+      - "§d▸ Blocages historiques: §5{total_blocks_ever}"
+      - "§d▸ Déblocages effectués: §5{total_unblocks}"
+      - "§d▸ Blocages automatiques: §5{auto_blocks}"
+      - "§d▸ Moyenne de durée: §5{average_duration}"
+      - ""
+      - "§7Raison la plus fréquente: §5{most_common_reason}"
+      - ""
+      - "§8» §dCliquez pour plus de stats"
+    actions:
+      left_click: "view_block_statistics"
+
+# Configuration des blocages
+block_configuration:
+  auto_unblock_expired: true
+  allow_mutual_unblock: false
+  log_block_actions: true
+  notify_block_expiry: true
+  max_blocked_players: 100
+  
+  # Durées prédéfinies (en secondes)
+  durations:
+    temporary_short: 3600 # 1 heure
+    temporary_medium: 86400 # 1 jour
+    temporary_long: 604800 # 1 semaine
+    temporary_extended: 2592000 # 1 mois
+    permanent: -1 # Permanent
+
+# Messages système
+messages:
+  player_unblocked: "§a{player} a été débloqué avec succès"
+  player_already_unblocked: "§7{player} n'était pas bloqué"
+  all_players_unblocked: "§aTous les joueurs ont été débloqués ({count} joueurs)"
+  no_blocked_players: "§7Vous n'avez bloqué aucun joueur"
+  block_reason_updated: "§aRaison de blocage mise à jour pour {player}"
+  block_extended: "§6Blocage de {player} étendu jusqu'au {new_expiry}"
+  report_sent: "§aSignalement envoyé aux modérateurs concernant {player}"
+  max_blocks_reached: "§cVous avez atteint la limite de joueurs bloqués ({max})"
+  block_expired: "§7Le blocage de {player} a expiré automatiquement"
+  
+# Confirmations
+confirmations:
+  unblock_player:
+    title: "§aConfirmer le déblocage"
+    message: "§7Êtes-vous sûr de vouloir débloquer §a{player}§7 ?"
+    confirm: "§a✓ Oui, débloquer"
+    cancel: "§c✗ Annuler"
+    
+  unblock_all:
+    title: "§cConfirmer le déblocage massif"
+    message: "§7Êtes-vous sûr de vouloir débloquer §cTOUS§7 les joueurs bloqués ?"
+    details: "§7Cela affectera §c{count}§7 joueurs"
+    confirm: "§c✓ Oui, débloquer tous"
+    cancel: "§a✗ Annuler"
+    
+  extend_block:
+    title: "§6Confirmer l'extension"
+    message: "§7Étendre le blocage de §6{player}§7 ?"
+    details: "§7Nouvelle expiration: §6{new_expiry}"
+    confirm: "§6✓ Confirmer"
+    cancel: "§c✗ Annuler"
+
+# Sons
+sounds:
+  player_unblocked: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  all_unblocked: "ENTITY_PLAYER_LEVELUP"
+  block_extended: "BLOCK_NOTE_BLOCK_PLING"
+  report_sent: "ENTITY_VILLAGER_YES"
+  filter_changed: "UI_BUTTON_CLICK"
+  error: "BLOCK_ANVIL_LAND"
