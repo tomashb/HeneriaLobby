@@ -16,6 +16,8 @@ import java.util.Locale;
 public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler {
 
     private final LobbyPlugin plugin;
+    private FriendsListMenu friendsListMenu;
+    private AddFriendMenu addFriendMenu;
 
     public DefaultFriendsMenuActionHandler(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -43,11 +45,10 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
     private boolean openFriendsList(final Player player) {
         closeInventory(player);
         runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu liste des amis ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bfriends_list.yml §7disponible");
-            // TODO: Implémenter FriendsListMenu.java
+            if (friendsListMenu == null) {
+                friendsListMenu = new FriendsListMenu(plugin);
+            }
+            friendsListMenu.open(player);
         });
         return true;
     }
@@ -55,11 +56,10 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
     private boolean openAddFriend(final Player player) {
         closeInventory(player);
         runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu ajout d'ami ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §badd_friend.yml §7disponible");
-            // TODO: Implémenter AddFriendMenu.java
+            if (addFriendMenu == null) {
+                addFriendMenu = new AddFriendMenu(plugin);
+            }
+            addFriendMenu.open(player);
         });
         return true;
     }
