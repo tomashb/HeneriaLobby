@@ -1,5 +1,6 @@
 package com.lobby.events;
 
+import com.lobby.LobbyPlugin;
 import com.lobby.core.PlayerDataManager;
 import com.lobby.economy.EconomyManager;
 import com.lobby.utils.MessageUtils;
@@ -10,12 +11,18 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+import java.util.UUID;
+
 public class PlayerJoinLeaveEvent implements Listener {
 
+    private final LobbyPlugin plugin;
     private final PlayerDataManager playerDataManager;
     private final EconomyManager economyManager;
 
-    public PlayerJoinLeaveEvent(final PlayerDataManager playerDataManager, final EconomyManager economyManager) {
+    public PlayerJoinLeaveEvent(final LobbyPlugin plugin,
+                                final PlayerDataManager playerDataManager,
+                                final EconomyManager economyManager) {
+        this.plugin = plugin;
         this.playerDataManager = playerDataManager;
         this.economyManager = economyManager;
     }
@@ -29,6 +36,31 @@ public class PlayerJoinLeaveEvent implements Listener {
             economyManager.handlePlayerJoin(player.getUniqueId(), player.getName());
         }
         broadcastConnectionMessage("&7[&a+&7] &a" + player.getName());
+
+        final UUID playerUuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            if (plugin.getFriendCodeManager() == null) {
+                return;
+            }
+
+            final String existingCode = plugin.getFriendCodeManager().getPlayerCode(playerUuid);
+            if (existingCode != null) {
+                return;
+            }
+
+            final String newCode = plugin.getFriendCodeManager().generateUniqueCode(playerUuid);
+            if (newCode == null) {
+                return;
+            }
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                final Player online = Bukkit.getPlayer(playerUuid);
+                if (online != null) {
+                    online.sendMessage("§a✅ Votre code d'ami a été généré : §2" + newCode);
+                    online.sendMessage("§7Partagez-le pour que d'autres puissent vous ajouter !");
+                }
+            });
+        });
     }
 
     @EventHandler

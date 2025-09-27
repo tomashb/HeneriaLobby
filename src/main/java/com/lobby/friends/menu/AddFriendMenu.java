@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.listeners.FriendAddChatListener;
+import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.FriendsMainMenu;
 import com.lobby.friends.menu.FriendsMenuManager;
@@ -18,7 +19,9 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Menu dedicated to the different options available when adding a friend.
@@ -107,21 +110,20 @@ public class AddFriendMenu implements Listener {
         inventory.setItem(NEARBY_SLOT, nearby);
 
         final ItemStack importCode = createItem(Material.WRITABLE_BOOK, "§d💾 Code d'Ami");
-        final ItemMeta importMeta = importCode.getItemMeta();
-        if (importMeta != null) {
-            final String code = "#" + player.getName().toUpperCase().substring(0, Math.min(4, player.getName().length())) + "1234";
-            importMeta.setLore(Arrays.asList(
-                    "§7Utilisez un code d'ami pour",
-                    "§7ajouter rapidement quelqu'un",
-                    "",
-                    "§d▸ Votre code: §f" + code,
-                    "§d▸ Saisissez un code reçu",
-                    "",
-                    "§8» §dCliquez pour utiliser un code"
-            ));
-            importCode.setItemMeta(importMeta);
-        }
         inventory.setItem(IMPORT_SLOT, importCode);
+
+        final FriendCodeManager codeManager = plugin.getFriendCodeManager();
+        if (codeManager == null) {
+            updateFriendCodeItem(null, "§cGestionnaire de codes indisponible.");
+        } else {
+            final String cachedCode = codeManager.getCachedCode(player.getUniqueId());
+            if (cachedCode != null) {
+                updateFriendCodeItem(cachedCode, null);
+            } else {
+                updateFriendCodeItem(null, "§7Chargement du code...");
+            }
+            loadFriendCodeAsync(codeManager);
+        }
 
         setPendingItem(0);
 
@@ -171,6 +173,61 @@ public class AddFriendMenu implements Listener {
             pending.setItemMeta(pendingMeta);
         }
         inventory.setItem(PENDING_SLOT, pending);
+    }
+
+    private void loadFriendCodeAsync(final FriendCodeManager codeManager) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String code = codeManager.getPlayerCode(player.getUniqueId());
+            if (code == null) {
+                code = codeManager.generateUniqueCode(player.getUniqueId());
+            }
+            final String resolvedCode = code;
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (!player.isOnline()) {
+                    return;
+                }
+                if (resolvedCode != null) {
+                    updateFriendCodeItem(resolvedCode, null);
+                } else {
+                    updateFriendCodeItem(null, "§cImpossible de récupérer votre code.");
+                }
+            });
+        });
+    }
+
+    private void updateFriendCodeItem(final String friendCode, final String statusLine) {
+        final ItemStack item = inventory.getItem(IMPORT_SLOT);
+        if (item == null || item.getType() == Material.AIR) {
+            return;
+        }
+        final ItemMeta meta = item.getItemMeta();
+        if (meta == null) {
+            return;
+        }
+
+        final List<String> lore = new ArrayList<>();
+        lore.add("§7Utilisez un code d'ami pour");
+        lore.add("§7ajouter rapidement quelqu'un");
+        lore.add("");
+
+        if (friendCode != null) {
+            lore.add("§d▸ Votre code: §f" + friendCode);
+        } else {
+            lore.add("§d▸ Votre code: §c(indisponible)");
+        }
+
+        if (statusLine != null && !statusLine.isEmpty()) {
+            lore.add(statusLine);
+        } else {
+            lore.add("§d▸ Saisissez un code reçu");
+        }
+
+        lore.add("");
+        lore.add("§8» §dCliquez pour utiliser un code");
+
+        meta.setLore(lore);
+        item.setItemMeta(meta);
+        inventory.setItem(IMPORT_SLOT, item);
     }
 
     private ItemStack createItem(final Material material, final String name) {
@@ -279,10 +336,12 @@ public class AddFriendMenu implements Listener {
 
     private void handleFriendCode() {
         player.closeInventory();
-        player.sendMessage("§d💾 Code d'ami:");
-        player.sendMessage("§7Votre code: §f#" + player.getName().toUpperCase().substring(0, Math.min(4, player.getName().length())) + "1234");
-        player.sendMessage("§7Tapez le code d'un ami pour l'ajouter:");
-        player.sendMessage("§7(ou tapez 'cancel' pour annuler)");
+        final FriendAddChatListener listener = plugin.getFriendAddChatListener();
+        if (listener == null) {
+            player.sendMessage("§cLe système de codes d'amis est indisponible.");
+            return;
+        }
+        listener.enableFriendCodeMode(player);
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
     }
 

@@ -4,6 +4,7 @@ import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.friends.data.FriendData;
 import com.lobby.friends.data.FriendRequest;
+import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -12,7 +13,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -21,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FriendAddChatListener implements Listener {
 
     private static final String MODE_SEARCH_PLAYER_NAME = "search_player_name";
+    private static final String MODE_FRIEND_CODE = "friend_code";
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
@@ -58,6 +65,11 @@ public class FriendAddChatListener implements Listener {
             return;
         }
 
+        if (MODE_FRIEND_CODE.equals(mode)) {
+            handleAddByCode(player, input);
+            return;
+        }
+
         Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ Mode d'ajout non reconnu !"));
     }
 
@@ -84,6 +96,50 @@ public class FriendAddChatListener implements Listener {
             }
 
             Bukkit.getScheduler().runTask(plugin, () -> processFriendRequest(player, targetUUID, targetName));
+        });
+    }
+
+    private void handleAddByCode(final Player player, final String rawInput) {
+        final FriendCodeManager friendCodeManager = plugin.getFriendCodeManager();
+        if (friendCodeManager == null) {
+            Bukkit.getScheduler().runTask(plugin, () ->
+                    player.sendMessage("§c❌ Le système de codes d'amis est indisponible."));
+            return;
+        }
+
+        final String normalized = normalizeFriendCode(rawInput);
+        if (normalized == null) {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                player.sendMessage("§c❌ Format de code invalide !");
+                player.sendMessage("§7Le format correct est §dXXXX-YYYY§7.");
+            });
+            return;
+        }
+
+        final UUID senderUuid = player.getUniqueId();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final UUID targetUuid = friendCodeManager.getPlayerByCode(normalized);
+            if (targetUuid == null) {
+                Bukkit.getScheduler().runTask(plugin, () ->
+                        player.sendMessage("§c❌ Code d'ami invalide ou inexistant !"));
+                return;
+            }
+
+            if (targetUuid.equals(senderUuid)) {
+                Bukkit.getScheduler().runTask(plugin, () ->
+                        player.sendMessage("§c❌ Vous ne pouvez pas utiliser votre propre code !"));
+                return;
+            }
+
+            final String targetName = fetchPlayerName(targetUuid);
+            if (targetName == null) {
+                Bukkit.getScheduler().runTask(plugin, () ->
+                        player.sendMessage("§c❌ Impossible de trouver le joueur associé à ce code."));
+                return;
+            }
+
+            Bukkit.getScheduler().runTask(plugin, () ->
+                    processFriendRequest(player, targetUuid, targetName));
         });
     }
 
@@ -155,10 +211,45 @@ public class FriendAddChatListener implements Listener {
         final UUID playerUUID = player.getUniqueId();
         pendingRequests.put(playerUUID, mode);
 
-        if (MODE_SEARCH_PLAYER_NAME.equals(mode)) {
-            player.sendMessage("§e🔍 §6Tapez le nom exact du joueur à ajouter:");
-            player.sendMessage("§7Exemple: §aSteve §7ou §aPlayer123");
-            player.sendMessage("§7Tapez §c'annuler'§7 pour annuler");
+        switch (mode) {
+            case MODE_SEARCH_PLAYER_NAME -> {
+                player.sendMessage("§e🔍 §6Tapez le nom exact du joueur à ajouter:");
+                player.sendMessage("§7Exemple: §aSteve §7ou §aPlayer123");
+                player.sendMessage("§7Tapez §c'annuler'§7 pour annuler");
+            }
+            case MODE_FRIEND_CODE -> {
+                player.sendMessage("§d💾 Ajout via code d'ami activé !");
+                player.sendMessage("§7Saisissez un code au format §dXXXX-YYYY§7.");
+                player.sendMessage("§7Tapez §c'annuler'§7 pour annuler");
+
+                final FriendCodeManager codeManager = plugin.getFriendCodeManager();
+                if (codeManager == null) {
+                    player.sendMessage("§c❌ Le système de codes d'amis est indisponible.");
+                    break;
+                }
+
+                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                    String code = codeManager.getPlayerCode(playerUUID);
+                    if (code == null) {
+                        code = codeManager.generateUniqueCode(playerUUID);
+                    }
+                    final String resolvedCode = code;
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (!player.isOnline()) {
+                            return;
+                        }
+                        if (!MODE_FRIEND_CODE.equals(pendingRequests.get(playerUUID))) {
+                            return;
+                        }
+                        if (resolvedCode != null) {
+                            player.sendMessage("§d▸ Votre code : §f" + resolvedCode);
+                        } else {
+                            player.sendMessage("§c❌ Impossible de récupérer votre code d'ami pour le moment.");
+                        }
+                    });
+                });
+            }
+            default -> player.sendMessage("§c❌ Mode d'ajout non reconnu !");
         }
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -167,6 +258,49 @@ public class FriendAddChatListener implements Listener {
                 player.sendMessage("§c⏰ Temps d'attente écoulé - Ajout d'ami annulé");
             }
         }, 20L * 30);
+    }
+
+    public void enableFriendCodeMode(final Player player) {
+        enableAddMode(player, MODE_FRIEND_CODE);
+    }
+
+    private String normalizeFriendCode(final String input) {
+        if (input == null) {
+            return null;
+        }
+
+        String sanitized = input.trim().toUpperCase(Locale.ROOT).replace(" ", "");
+        if (sanitized.length() == 8 && !sanitized.contains("-")) {
+            sanitized = sanitized.substring(0, 4) + "-" + sanitized.substring(4);
+        }
+
+        if (!sanitized.matches("[A-Z0-9]{4}-[A-Z0-9]{4}")) {
+            return null;
+        }
+
+        return sanitized;
+    }
+
+    private String fetchPlayerName(final UUID uuid) {
+        final DatabaseManager databaseManager = plugin.getDatabaseManager();
+        if (databaseManager == null) {
+            return null;
+        }
+
+        final String query = "SELECT username FROM players WHERE uuid = ? ORDER BY last_seen DESC LIMIT 1";
+        try (Connection connection = databaseManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, uuid.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("username");
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Erreur recherche nom pour UUID " + uuid + ": " + exception.getMessage());
+        }
+
+        return null;
     }
 
     private UUID getPlayerUUID(final String playerName) {

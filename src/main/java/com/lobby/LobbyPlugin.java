@@ -19,6 +19,7 @@ import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
 import com.lobby.friends.commands.FriendsTestCommand;
 import com.lobby.friends.listeners.FriendAddChatListener;
+import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
@@ -73,6 +74,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private NametagManager nametagManager;
     private TablistManager tablistManager;
     private DefaultFriendsDataProvider friendsDataProvider;
+    private FriendCodeManager friendCodeManager;
     private FriendsManager friendsManager;
     private FriendsMenuController friendsMenuController;
     private FriendsMenuManager friendsMenuManager;
@@ -123,6 +125,8 @@ public final class LobbyPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(chatPromptManager, this);
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
+        friendCodeManager = new FriendCodeManager(this);
+        getLogger().info("Gestionnaire de codes d'amis initialisé !");
         friendsManager = new FriendsManager(this);
         friendAddChatListener = new FriendAddChatListener(this);
         getServer().getPluginManager().registerEvents(friendAddChatListener, this);
@@ -146,7 +150,7 @@ public final class LobbyPlugin extends JavaPlugin {
 
         registerCommands();
 
-        getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(playerDataManager, economyManager), this);
+        getServer().getPluginManager().registerEvents(new PlayerJoinLeaveEvent(this, playerDataManager, economyManager), this);
         getServer().getPluginManager().registerEvents(new LobbyPlayerListener(lobbyManager), this);
         getServer().getPluginManager().registerEvents(new LobbyItemListener(lobbyManager, lobbyManager.getItemManager()), this);
         getServer().getPluginManager().registerEvents(new LobbyProtectionListener(lobbyManager), this);
@@ -323,6 +327,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendAddChatListener getFriendAddChatListener() {
         return friendAddChatListener;
+    }
+
+    public FriendCodeManager getFriendCodeManager() {
+        return friendCodeManager;
     }
 
     public void reloadLobbyConfig() {
