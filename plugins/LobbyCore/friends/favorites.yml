@@ -1,10 +1,368 @@
+# ===============================
+# CONFIGURATION AMIS FAVORIS
+# ===============================
+
 menu:
-  title: "§8» §eAmis Favoris"
+  title: "§8» §eAmis Favoris ({count}/{limit})"
   size: 54
+  auto_refresh: true
+  refresh_interval: 10
+  special_effects: true # Effets spéciaux pour favoris
+
+# Décoration spéciale dorée
+decoration:
+  gold_glass:
+    material: "YELLOW_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,36,44,45,53]
+
+# Slots pour favoris (28 par page)
+favorite_slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+
+# Actions spéciales pour favoris
+special_actions:
+  quick_teleport_all:
+    slot: 46
+    hdb_id: 2018 # Téléportation
+    name: "§6🚀 Téléportation Rapide"
+    lore:
+      - "§7Téléportez-vous rapidement"
+      - "§7vers un ami favori en ligne"
+      - ""
+      - "§6▸ Favoris en ligne: §e{favorites_online}"
+      - ""
+      - "§7Favoris disponibles:"
+      - "{online_favorites_list}"
+      - ""
+      - "§8» §6Cliquez pour choisir"
+    actions:
+      left_click: "open_quick_teleport"
+      
+  group_message:
+    slot: 47
+    hdb_id: 5315 # Message de groupe
+    name: "§e💬 Message de Groupe"
+    lore:
+      - "§7Envoyez un message à"
+      - "§7tous vos amis favoris"
+      - ""
+      - "§e▸ Destinataires: §6{favorites_count} favoris"
+      - "§e▸ En ligne: §6{favorites_online}"
+      - "§e▸ Hors ligne: §6{favorites_offline}"
+      - ""
+      - "§7Le message sera:"
+      - "§8▸ §7Envoyé immédiatement aux connectés"
+      - "§8▸ §7Stocké pour les déconnectés"
+      - ""
+      - "§8» §eCliquez pour écrire"
+    actions:
+      left_click: "send_group_message"
+      
+  favorites_activity:
+    slot: 48
+    hdb_id: 2967 # Activité
+    name: "§b📊 Activité des Favoris"
+    lore:
+      - "§7Consultez l'activité récente"
+      - "§7de vos amis favoris"
+      - ""
+      - "§b▸ Activité moyenne: §3{average_activity}%"
+      - "§b▸ Plus actif: §3{most_active_favorite}"
+      - "§b▸ Dernière interaction: §3{last_interaction}"
+      - ""
+      - "§7Tendances récentes:"
+      - "§8▸ §3{trend_1}"
+      - "§8▸ §3{trend_2}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_favorites_activity"
+
+# Navigation
 navigation:
   back_to_main:
     slot: 49
     hdb_id: 3593
     name: "§e🏠 Retour Menu Principal"
+    actions:
+      left_click: "back_to_main"
+      
+  manage_favorites:
+    slot: 50
+    hdb_id: 1275 # Gestion
+    name: "§6⚙️ Gérer les Favoris"
+    lore:
+      - "§7Options de gestion des"
+      - "§7amis favoris"
+      - ""
+      - "§6▸ Limite actuelle: §e{current_limit}"
+      - "§6▸ Favoris actuels: §e{current_count}"
+      - "§6▸ Places libres: §e{remaining_slots}"
+      - ""
+      - "§8» §6Cliquez pour gérer"
+    actions:
+      left_click: "manage_favorites_settings"
+
+# Format d'un ami favori
+favorite_friend:
+  item: "PLAYER_HEAD"
+  enchanted: true # Effet brillant
+  particles: "VILLAGER_HAPPY" # Particules dorées
+  name: "§e§l⭐ {nom_joueur} {status_indicator}"
+  lore:
+    - "§6✨ AMI FAVORI ✨"
+    - ""
+    - "§7Statut: {statut_en_ligne}"
+    - "§7Serveur: §e{serveur_actuel}"
+    - "§7Favori depuis: §6{date_favori}"
+    - "§7Ami depuis: §b{date_amitie}"
+    - ""
+    - "§6🏆 Statistiques spéciales:"
+    - "§8▸ §7Messages échangés: §6{nb_messages}"
+    - "§8▸ §7Temps joué ensemble: §6{temps_ensemble}"
+    - "§8▸ §7Dernière interaction: §6{derniere_interaction}"
+    - "§8▸ §7Score d'affinité: §6{affinite_score}/10"
+    - ""
+    - "§7Activité récente:"
+    - "§8▸ §6{activite_recente}"
+    - ""
+    - "§8▸ §aClique gauche §8: §7Actions favoris"
+    - "§8▸ §eClique milieu §8: §7Téléportation rapide"
+    - "§8▸ §cClique droit §8: §7Retirer des favoris"
+  actions:
+    left_click: "open_favorite_actions"
+    middle_click: "quick_teleport_to"
+    right_click: "remove_from_favorites"
+
+# Indicateurs de statut spéciaux pour favoris
+favorite_status_indicators:
+  online_active:
+    suffix: " §a●§2⚡"
+    description: "En ligne et actif"
+    color: "§a"
+    
+  online_idle:
+    suffix: " §a●§e⏸"
+    description: "En ligne mais inactif"
+    color: "§e"
+    
+  online_busy:
+    suffix: " §a●§c⛔"
+    description: "En ligne mais occupé"
+    color: "§c"
+    
+  offline_recent:
+    suffix: " §8●§7⏰"
+    description: "Hors ligne récemment"
+    color: "§7"
+    
+  offline_long:
+    suffix: " §8●§8💤"
+    description: "Hors ligne longtemps"
+    color: "§8"
+
+# Menu actions favoris
+favorite_actions_menu:
+  title: "§8» §6Actions pour §e⭐ {player_name}"
+  size: 36
+  
+  items:
+    super_teleport:
+      slot: 10
+      hdb_id: 2018 # Téléportation VIP
+      name: "§a🚀 Téléportation Instantanée"
+      lore:
+        - "§7Téléportation prioritaire sans"
+        - "§7délai ni demande de permission"
+        - ""
+        - "§a▸ Privilège d'ami favori"
+        - "§a▸ Téléportation immédiate"
+        - "§a▸ Bypass des restrictions"
+        - ""
+        - "§8» §aCliquez pour vous téléporter"
+      actions:
+        left_click: "super_teleport"
+        
+    priority_message:
+      slot: 11
+      hdb_id: 6156 # Message prioritaire
+      name: "§e💌 Message Prioritaire"
+      lore:
+        - "§7Envoyez un message avec"
+        - "§7notification spéciale"
+        - ""
+        - "§e▸ Notification renforcée"
+        - "§e▸ Son spécial"
+        - "§e▸ Affichage prioritaire"
+        - ""
+        - "§8» §eCliquez pour écrire"
+      actions:
+        left_click: "send_priority_message"
+        
+    invite_to_activity:
+      slot: 12
+      hdb_id: 1420 # Invitation
+      name: "§b🎮 Inviter à une Activité"
+      lore:
+        - "§7Invitez votre ami favori"
+        - "§7à rejoindre une activité"
+        - ""
+        - "§b▸ Activités disponibles:"
+        - "§8▸ §7Mini-jeux"
+        - "§8▸ §7Exploration"
+        - "§8▸ §7Construction"
+        - "§8▸ §7Événements"
+        - ""
+        - "§8» §bCliquez pour inviter"
+      actions:
+        left_click: "invite_to_activity"
+        
+    shared_achievements:
+      slot: 13
+      hdb_id: 2967 # Succès partagés
+      name: "§d🏆 Succès Partagés"
+      lore:
+        - "§7Consultez vos succès"
+        - "§7obtenus ensemble"
+        - ""
+        - "§d▸ Succès communs: §5{shared_achievements}"
+        - "§d▸ En cours: §5{progress_achievements}"
+        - "§d▸ Prochains objectifs: §5{next_goals}"
+        - ""
+        - "§8» §dCliquez pour voir"
+      actions:
+        left_click: "view_shared_achievements"
+        
+    gift_item:
+      slot: 14
+      hdb_id: 3621 # Cadeau
+      name: "§6🎁 Offrir un Cadeau"
+      lore:
+        - "§7Offrez un objet spécial"
+        - "§7à votre ami favori"
+        - ""
+        - "§6▸ Cadeaux disponibles:"
+        - "§8▸ §7Objets cosmétiques"
+        - "§8▸ §7Ressources rares"
+        - "§8▸ §7Accès temporaires"
+        - ""
+        - "§7Coût: §6{gift_cost} points d'amitié"
+        - ""
+        - "§8» §6Cliquez pour offrir"
+      actions:
+        left_click: "offer_gift"
+        
+    favorite_notes:
+      slot: 15
+      hdb_id: 1396 # Notes
+      name: "§7📝 Notes Personnelles"
+      lore:
+        - "§7Ajoutez des notes privées"
+        - "§7sur cet ami favori"
+        - ""
+        - "§7▸ Note actuelle:"
+        - "§f  \"{current_note}\""
+        - ""
+        - "§7▸ Longueur: §8{note_length}§7/§8{max_note_length}"
+        - ""
+        - "§8» §7Cliquez pour modifier"
+      actions:
+        left_click: "edit_favorite_note"
+        
+    remove_favorite:
+      slot: 16
+      hdb_id: 5464 # Retirer
+      name: "§c💔 Retirer des Favoris"
+      lore:
+        - "§cRetirez ce joueur de"
+        - "§cvos amis favoris"
+        - ""
+        - "§7Cette action:"
+        - "§8▸ §7Ne supprime PAS l'amitié"
+        - "§8▸ §7Retire les privilèges favoris"
+        - "§8▸ §7Libère une place favori"
+        - ""
+        - "§8» §cCliquez pour retirer"
+      actions:
+        left_click: "remove_from_favorites"
+        
+    back:
+      slot: 31
+      hdb_id: 3593
+      name: "§e◀ Retour aux Favoris"
+      actions:
+        left_click: "back_to_favorites"
+
+# Gestion des favoris
+favorites_management:
+  max_favorites_by_rank:
+    default: 5
+    vip: 10
+    premium: 20
+    staff: -1 # Illimité
+    
+  auto_favorite_criteria:
+    enable_auto_favorite: false
+    min_friendship_days: 30
+    min_messages_exchanged: 100
+    min_time_together: 3600 # secondes
+    min_interaction_frequency: 0.8 # ratio
+
+# Privilèges des favoris
+favorite_privileges:
+  instant_teleport: true
+  priority_messages: true
+  bypass_dnd: false # Bypass "Ne pas déranger"
+  activity_invites: true
+  gift_system: true
+  shared_achievements: true
+  
+# Notifications spéciales favoris
+favorite_notifications:
+  connection:
+    enabled: true
+    sound: "ENTITY_PLAYER_LEVELUP"
+    message: "§e⭐ §6{favorite} §7(favori) vient de se connecter !"
+    title: "§6Ami Favori"
+    subtitle: "§e{favorite} §7est en ligne"
+    
+  special_message:
+    enabled: true
+    sound: "BLOCK_NOTE_BLOCK_CHIME"
+    title: "§6💌 Message Prioritaire"
+    subtitle: "§7de §e{favorite}"
+
+# Système de points d'amitié pour favoris
+friendship_points:
+  earn_rates:
+    time_together: 1 # point par minute
+    messages_exchanged: 0.5 # point par message
+    activities_shared: 10 # points par activité
+    gifts_exchanged: 5 # points par cadeau
+    
+  costs:
+    premium_gift: 100
+    activity_boost: 50
+    cosmetic_item: 25
+
+# Messages système
+messages:
+  favorite_added: "§e⭐ §a{player} a été ajouté à vos favoris !"
+  favorite_removed: "§7{player} a été retiré de vos favoris"
+  favorites_limit_reached: "§cVous avez atteint votre limite de favoris ({limit})"
+  not_your_friend: "§cVous devez être ami avec {player} pour l'ajouter en favori"
+  already_favorite: "§6{player} est déjà dans vos favoris"
+  teleport_to_favorite: "§aVous vous êtes téléporté vers votre ami favori {player} !"
+  priority_message_sent: "§eMessage prioritaire envoyé à {player} !"
+  group_message_sent: "§aMessage envoyé à {count} amis favoris"
+  gift_sent: "§6Cadeau envoyé à {player} ! (-{cost} points d'amitié)"
+  note_updated: "§7Note mise à jour pour {player}"
+  
+# Sons spéciaux
 sounds:
-  open_favorites: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  favorite_added: "ENTITY_PLAYER_LEVELUP"
+  favorite_removed: "BLOCK_NOTE_BLOCK_BASS"
+  priority_teleport: "ENTITY_ENDERMAN_TELEPORT"
+  priority_message: "BLOCK_NOTE_BLOCK_CHIME"
+  gift_sent: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  group_action: "ENTITY_FIREWORK_ROCKET_LAUNCH"

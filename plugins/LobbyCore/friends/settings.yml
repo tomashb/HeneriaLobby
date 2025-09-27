@@ -1,10 +1,686 @@
+# ===============================
+# CONFIGURATION PARAMÈTRES AMIS
+# ===============================
+
 menu:
   title: "§8» §6Paramètres d'Amitié"
-  size: 36
-navigation:
-  back_to_main:
+  size: 54
+  auto_save: true
+  save_interval: 30 # secondes
+  
+# Décoration
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,18,26,27,35,36,37,38,42,43,44,45,46,47,51,52,53]
+
+# Paramètres principaux
+main_settings:
+  notifications:
+    slot: 10
+    hdb_id: 1420 # Cloche
+    name: "§6§l🔔 Notifications"
+    lore:
+      - "§7Configurez vos notifications"
+      - "§7concernant les amis"
+      - ""
+      - "§6▸ État actuel: §e{notifications_status}"
+      - ""
+      - "§7Options disponibles:"
+      - "§8▸ §aToutes §7- Toutes les notifications"
+      - "§8▸ §eImportantes §7- Connexions et messages"
+      - "§8▸ §6Favoris §7- Favoris uniquement"
+      - "§8▸ §cAucune §7- Aucune notification"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      all:
+        name: "Toutes"
+        description: "Recevoir toutes les notifications d'amis"
+        color: "§a"
+      important:
+        name: "Importantes"
+        description: "Connexions, déconnexions et messages uniquement"
+        color: "§e"
+      favorites:
+        name: "Favoris seulement"
+        description: "Notifications des amis favoris uniquement"
+        color: "§6"
+      none:
+        name: "Aucune"
+        description: "Aucune notification d'amis"
+        color: "§c"
+    actions:
+      left_click: "cycle_notifications"
+      right_click: "open_notification_details"
+      
+  visibility:
+    slot: 11
+    hdb_id: 8127 # Œil
+    name: "§6§l👁️ Visibilité en Ligne"
+    lore:
+      - "§7Contrôlez qui peut voir"
+      - "§7votre statut de connexion"
+      - ""
+      - "§6▸ État actuel: §e{visibility_status}"
+      - ""
+      - "§7Options:"
+      - "§8▸ §aPublic §7- Visible par tous"
+      - "§8▸ §eAmis §7- Visible par vos amis"
+      - "§8▸ §6Favoris §7- Favoris uniquement"
+      - "§8▸ §cInvisible §7- Toujours hors-ligne"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      public:
+        name: "Public"
+        description: "Statut visible par tous les joueurs"
+        color: "§a"
+      friends:
+        name: "Amis seulement"
+        description: "Statut visible par vos amis uniquement"
+        color: "§e"
+      favorites:
+        name: "Favoris seulement"
+        description: "Statut visible par vos favoris uniquement"
+        color: "§6"
+      invisible:
+        name: "Invisible"
+        description: "Apparaître toujours hors-ligne"
+        color: "§c"
+    actions:
+      left_click: "cycle_visibility"
+      
+  auto_requests:
+    slot: 12
+    hdb_id: 1619 # Entonnoir
+    name: "§6§l📨 Demandes Automatiques"
+    lore:
+      - "§7Gestion automatique des"
+      - "§7demandes d'amitié reçues"
+      - ""
+      - "§6▸ État actuel: §e{auto_requests_status}"
+      - ""
+      - "§7Options:"
+      - "§8▸ §aAccepter auto §7- Accepter toutes"
+      - "§8▸ §eAmis mutuels §7- Auto si 3+ amis communs"
+      - "§8▸ §6Manuel §7- Décider manuellement"
+      - "§8▸ §cRefuser auto §7- Refuser toutes"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      accept_all:
+        name: "Accepter automatiquement"
+        description: "Accepter toutes les demandes automatiquement"
+        color: "§a"
+      mutual_friends:
+        name: "Amis mutuels"
+        description: "Accepter si 3+ amis en commun"
+        color: "§e"
+      manual:
+        name: "Manuel"
+        description: "Décider pour chaque demande"
+        color: "§6"
+      reject_all:
+        name: "Refuser automatiquement"
+        description: "Refuser toutes les demandes automatiquement"
+        color: "§c"
+    actions:
+      left_click: "cycle_auto_requests"
+      
+  sounds:
+    slot: 13
+    hdb_id: 3621 # Note de musique
+    name: "§6§l🎵 Sons d'Amitié"
+    lore:
+      - "§7Contrôlez les sons joués"
+      - "§7lors des interactions d'amis"
+      - ""
+      - "§6▸ État actuel: §e{sounds_status}"
+      - "§6▸ Volume: §e{sound_volume}%"
+      - ""
+      - "§7Types de sons:"
+      - "§8▸ §7Connexion/Déconnexion amis"
+      - "§8▸ §7Messages privés reçus"
+      - "§8▸ §7Demandes d'amitié"
+      - "§8▸ §7Interactions menu"
+      - ""
+      - "§8» §6Clic gauche: Activer/Désactiver"
+      - "§8» §6Clic droit: Ajuster volume"
+    actions:
+      left_click: "toggle_sounds"
+      right_click: "adjust_volume"
+      
+  private_messages:
+    slot: 14
+    hdb_id: 5315 # Livre
+    name: "§6§l💬 Messages Privés"
+    lore:
+      - "§7Contrôlez qui peut vous"
+      - "§7envoyer des messages privés"
+      - ""
+      - "§6▸ État actuel: §e{pm_status}"
+      - "§6▸ Historique: §e{pm_history_status}"
+      - ""
+      - "§7Options:"
+      - "§8▸ §aTous §7- Tous les joueurs"
+      - "§8▸ §eAmis §7- Vos amis uniquement"
+      - "§8▸ §6Favoris §7- Favoris uniquement"
+      - "§8▸ §cDésactivé §7- Aucun message"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      all:
+        name: "Tous"
+        description: "Recevoir des MP de tous les joueurs"
+        color: "§a"
+      friends:
+        name: "Amis uniquement"
+        description: "Recevoir des MP de vos amis seulement"
+        color: "§e"
+      favorites:
+        name: "Favoris uniquement"
+        description: "Recevoir des MP de vos favoris seulement"
+        color: "§6"
+      disabled:
+        name: "Désactivé"
+        description: "Ne recevoir aucun message privé"
+        color: "§c"
+    actions:
+      left_click: "cycle_private_messages"
+      
+  teleportation:
+    slot: 15
+    hdb_id: 2018 # Perle de l'Ender
+    name: "§6§l🚀 Téléportation"
+    lore:
+      - "§7Paramètres de téléportation"
+      - "§7vers vous par vos amis"
+      - ""
+      - "§6▸ État actuel: §e{teleport_status}"
+      - "§6▸ Délai: §e{teleport_delay}s"
+      - ""
+      - "§7Options:"
+      - "§8▸ §aLibre §7- Téléportation instantanée"
+      - "§8▸ §eDemander §7- Demander permission"
+      - "§8▸ §6Favoris §7- Favoris sans permission"
+      - "§8▸ §cDésactivé §7- Aucune téléportation"
+      - ""
+      - "§8» §6Clic gauche: Changer mode"
+      - "§8» §6Clic droit: Ajuster délai"
+    values:
+      free:
+        name: "Libre"
+        description: "Amis peuvent se téléporter librement"
+        color: "§a"
+      ask_permission:
+        name: "Demander permission"
+        description: "Demander avant téléportation"
+        color: "§e"
+      favorites_only:
+        name: "Favoris seulement"
+        description: "Seuls les favoris peuvent se téléporter"
+        color: "§6"
+      disabled:
+        name: "Désactivé"
+        description: "Interdire toute téléportation"
+        color: "§c"
+    actions:
+      left_click: "cycle_teleportation"
+      right_click: "adjust_teleport_delay"
+      
+  favorite_limit:
+    slot: 16
+    hdb_id: 6156 # Étoile
+    name: "§6§l🏆 Limite Favoris"
+    lore:
+      - "§7Nombre maximum d'amis"
+      - "§7favoris autorisés"
+      - ""
+      - "§6▸ Limite actuelle: §e{favorite_limit_current}"
+      - "§6▸ Favoris actuels: §e{favorites_count}§7/§e{favorite_limit_current}"
+      - ""
+      - "§7Options disponibles:"
+      - "§8▸ §e3 favoris §7(Basique)"
+      - "§8▸ §e5 favoris §7(Standard)"
+      - "§8▸ §e10 favoris §7(Étendu)"
+      - "§8▸ §e20 favoris §7(Premium)"
+      - "§8▸ §aIllimité §7(VIP)"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      3:
+        name: "3 favoris"
+        description: "Limite basique"
+        color: "§e"
+      5:
+        name: "5 favoris"
+        description: "Limite standard"
+        color: "§e"
+      10:
+        name: "10 favoris"
+        description: "Limite étendue"
+        color: "§e"
+      20:
+        name: "20 favoris"
+        description: "Limite premium"
+        color: "§e"
+      -1:
+        name: "Illimité"
+        description: "Aucune limite (VIP)"
+        color: "§a"
+    actions:
+      left_click: "cycle_favorite_limit"
+
+# Paramètres avancés
+advanced_settings:
+  status_message:
+    slot: 19
+    hdb_id: 1396 # Parchemin
+    name: "§6§l📝 Message de Statut"
+    lore:
+      - "§7Message personnalisé visible"
+      - "§7par vos amis dans leur liste"
+      - ""
+      - "§6▸ Message actuel:"
+      - "§f  \"{status_message_current}\""
+      - ""
+      - "§6▸ Longueur: §e{status_length}§7/§e{status_max_length}"
+      - "§6▸ Dernière modification: §e{status_last_edit}"
+      - ""
+      - "§8» §6Cliquez pour modifier"
+    actions:
+      left_click: "edit_status_message"
+      right_click: "clear_status_message"
+      
+  do_not_disturb:
+    slot: 20
+    hdb_id: 5464 # Panneau stop
+    name: "§6§l🔇 Ne Pas Déranger"
+    lore:
+      - "§7Mode silencieux temporaire"
+      - "§7bloquant toutes les notifications"
+      - ""
+      - "§6▸ État actuel: §e{dnd_status}"
+      - "§6▸ Durée restante: §e{dnd_time_remaining}"
+      - "§6▸ Raison: §e{dnd_reason}"
+      - ""
+      - "§7Durées disponibles:"
+      - "§8▸ §715 minutes"
+      - "§8▸ §71 heure"
+      - "§8▸ §73 heures"
+      - "§8▸ §7Jusqu'à déconnexion"
+      - ""
+      - "§8» §6Clic gauche: Activer/Désactiver"
+      - "§8» §6Clic droit: Choisir durée"
+    actions:
+      left_click: "toggle_dnd"
+      right_click: "set_dnd_duration"
+      
+  backup_restore:
+    slot: 21
+    hdb_id: 3621 # Dossier
+    name: "§6§l💾 Sauvegarde & Restauration"
+    lore:
+      - "§7Sauvegardez ou restaurez"
+      - "§7vos données d'amis"
+      - ""
+      - "§6▸ Dernière sauvegarde: §e{last_backup_date}"
+      - "§6▸ Taille: §e{backup_size}"
+      - "§6▸ Sauvegardes disponibles: §e{backup_count}"
+      - ""
+      - "§7Contenu sauvegardé:"
+      - "§8▸ §7Liste des amis"
+      - "§8▸ §7Paramètres personnels"
+      - "§8▸ §7Historique des messages"
+      - "§8▸ §7Statistiques"
+      - ""
+      - "§8» §6Clic gauche: Sauvegarder"
+      - "§8» §6Clic droit: Restaurer"
+    actions:
+      left_click: "backup_friends_data"
+      right_click: "restore_friends_data"
+      
+  auto_cleanup:
+    slot: 22
+    hdb_id: 1420 # Nettoyage
+    name: "§6§l🔄 Nettoyage Automatique"
+    lore:
+      - "§7Nettoyage automatique des"
+      - "§7données d'amis inactifs"
+      - ""
+      - "§6▸ État: §e{auto_cleanup_status}"
+      - "§6▸ Inactivité limite: §e{cleanup_days} jours"
+      - "§6▸ Dernier nettoyage: §e{last_cleanup}"
+      - ""
+      - "§7Actions automatiques:"
+      - "§8▸ §7Supprimer amis inactifs (>1 an)"
+      - "§8▸ §7Nettoyer demandes expirées"
+      - "§8▸ §7Archiver anciens messages"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_auto_cleanup"
+      
+  statistics_tracking:
+    slot: 23
+    hdb_id: 2967 # Graphique
+    name: "§6§l📊 Suivi des Statistiques"
+    lore:
+      - "§7Contrôlez quelles statistiques"
+      - "§7sont collectées et stockées"
+      - ""
+      - "§6▸ Collecte active: §e{stats_tracking_status}"
+      - "§6▸ Stockage: §e{stats_storage_duration} jours"
+      - ""
+      - "§7Données collectées:"
+      - "§8▸ §7Temps de jeu avec amis"
+      - "§8▸ §7Messages échangés"
+      - "§8▸ §7Activités communes"
+      - "§8▸ §7Historique de connexion"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_stats_tracking"
+      
+  theme_customization:
+    slot: 24
+    hdb_id: 8726 # Palette
+    name: "§6§l🎨 Personnalisation"
+    lore:
+      - "§7Personnalisez l'apparence"
+      - "§7de vos menus d'amis"
+      - ""
+      - "§6▸ Thème actuel: §e{current_theme}"
+      - "§6▸ Couleur principale: §e{primary_color}Exemple"
+      - ""
+      - "§7Thèmes disponibles:"
+      - "§8▸ §aClassique §7(Vert/Gris)"
+      - "§8▸ §9Océan §7(Bleu/Cyan)"
+      - "§8▸ §dRose §7(Rose/Violet)"
+      - "§8▸ §6Automne §7(Orange/Jaune)"
+      - "§8▸ §cFeu §7(Rouge/Orange)"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    actions:
+      left_click: "cycle_theme"
+      
+  performance_mode:
+    slot: 25
+    hdb_id: 1275 # Engrenage rapide
+    name: "§6§l⚡ Mode Performance"
+    lore:
+      - "§7Optimisations pour améliorer"
+      - "§7les performances du système"
+      - ""
+      - "§6▸ Mode actuel: §e{performance_mode}"
+      - ""
+      - "§7Options:"
+      - "§8▸ §aMaximum §7- Toutes les fonctionnalités"
+      - "§8▸ §eÉquilibré §7- Compromis performance/fonctions"
+      - "§8▸ §6Économique §7- Fonctions de base uniquement"
+      - "§8▸ §cMinimal §7- Performance maximale"
+      - ""
+      - "§8» §6Cliquez pour changer"
+    values:
+      maximum:
+        name: "Maximum"
+        description: "Toutes les fonctionnalités activées"
+        color: "§a"
+      balanced:
+        name: "Équilibré"
+        description: "Compromis performance/fonctionnalités"
+        color: "§e"
+      economical:
+        name: "Économique"
+        description: "Fonctions de base seulement"
+        color: "§6"
+      minimal:
+        name: "Minimal"
+        description: "Performance maximale"
+        color: "§c"
+    actions:
+      left_click: "cycle_performance_mode"
+
+# Paramètres de sécurité
+security_settings:
+  anti_spam:
+    slot: 28
+    hdb_id: 8127 # Bouclier
+    name: "§6§l🛡️ Protection Anti-Spam"
+    lore:
+      - "§7Protection contre le spam"
+      - "§7de demandes et messages"
+      - ""
+      - "§6▸ Protection active: §e{anti_spam_status}"
+      - "§6▸ Limite demandes/heure: §e{request_limit}"
+      - "§6▸ Limite messages/minute: §e{message_limit}"
+      - ""
+      - "§7Détections automatiques:"
+      - "§8▸ §7Messages répétitifs"
+      - "§8▸ §7Demandes en masse"
+      - "§8▸ §7Comportement suspect"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_anti_spam"
+      
+  mobile_notifications:
+    slot: 29
+    hdb_id: 1420 # Téléphone
+    name: "§6§l📱 Notifications Mobiles"
+    lore:
+      - "§7Notifications push vers"
+      - "§7votre application mobile"
+      - ""
+      - "§6▸ App connectée: §e{mobile_app_status}"
+      - "§6▸ Notifications push: §e{push_notifications}"
+      - ""
+      - "§7Types de notifications:"
+      - "§8▸ §7Connexion d'amis favoris"
+      - "§8▸ §7Messages privés importants"
+      - "§8▸ §7Demandes d'amitié"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_mobile_notifications"
+      
+  cross_server:
+    slot: 30
+    hdb_id: 2975 # Réseau
+    name: "§6§l🌐 Inter-Serveurs"
+    lore:
+      - "§7Paramètres pour les amis"
+      - "§7sur d'autres serveurs du réseau"
+      - ""
+      - "§6▸ Synchronisation: §e{cross_server_sync}"
+      - "§6▸ Chat global: §e{global_chat}"
+      - "§6▸ Téléportation: §e{cross_teleport}"
+      - ""
+      - "§7Fonctionnalités réseau:"
+      - "§8▸ §7Voir amis sur autres serveurs"
+      - "§8▸ §7Chat entre serveurs"
+      - "§8▸ §7Téléportation inter-serveurs"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_cross_server"
+      
+  schedule_settings:
     slot: 31
-    hdb_id: 3593
+    hdb_id: 8127 # Horloge
+    name: "§6§l⏰ Planification"
+    lore:
+      - "§7Programmez des actions"
+      - "§7automatiques d'amitié"
+      - ""
+      - "§6▸ Événements programmés: §e{scheduled_events}"
+      - ""
+      - "§7Actions planifiables:"
+      - "§8▸ §7Anniversaires d'amitié"
+      - "§8▸ §7Rappels de reconnexion"
+      - "§8▸ §7Nettoyages automatiques"
+      - "§8▸ §7Sauvegardes périodiques"
+      - ""
+      - "§8» §6Cliquez pour configurer"
+    actions:
+      left_click: "configure_schedule"
+      
+  achievements:
+    slot: 32
+    hdb_id: 6156 # Trophée
+    name: "§6§l🎯 Succès d'Amitié"
+    lore:
+      - "§7Système de succès liés"
+      - "§7aux interactions d'amitié"
+      - ""
+      - "§6▸ Succès débloqués: §e{unlocked_achievements}§7/§e{total_achievements}"
+      - "§6▸ Points d'amitié: §e{friendship_points}"
+      - ""
+      - "§7Catégories de succès:"
+      - "§8▸ §7Social (amis, messages)"
+      - "§8▸ §7Fidélité (durée d'amitié)"
+      - "§8▸ §7Activité (jeu ensemble)"
+      - "§8▸ §7Communauté (amis en commun)"
+      - ""
+      - "§8» §6Cliquez pour voir les succès"
+    actions:
+      left_click: "view_achievements"
+      
+  data_export:
+    slot: 33
+    hdb_id: 1396 # Document
+    name: "§6§l📋 Export de Données"
+    lore:
+      - "§7Exportez vos données d'amis"
+      - "§7vers différents formats"
+      - ""
+      - "§6▸ Dernière export: §e{last_export}"
+      - "§6▸ Format préféré: §e{export_format}"
+      - ""
+      - "§7Formats disponibles:"
+      - "§8▸ §7JSON (pour développeurs)"
+      - "§8▸ §7CSV (pour tableurs)"
+      - "§8▸ §7TXT (lisible)"
+      - "§8▸ §7PDF (rapport)"
+      - ""
+      - "§8» §6Cliquez pour exporter"
+    actions:
+      left_click: "export_data"
+      
+  advanced_config:
+    slot: 34
+    hdb_id: 1275 # Configuration
+    name: "§6§l🔧 Configuration Avancée"
+    lore:
+      - "§7Paramètres techniques pour"
+      - "§7utilisateurs expérimentés"
+      - ""
+      - "§c⚠ Attention: Modifications avancées"
+      - "§cpouvant affecter le fonctionnement"
+      - ""
+      - "§7Paramètres disponibles:"
+      - "§8▸ §7Cache et performance"
+      - "§8▸ §7Limites système"
+      - "§8▸ §7Timeouts et délais"
+      - "§8▸ §7Intégrations externes"
+      - ""
+      - "§8» §6Cliquez pour accéder"
+    actions:
+      left_click: "open_advanced_config"
+
+# Navigation
+navigation:
+  reset_settings:
+    slot: 48
+    hdb_id: 5464 # Reset
+    name: "§c🔄 Réinitialiser"
+    lore:
+      - "§cRéinitialiser tous les paramètres"
+      - "§caux valeurs par défaut"
+      - ""
+      - "§c⚠ Cette action est irréversible !"
+      - "§cTous vos paramètres seront perdus"
+      - ""
+      - "§8» §cCliquez pour réinitialiser"
+    actions:
+      left_click: "reset_all_settings"
+      
+  back_to_main:
+    slot: 49
+    hdb_id: 3593 # Maison
     name: "§e🏠 Retour Menu Principal"
+    lore:
+      - "§7Revenir au menu principal"
+      - "§7des amis"
+      - ""
+      - "§e▸ Modifications sauvegardées automatiquement"
+      - ""
+      - "§8» §eCliquez pour retourner"
+    actions:
+      left_click: "back_to_main"
+      
+  help_settings:
+    slot: 50
+    hdb_id: 5315 # Aide
+    name: "§b❓ Aide sur les Paramètres"
+    lore:
+      - "§7Guide détaillé des paramètres"
+      - "§7d'amitié disponibles"
+      - ""
+      - "§b▸ Tutoriels interactifs"
+      - "§b▸ Explications détaillées"
+      - "§b▸ Recommandations"
+      - ""
+      - "§8» §bCliquez pour l'aide"
+    actions:
+      left_click: "open_settings_help"
+
+# Valeurs par défaut
+default_values:
+  notifications: "important"
+  visibility: "friends"
+  auto_requests: "manual"
+  sounds: "enabled"
+  sound_volume: 70
+  private_messages: "friends"
+  teleportation: "ask_permission"
+  teleport_delay: 3
+  favorite_limit: 5
+  status_message: ""
+  do_not_disturb: false
+  dnd_duration: 60
+  auto_cleanup: true
+  cleanup_days: 365
+  stats_tracking: true
+  stats_storage_duration: 90
+  theme: "classic"
+  performance_mode: "balanced"
+  anti_spam: true
+  request_limit: 5
+  message_limit: 10
+  mobile_notifications: false
+  cross_server_sync: true
+  global_chat: true
+  cross_teleport: false
+
+# Messages de confirmation
+confirmations:
+  setting_changed: "§aParamètre modifié: §e{setting_name} §8→ §a{new_value}"
+  reset_all: "§cÊtes-vous sûr de vouloir réinitialiser tous les paramètres ?"
+  backup_created: "§aSauvegarde créée avec succès ! ({timestamp})"
+  data_restored: "§aDonnées restaurées avec succès !"
+  export_completed: "§aDonnées exportées vers {filename}"
+  invalid_value: "§cValeur invalide pour ce paramètre"
+  permission_denied: "§cVous n'avez pas la permission de modifier ce paramètre"
+  feature_disabled: "§7Cette fonctionnalité est désactivée par l'administrateur"
+
+# Sons
 sounds:
-  open_settings: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  setting_change: "UI_BUTTON_CLICK"
+  setting_saved: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  reset_all: "BLOCK_ANVIL_LAND"
+  backup_created: "ENTITY_PLAYER_LEVELUP"
+  error: "BLOCK_ANVIL_LAND"
+  help_open: "BLOCK_ENCHANTMENT_TABLE_USE"

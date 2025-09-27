@@ -1,10 +1,400 @@
+# ===============================
+# STATISTIQUES D'AMITIÉ DÉTAILLÉES
+# ===============================
+
 menu:
   title: "§8» §bStatistiques d'Amitié"
   size: 54
+  auto_refresh: true
+  refresh_interval: 30 # secondes
+
+# Décoration
+decoration:
+  blue_glass:
+    material: "BLUE_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,36,44,45,53]
+
+# Catégories de statistiques
+statistics_categories:
+  general_stats:
+    slot: 10
+    hdb_id: 2967 # Graphique général
+    name: "§b§l📊 Statistiques Générales"
+    lore:
+      - "§7Vue d'ensemble de vos"
+      - "§7interactions d'amitié"
+      - ""
+      - "§b▸ Total d'amis: §3{total_friends}"
+      - "§b▸ Amis actifs (7j): §3{active_friends}"
+      - "§b▸ Nouvel ami le plus récent: §3{newest_friend}"
+      - "§b▸ Ami depuis le plus longtemps: §3{oldest_friend}"
+      - "§b▸ Moyenne d'amis ajoutés/mois: §3{friends_per_month}"
+      - ""
+      - "§7Tendance: {trend_indicator} {trend_text}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_general_details"
+      
+  communication_stats:
+    slot: 11
+    hdb_id: 5315 # Messages
+    name: "§b§l💬 Communication"
+    lore:
+      - "§7Statistiques de communication"
+      - "§7avec vos amis"
+      - ""
+      - "§b▸ Messages envoyés: §3{messages_sent}"
+      - "§b▸ Messages reçus: §3{messages_received}"
+      - "§b▸ Conversations actives: §3{active_conversations}"
+      - "§b▸ Ami le plus bavard: §3{most_chatty_friend}"
+      - "§b▸ Moyenne msgs/jour: §3{messages_per_day}"
+      - ""
+      - "§7Période la plus active: §3{peak_chat_time}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_communication_details"
+      
+  activity_stats:
+    slot: 12
+    hdb_id: 1420 # Activités
+    name: "§b§l🎮 Activités Communes"
+    lore:
+      - "§7Temps passé à jouer"
+      - "§7avec vos amis"
+      - ""
+      - "§b▸ Temps total ensemble: §3{time_together}"
+      - "§b▸ Sessions de jeu: §3{gaming_sessions}"
+      - "§b▸ Partenaire de jeu favori: §3{favorite_gaming_buddy}"
+      - "§b▸ Activité préférée: §3{favorite_activity}"
+      - "§b▸ Plus longue session: §3{longest_session}"
+      - ""
+      - "§7Cette semaine: §3{this_week_time}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_activity_details"
+      
+  temporal_stats:
+    slot: 13
+    hdb_id: 8127 # Temps
+    name: "§b§l⏰ Analyses Temporelles"
+    lore:
+      - "§7Patterns et tendances"
+      - "§7temporelles d'amitié"
+      - ""
+      - "§b▸ Heure la plus active: §3{peak_hour}"
+      - "§b▸ Jour le plus social: §3{peak_day}"
+      - "§b▸ Présence moyenne: §3{average_presence}%"
+      - "§b▸ Fuseaux horaires d'amis: §3{timezones_count}"
+      - "§b▸ Compatibilité horaire: §3{time_compatibility}%"
+      - ""
+      - "§7Prédiction prochaine connexion: §3{next_prediction}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_temporal_details"
+      
+  friendship_quality:
+    slot: 14
+    hdb_id: 6156 # Qualité
+    name: "§b§l🏆 Qualité des Amitiés"
+    lore:
+      - "§7Analyse de la qualité et"
+      - "§7stabilité de vos amitiés"
+      - ""
+      - "§b▸ Score de qualité moyen: §3{average_quality}/10"
+      - "§b▸ Amitiés stables (>6 mois): §3{stable_friendships}"
+      - "§b▸ Amitiés récentes (<1 mois): §3{recent_friendships}"
+      - "§b▸ Taux de rétention: §3{retention_rate}%"
+      - "§b▸ Interactions régulières: §3{regular_interactions}"
+      - ""
+      - "§7Recommandation: {quality_recommendation}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_quality_details"
+      
+  network_analysis:
+    slot: 15
+    hdb_id: 2975 # Réseau
+    name: "§b§l🌐 Analyse de Réseau"
+    lore:
+      - "§7Votre réseau social et"
+      - "§7connexions indirectes"
+      - ""
+      - "§b▸ Amis d'amis potentiels: §3{potential_friends}"
+      - "§b▸ Groupes d'amis détectés: §3{friend_clusters}"
+      - "§b▸ Connecteur principal: §3{main_connector}"
+      - "§b▸ Degré de séparation moyen: §3{separation_degree}"
+      - "§b▸ Influence sociale: §3{social_influence}/10"
+      - ""
+      - "§7Suggestions basées sur le réseau: §3{network_suggestions}"
+      - ""
+      - "§8» §bCliquez pour plus de détails"
+    actions:
+      left_click: "view_network_details"
+      
+  achievements_progress:
+    slot: 16
+    hdb_id: 1275 # Succès
+    name: "§b§l🎯 Progression des Succès"
+    lore:
+      - "§7Vos succès et objectifs"
+      - "§7d'amitié"
+      - ""
+      - "§b▸ Succès débloqués: §3{unlocked_achievements}§7/§3{total_achievements}"
+      - "§b▸ Points d'amitié: §3{friendship_points}"
+      - "§b▸ Rang social: §3{social_rank}"
+      - "§b▸ Prochain succès: §3{next_achievement}"
+      - "§b▸ Progression: §3{achievement_progress}%"
+      - ""
+      - "§7Succès rare le plus récent: §3{latest_rare_achievement}"
+      - ""
+      - "§8» §bCliquez pour voir tous les succès"
+    actions:
+      left_click: "view_achievements_details"
+
+# Graphiques et visualisations
+charts:
+  activity_over_time:
+    slot: 19
+    hdb_id: 8726 # Graphique linéaire
+    name: "§e📈 Activité dans le Temps"
+    lore:
+      - "§7Graphique de votre activité"
+      - "§7sociale au fil du temps"
+      - ""
+      - "§e▸ Période: §6{chart_period}"
+      - "§e▸ Points de données: §6{data_points}"
+      - ""
+      - "§7Tendances visibles:"
+      - "§8▸ §7Pics d'activité"
+      - "§8▸ §7Périodes calmes"
+      - "§8▸ §7Croissance du réseau"
+      - ""
+      - "§8» §eCliquez pour voir le graphique"
+    actions:
+      left_click: "view_activity_chart"
+      
+  friend_distribution:
+    slot: 20
+    hdb_id: 1619 # Camembert
+    name: "§e🥧 Répartition des Amis"
+    lore:
+      - "§7Distribution de vos amis"
+      - "§7par catégories"
+      - ""
+      - "§e▸ Favoris: §6{favorites_percentage}%"
+      - "§e▸ Actifs réguliers: §6{active_percentage}%"
+      - "§e▸ Occasionnels: §6{occasional_percentage}%"
+      - "§e▸ Inactifs: §6{inactive_percentage}%"
+      - ""
+      - "§8» §eCliquez pour voir la répartition"
+    actions:
+      left_click: "view_distribution_chart"
+      
+  interaction_heatmap:
+    slot: 21
+    hdb_id: 3621 # Heatmap
+    name: "§e🔥 Carte de Chaleur"
+    lore:
+      - "§7Visualisation des heures"
+      - "§7d'interaction les plus fréquentes"
+      - ""
+      - "§e▸ Données sur: §6{heatmap_days} jours"
+      - "§e▸ Résolution: §6Heure par heure"
+      - ""
+      - "§7Insights:"
+      - "§8▸ §7Créneaux optimaux pour jouer"
+      - "§8▸ §7Périodes de pic social"
+      - "§8▸ §7Moments de solitude"
+      - ""
+      - "§8» §eCliquez pour voir la heatmap"
+    actions:
+      left_click: "view_heatmap"
+
+# Comparaisons et benchmarks
+comparisons:
+  server_average:
+    slot: 28
+    hdb_id: 2967 # Comparaison
+    name: "§d📊 Comparaison Serveur"
+    lore:
+      - "§7Vos statistiques comparées"
+      - "§7à la moyenne du serveur"
+      - ""
+      - "§d▸ Votre score social: §5{your_social_score}/100"
+      - "§d▸ Moyenne serveur: §5{server_average_score}/100"
+      - "§d▸ Votre rang: §5{your_rank}§7/§5{total_players}"
+      - "§d▸ Percentile: §5{percentile}e percentile"
+      - ""
+      - "§7Vous êtes {comparison_text}"
+      - ""
+      - "§8» §dCliquez pour plus de comparaisons"
+    actions:
+      left_click: "view_server_comparison"
+      
+  friend_comparison:
+    slot: 29
+    hdb_id: 1452 # Amis
+    name: "§d👥 Comparaison avec Amis"
+    lore:
+      - "§7Comparez vos statistiques"
+      - "§7avec celles de vos amis"
+      - ""
+      - "§d▸ Ami le plus actif: §5{most_active_friend}"
+      - "§d▸ Votre activité vs lui: §5{activity_vs_most_active}%"
+      - "§d▸ Position dans votre groupe: §5{position_in_group}"
+      - ""
+      - "§7Domaines d'excellence:"
+      - "§8▸ §5{excellence_area_1}"
+      - "§8▸ §5{excellence_area_2}"
+      - ""
+      - "§8» §dCliquez pour comparaisons détaillées"
+    actions:
+      left_click: "view_friend_comparison"
+
+# Insights et recommandations
+insights:
+  ai_insights:
+    slot: 37
+    hdb_id: 8127 # IA
+    name: "§a🤖 Insights Intelligents"
+    lore:
+      - "§7Analyses automatiques et"
+      - "§7recommandations personnalisées"
+      - ""
+      - "§a▸ Insights générés: §2{insights_count}"
+      - "§a▸ Dernière analyse: §2{last_analysis}"
+      - ""
+      - "§7Recommandations actuelles:"
+      - "§8▸ §2{recommendation_1}"
+      - "§8▸ §2{recommendation_2}"
+      - "§8▸ §2{recommendation_3}"
+      - ""
+      - "§8» §aCliquez pour tous les insights"
+    actions:
+      left_click: "view_ai_insights"
+      
+  improvement_suggestions:
+    slot: 38
+    hdb_id: 6156 # Amélioration
+    name: "§a📈 Suggestions d'Amélioration"
+    lore:
+      - "§7Conseils pour améliorer"
+      - "§7votre expérience sociale"
+      - ""
+      - "§a▸ Suggestions actives: §2{active_suggestions}"
+      - "§a▸ Objectifs recommandés: §2{recommended_goals}"
+      - ""
+      - "§7Priorités identifiées:"
+      - "§8▸ §2{priority_1}"
+      - "§8▸ §2{priority_2}"
+      - ""
+      - "§7Impact estimé: §2{estimated_impact}"
+      - ""
+      - "§8» §aCliquez pour le plan d'amélioration"
+    actions:
+      left_click: "view_improvement_plan"
+
+# Navigation et actions
 navigation:
+  export_stats:
+    slot: 46
+    hdb_id: 1396 # Export
+    name: "§6📋 Exporter les Statistiques"
+    lore:
+      - "§7Exportez vos statistiques"
+      - "§7vers différents formats"
+      - ""
+      - "§6▸ Formats disponibles:"
+      - "§8▸ §7PDF (rapport complet)"
+      - "§8▸ §7CSV (données brutes)"
+      - "§8▸ §7JSON (pour développeurs)"
+      - ""
+      - "§8» §6Cliquez pour exporter"
+    actions:
+      left_click: "export_statistics"
+      
+  refresh_stats:
+    slot: 47
+    hdb_id: 1420 # Actualiser
+    name: "§b🔄 Actualiser"
+    lore:
+      - "§7Recalculer toutes les"
+      - "§7statistiques en temps réel"
+      - ""
+      - "§b▸ Dernière MAJ: §3{last_update}"
+      - "§b▸ Temps de calcul: §3{calculation_time}ms"
+      - ""
+      - "§8» §bCliquez pour actualiser"
+    actions:
+      left_click: "refresh_statistics"
+      
   back_to_main:
     slot: 49
-    hdb_id: 3593
+    hdb_id: 3593 # Retour
     name: "§e🏠 Retour Menu Principal"
+    actions:
+      left_click: "back_to_main"
+      
+  share_stats:
+    slot: 51
+    hdb_id: 5315 # Partager
+    name: "§d📤 Partager"
+    lore:
+      - "§7Partagez vos statistiques"
+      - "§7avec vos amis"
+      - ""
+      - "§d▸ Confidentialité: §5{privacy_level}"
+      - ""
+      - "§7Options de partage:"
+      - "§8▸ §7Lien temporaire"
+      - "§8▸ §7Image des stats"
+      - "§8▸ §7Rapport résumé"
+      - ""
+      - "§8» §dCliquez pour partager"
+    actions:
+      left_click: "share_statistics"
+      
+  historical_data:
+    slot: 52
+    hdb_id: 8726 # Historique
+    name: "§7📚 Données Historiques"
+    lore:
+      - "§7Accédez à l'historique"
+      - "§7complet de vos statistiques"
+      - ""
+      - "§7▸ Données disponibles: §8{historical_months} mois"
+      - "§7▸ Premier enregistrement: §8{first_record}"
+      - ""
+      - "§8» §7Cliquez pour l'historique"
+    actions:
+      left_click: "view_historical_data"
+
+# Configuration des calculs
+calculation_settings:
+  update_frequency: 300 # secondes
+  data_retention: 365 # jours
+  cache_duration: 60 # minutes
+  heavy_calculation_delay: 3600 # secondes (1 heure)
+  
+# Messages système
+messages:
+  calculating: "§7Calcul des statistiques en cours..."
+  updated: "§aStatistiques mises à jour !"
+  export_success: "§aStatistiques exportées vers {filename}"
+  share_link_created: "§aLien de partage créé: {link}"
+  no_data: "§7Pas assez de données pour cette statistique"
+  error_calculation: "§cErreur lors du calcul des statistiques"
+
+# Sons
 sounds:
-  open_stats: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  stats_updated: "ENTITY_EXPERIENCE_ORB_PICKUP"
+  export_complete: "ENTITY_PLAYER_LEVELUP"
+  chart_generated: "BLOCK_ENCHANTMENT_TABLE_USE"
+  insight_discovered: "ENTITY_VILLAGER_YES"
+  error: "BLOCK_ANVIL_LAND"
