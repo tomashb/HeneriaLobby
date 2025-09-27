@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.logging.Level;
 
 public class DatabaseManager {
@@ -199,6 +200,24 @@ public class DatabaseManager {
 
         plugin.getLogger().info("Database initialization completed successfully!");
         return true;
+    }
+
+    public UUID getPlayerUUID(final String playerName) {
+        final String query = "SELECT uuid FROM players WHERE username = ? ORDER BY last_seen DESC LIMIT 1";
+
+        try (Connection connection = getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, playerName);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return UUID.fromString(resultSet.getString("uuid"));
+                }
+            }
+        } catch (final SQLException exception) {
+            plugin.getLogger().severe("Erreur lors de la recherche UUID pour " + playerName + ": " + exception.getMessage());
+        }
+
+        return null;
     }
 
     private void createCoreTablesWithoutFK() throws SQLException {

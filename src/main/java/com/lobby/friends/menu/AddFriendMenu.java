@@ -1,6 +1,7 @@
 package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.friends.listeners.FriendAddChatListener;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.FriendsMainMenu;
 import com.lobby.friends.menu.FriendsMenuManager;
@@ -234,9 +235,12 @@ public class AddFriendMenu implements Listener {
 
     private void handleSearch() {
         player.closeInventory();
-        player.sendMessage("§b🔍 Recherche de joueur");
-        player.sendMessage("§7Tapez le nom du joueur dans le chat:");
-        player.sendMessage("§7(ou tapez 'cancel' pour annuler)");
+        final FriendAddChatListener listener = plugin.getFriendAddChatListener();
+        if (listener == null) {
+            player.sendMessage("§cLe système d'ajout via le chat est indisponible.");
+            return;
+        }
+        listener.enableAddMode(player, "search_player_name");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
     }
 
