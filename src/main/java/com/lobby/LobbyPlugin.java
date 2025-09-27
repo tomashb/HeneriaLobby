@@ -26,6 +26,8 @@ import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
 import com.lobby.friends.menu.FriendsMenuManager;
+import com.lobby.friends.menu.MenuLoader;
+import com.lobby.friends.utils.HeadManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -64,6 +66,8 @@ public final class LobbyPlugin extends JavaPlugin {
     private ChatPromptManager chatPromptManager;
     private ConfirmationManager confirmationManager;
     private HeadDatabaseManager headDatabaseManager;
+    private HeadManager headManager;
+    private MenuLoader menuLoader;
     private ShopManager shopManager;
     private ShopCommands shopCommands;
     private ServerManager serverManager;
@@ -97,6 +101,10 @@ public final class LobbyPlugin extends JavaPlugin {
         configManager.loadConfigs();
 
         headDatabaseManager = new HeadDatabaseManager(this);
+        headManager = new HeadManager(this);
+        menuLoader = new MenuLoader(this, headManager);
+        getLogger().info("HeadManager initialisé !");
+        getLogger().info(headManager.getHeadDatabaseStatus());
 
         databaseManager = new DatabaseManager(this);
         if (!databaseManager.initialize()) {
@@ -277,6 +285,14 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public HeadDatabaseManager getHeadDatabaseManager() {
         return headDatabaseManager;
+    }
+
+    public HeadManager getHeadManager() {
+        return headManager;
+    }
+
+    public MenuLoader getMenuLoader() {
+        return menuLoader;
     }
 
     public ShopManager getShopManager() {

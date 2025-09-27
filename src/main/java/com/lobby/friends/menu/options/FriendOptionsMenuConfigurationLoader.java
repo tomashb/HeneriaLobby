@@ -149,6 +149,10 @@ public final class FriendOptionsMenuConfigurationLoader {
     }
 
     private static String resolveItemKey(final ConfigurationSection section) {
+        final String headId = section.getString("head_id");
+        if (headId != null && !headId.isBlank()) {
+            return "hdb:" + headId.trim();
+        }
         final String hdbId = section.getString("hdb_id");
         if (hdbId != null && !hdbId.isBlank()) {
             return "hdb:" + hdbId.trim();

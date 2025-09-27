@@ -3,6 +3,7 @@ package com.lobby.friends.menu;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.data.FriendSettings;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.utils.HeadManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,17 +31,18 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     private static final int SAVE_SLOT = 40;
     private static final int RESET_SLOT = 42;
     private static final int BACK_SLOT = 45;
-    private static final int CLOSE_SLOT = 53;
 
     private Inventory inventory;
     private FriendSettings settings;
     private final AtomicBoolean opened = new AtomicBoolean(false);
+    private final HeadManager headManager;
 
     public FriendSettingsMenu(final LobbyPlugin plugin,
                               final FriendsManager friendsManager,
                               final FriendsMenuManager menuManager,
                               final Player player) {
         super(plugin, friendsManager, menuManager, player);
+        this.headManager = plugin.getHeadManager();
     }
 
     @Override
@@ -111,7 +114,7 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private void fillFrame() {
-        final ItemStack glass = createItem(Material.ORANGE_STAINED_GLASS_PANE, " ");
+        final ItemStack glass = createItem(Material.ORANGE_STAINED_GLASS_PANE, "§7");
         final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : goldSlots) {
             inventory.setItem(slot, glass);
@@ -119,16 +122,11 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private void displayLoadingState() {
-        final ItemStack loading = createItem(Material.CLOCK, "§eChargement des paramètres...");
-        final ItemMeta meta = loading.getItemMeta();
-        if (meta != null) {
-            meta.setLore(Arrays.asList(
-                    "§7Veuillez patienter quelques secondes",
-                    "§7pendant la récupération de vos",
-                    "§7préférences d'amitié."
-            ));
-            loading.setItemMeta(meta);
-        }
+        final ItemStack loading = createItem(Material.CLOCK, "§eChargement des paramètres...", Arrays.asList(
+                "§7Veuillez patienter quelques secondes",
+                "§7pendant la récupération de vos",
+                "§7préférences d'amitié."
+        ));
         inventory.setItem(22, loading);
     }
 
@@ -142,193 +140,127 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private ItemStack buildNotificationsItem() {
-        final ItemStack item = createItem(Material.BELL, "§6§l🔔 Notifications");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("notifications");
-            meta.setLore(Arrays.asList(
-                    "§7Configurez vos notifications d'amis",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Options disponibles:",
-                    "§8▸ §aToutes §7- Toutes les notifications",
-                    "§8▸ §eImportantes §7- Connexions et messages",
-                    "§8▸ §6Favoris §7- Favoris uniquement",
-                    "§8▸ §cAucune §7- Aucune notification",
-                    "",
-                    "§8» §6Cliquez pour changer"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("notifications");
+        return buildHeadItem("4120", "§e🔔 Notifications d'Amis", Arrays.asList(
+                "§7Recevoir des alertes de vos amis",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Types:",
+                "§8• §aConnexion/Déconnexion",
+                "§8• §aMessages privés",
+                "§8• §aInvitations de jeu",
+                "",
+                "§8» §eCliquez pour activer/désactiver"
+        ), Material.BELL);
     }
 
     private ItemStack buildVisibilityItem() {
-        final ItemStack item = createItem(Material.ENDER_EYE, "§6§l👁️ Visibilité en Ligne");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("visibility");
-            meta.setLore(Arrays.asList(
-                    "§7Contrôlez qui peut voir votre statut",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Options:",
-                    "§8▸ §aPublic §7- Visible par tous",
-                    "§8▸ §eAmis §7- Visible par vos amis",
-                    "§8▸ §6Favoris §7- Favoris uniquement",
-                    "§8▸ §cInvisible §7- Toujours hors-ligne",
-                    "",
-                    "§8» §6Cliquez pour changer"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("visibility");
+        return buildHeadItem("3644", "§a🟢 Statut en Ligne", Arrays.asList(
+                "§7Qui voit votre statut de connexion",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Options:",
+                "§8• §aVisible - Tout le monde",
+                "§8• §eAmis seulement",
+                "§8• §6Favoris",
+                "§8• §cInvisible",
+                "",
+                "§8» §eCliquez pour changer"
+        ), Material.ENDER_EYE);
     }
 
     private ItemStack buildAutoRequestsItem() {
-        final ItemStack item = createItem(Material.HOPPER, "§6§l📨 Demandes Automatiques");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("auto_requests");
-            meta.setLore(Arrays.asList(
-                    "§7Gestion automatique des demandes",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Options:",
-                    "§8▸ §aAccepter auto §7- Accepter toutes",
-                    "§8▸ §eAmis mutuels §7- Auto si 3+ amis communs",
-                    "§8▸ §6Manuel §7- Décider manuellement",
-                    "§8▸ §cRefuser auto §7- Refuser toutes",
-                    "",
-                    "§8» §6Cliquez pour changer"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("auto_requests");
+        return buildHeadItem("5568", "§b📝 Demandes d'Amitié", Arrays.asList(
+                "§7Qui peut vous inviter",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Options:",
+                "§8• §aAcceptation automatique",
+                "§8• §eAmis mutuels requis",
+                "§8• §6Validation manuelle",
+                "§8• §cRefus automatique",
+                "",
+                "§8» §eCliquez pour modifier"
+        ), Material.PAPER);
     }
 
     private ItemStack buildSoundsItem() {
-        final ItemStack item = createItem(Material.NOTE_BLOCK, "§6§l🎵 Sons d'Amitié");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("sounds");
-            meta.setLore(Arrays.asList(
-                    "§7Contrôlez les sons d'interactions",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Types de sons:",
-                    "§8▸ §7Connexion/Déconnexion amis",
-                    "§8▸ §7Messages privés reçus",
-                    "§8▸ §7Demandes d'amitié",
-                    "",
-                    "§8» §6Cliquez pour activer/désactiver"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("sounds");
+        return buildHeadItem("3045", "§d🎵 Sons d'Amitié", Arrays.asList(
+                "§7Personnaliser les sons d'alerte",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Options:",
+                "§8• §aActivés",
+                "§8• §cDésactivés",
+                "",
+                "§8» §eCliquez pour basculer"
+        ), Material.NOTE_BLOCK);
     }
 
     private ItemStack buildPrivateMessagesItem() {
-        final ItemStack item = createItem(Material.WRITABLE_BOOK, "§6§l💬 Messages Privés");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("private_messages");
-            meta.setLore(Arrays.asList(
-                    "§7Contrôlez qui peut vous envoyer des MP",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Options:",
-                    "§8▸ §aTous §7- Tous les joueurs",
-                    "§8▸ §eAmis §7- Vos amis uniquement",
-                    "§8▸ §6Favoris §7- Favoris uniquement",
-                    "§8▸ §cDésactivé §7- Aucun message",
-                    "",
-                    "§8» §6Cliquez pour changer"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("private_messages");
+        return buildHeadItem("2177", "§d💬 Messages Privés", Arrays.asList(
+                "§7Qui peut vous écrire",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Options:",
+                "§8• §aTous",
+                "§8• §eAmis",
+                "§8• §6Favoris",
+                "§8• §cDésactivé",
+                "",
+                "§8» §eCliquez pour ajuster"
+        ), Material.WRITABLE_BOOK);
     }
 
     private ItemStack buildTeleportationItem() {
-        final ItemStack item = createItem(Material.ENDER_PEARL, "§6§l🚀 Téléportation");
-        final ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            final String status = getSettingDisplay("teleportation");
-            meta.setLore(Arrays.asList(
-                    "§7Paramètres de téléportation vers vous",
-                    "",
-                    "§6▸ État actuel: §e" + status,
-                    "",
-                    "§7Options:",
-                    "§8▸ §aLibre §7- Téléportation instantanée",
-                    "§8▸ §eDemander §7- Demander permission",
-                    "§8▸ §6Favoris §7- Favoris sans permission",
-                    "§8▸ §cDésactivé §7- Aucune téléportation",
-                    "",
-                    "§8» §6Cliquez pour changer"
-            ));
-            item.setItemMeta(meta);
-        }
-        return item;
+        final String status = getSettingDisplay("teleportation");
+        return buildHeadItem("7129", "§5🌀 Téléportation", Arrays.asList(
+                "§7Contrôler les téléportations",
+                "",
+                "§8▸ §aActuel: §f" + status,
+                "",
+                "§7Options:",
+                "§8• §aLibre - Tout le monde",
+                "§8• §eDemander permission",
+                "§8• §6Favoris uniquement",
+                "§8• §cDésactivé",
+                "",
+                "§8» §eCliquez pour modifier"
+        ), Material.ENDER_PEARL);
     }
 
     private void setupNavigation() {
-        final ItemStack save = createItem(Material.EMERALD, "§a💾 Sauvegarder");
-        final ItemMeta saveMeta = save.getItemMeta();
-        if (saveMeta != null) {
-            saveMeta.setLore(Arrays.asList(
-                    "§7Sauvegarder vos paramètres actuels",
-                    "",
-                    "§8» §aCliquez pour sauvegarder"
-            ));
-            save.setItemMeta(saveMeta);
-        }
+        final ItemStack save = buildHeadItem("4654", "§a💾 Sauvegarder", Arrays.asList(
+                "§7Enregistrer tous les paramètres",
+                "",
+                "§8» §aCliquez pour sauvegarder"
+        ), Material.EMERALD);
         inventory.setItem(SAVE_SLOT, save);
 
-        final ItemStack reset = createItem(Material.REDSTONE, "§c🔄 Réinitialiser");
-        final ItemMeta resetMeta = reset.getItemMeta();
-        if (resetMeta != null) {
-            resetMeta.setLore(Arrays.asList(
-                    "§cRéinitialiser tous les paramètres",
-                    "§caux valeurs par défaut",
-                    "",
-                    "§c⚠ Cette action est irréversible !",
-                    "",
-                    "§8» §cCliquez pour réinitialiser"
-            ));
-            reset.setItemMeta(resetMeta);
-        }
+        final ItemStack reset = buildHeadItem("9056", "§c🔄 Réinitialiser", Arrays.asList(
+                "§7Remettre les paramètres par défaut",
+                "",
+                "§c⚠ Action irréversible",
+                "",
+                "§8» §cCliquez pour réinitialiser"
+        ), Material.REDSTONE);
         inventory.setItem(RESET_SLOT, reset);
 
-        final ItemStack back = createItem(Material.ARROW, "§c« Retour");
-        final ItemMeta backMeta = back.getItemMeta();
-        if (backMeta != null) {
-            backMeta.setLore(Arrays.asList(
-                    "§7Revenir au menu principal des amis",
-                    "",
-                    "§8» §cCliquez pour retourner"
-            ));
-            back.setItemMeta(backMeta);
-        }
+        final ItemStack back = createItem(Material.ARROW, "§c« Retour aux Amis", Arrays.asList(
+                "§7Revenir au menu principal",
+                "",
+                "§8» §cCliquez pour retourner"
+        ));
         inventory.setItem(BACK_SLOT, back);
-
-        final ItemStack close = createItem(Material.BARRIER, "§c✕ Fermer");
-        final ItemMeta closeMeta = close.getItemMeta();
-        if (closeMeta != null) {
-            closeMeta.setLore(Arrays.asList(
-                    "§7Fermer le menu",
-                    "",
-                    "§8» §cCliquez pour fermer"
-            ));
-            close.setItemMeta(closeMeta);
-        }
-        inventory.setItem(CLOSE_SLOT, close);
     }
 
     private String getSettingDisplay(final String setting) {
@@ -409,7 +341,6 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
             case SAVE_SLOT -> handleSave();
             case RESET_SLOT -> handleReset();
             case BACK_SLOT -> handleBack();
-            case CLOSE_SLOT -> handleClose();
             default -> {
             }
         }
@@ -497,11 +428,6 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
                 () -> new FriendsMainMenu(plugin, friendsManager, menuManager, player).open(), 3L);
     }
 
-    private void handleClose() {
-        player.closeInventory();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-    }
-
     @Override
     public void handleMenuClose(final InventoryCloseEvent event) {
         if (!INVENTORY_TITLE.equals(event.getView().getTitle())) {
@@ -512,13 +438,30 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private ItemStack createItem(final Material material, final String name) {
+        return createItem(material, name, List.of());
+    }
+
+    private ItemStack createItem(final Material material, final String name, final List<String> lore) {
         final ItemStack item = new ItemStack(material);
         final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(name);
+            if (lore != null && !lore.isEmpty()) {
+                meta.setLore(new ArrayList<>(lore));
+            }
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    private ItemStack buildHeadItem(final String headId,
+                                    final String name,
+                                    final List<String> lore,
+                                    final Material fallback) {
+        if (headManager != null) {
+            return headManager.createCustomHead(headId, name, lore);
+        }
+        return createItem(fallback, name, lore);
     }
 
     @Override

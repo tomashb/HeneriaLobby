@@ -215,6 +215,39 @@ public class FriendsManager {
         return saveFriendSettings(player, defaults);
     }
 
+    public int getCachedFriendsCount(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return 0;
+        }
+        final List<FriendData> cached = friendsCache.get(playerUuid);
+        return cached != null ? cached.size() : 0;
+    }
+
+    public int getCachedOnlineFriendsCount(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return 0;
+        }
+        final List<FriendData> cached = friendsCache.get(playerUuid);
+        if (cached == null || cached.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        for (FriendData data : cached) {
+            if (data != null && data.isOnline()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int getCachedPendingRequests(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return 0;
+        }
+        final List<FriendRequest> cached = requestsCache.get(playerUuid);
+        return cached != null ? cached.size() : 0;
+    }
+
     // endregion
 
     // endregion

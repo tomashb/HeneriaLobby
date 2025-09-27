@@ -13,66 +13,80 @@ navigation:
   back:
     slot: 45
     material: "ARROW"
-    name: "§c« Retour"
+    name: "§c« Retour aux Amis"
     actions:
       left_click: "back_to_main"
-  close:
-    slot: 53
-    material: "BARRIER"
-    name: "§c✕ Fermer"
-    actions:
-      left_click: "close_menu"
 
 items:
-  search_input:
-    slot: 22
-    material: "NAME_TAG"
-    name: "§e🔍 Rechercher un Joueur"
+  search_by_name:
+    slot: 19
+    head_id: "1420"
+    name: "§e🔍 Rechercher par Nom"
     lore:
-      - "§7Tapez le nom du joueur"
-      - "§7à ajouter"
+      - "§7Ajouter un ami par son pseudo exact"
       - ""
-      - "§8» §eCliquez pour lancer la recherche"
+      - "§e▸ Tapez le nom complet du joueur"
+      - "§e▸ Sensible à la casse"
+      - "§e▸ 3-16 caractères requis"
+      - ""
+      - "§8» §eCliquez et tapez le nom en chat"
     actions:
       left_click: "prompt_search"
-  recent_players:
+
+  search_by_code:
     slot: 20
-    material: "CLOCK"
-    name: "§b⏰ Joueurs Récents"
+    head_id: "4579"
+    name: "§b🔑 Ajouter par Code d'Ami"
     lore:
-      - "§7Derniers joueurs rencontrés"
+      - "§7Utilisez le code d'ami unique"
+      - "§7Format requis: XXXX-YYYY"
       - ""
-      - "§8» §bCliquez pour afficher"
+      - "§b▸ Votre code personnel: §3%player_friend_code%"
+      - "§b▸ Code toujours unique"
+      - "§b▸ Partage sécurisé"
+      - ""
+      - "§8» §bCliquez et tapez le code"
+    actions:
+      left_click: "prompt_code"
+
+  recent_players:
+    slot: 21
+    head_id: "3644"
+    name: "§d⏰ Joueurs Récents"
+    lore:
+      - "§7Joueurs rencontrés récemment"
+      - ""
+      - "§d▸ Dernières 24h: §5%recent_24h% joueurs"
+      - "§d▸ Cette semaine: §5%recent_week% joueurs"
+      - ""
+      - "§8» §dCliquez pour voir la liste"
     actions:
       left_click: "show_recent"
+
   suggested_friends:
-    slot: 24
-    material: "COMPASS"
-    name: "§d💫 Suggestions"
+    slot: 22
+    head_id: "2118"
+    name: "§6💡 Suggestions Intelligentes"
     lore:
-      - "§7Recommandations personnalisées"
+      - "§7Joueurs que vous pourriez connaître"
       - ""
-      - "§8» §dCliquez pour voir"
+      - "§6▸ Amis d'amis: §e%mutual_friends%"
+      - "§6▸ Même serveur: §e%same_server%"
+      - ""
+      - "§8» §6Cliquez pour voir les suggestions"
     actions:
       left_click: "show_suggestions"
 
-search_results_area:
-  start_slot: 28
-  end_slot: 34
-  empty_message:
-    material: "GRAY_STAINED_GLASS_PANE"
-    name: "§7Aucun résultat"
+  help:
+    slot: 40
+    head_id: "160"
+    name: "§f📖 Guide d'Ajout d'Amis"
     lore:
-      - "§7Utilisez la recherche ci-dessus"
-      - "§7pour trouver des joueurs"
-
-help:
-  slot: 40
-  material: "BOOK"
-  name: "§f📖 Comment ajouter un ami"
-  lore:
-    - "§7Guide rapide:" 
-    - "§8• §eCherchez un joueur par son nom"
-    - "§8• §eConsultez vos rencontres récentes"
-    - "§8• §eDécouvrez nos suggestions"
-    - "§8• §eCliquez sur un joueur pour inviter"
+      - "§7Comment ajouter des amis:"
+      - ""
+      - "§8▸ §eNom: Pseudo exact du joueur"
+      - "§8▸ §bCode: Format XXXX-YYYY unique"
+      - "§8▸ §dRécents: Joueurs croisés"
+      - "§8▸ §6Suggestions: Algorithme intelligent"
+      - ""
+      - "§7⚠ Les demandes expirent après §c7 jours"

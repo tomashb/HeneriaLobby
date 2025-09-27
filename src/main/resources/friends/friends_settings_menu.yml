@@ -13,106 +13,138 @@ navigation:
   back:
     slot: 45
     material: "ARROW"
-    name: "§c« Retour"
+    name: "§c« Retour aux Amis"
     lore:
       - "§7Revenir au menu principal"
     actions:
       left_click: "back_to_main"
   save:
     slot: 40
-    material: "EMERALD"
+    head_id: "4654"
     name: "§a💾 Sauvegarder"
     lore:
-      - "§7Sauvegarder les paramètres"
+      - "§7Enregistrer tous les paramètres"
       - ""
-      - "§8» §aCliquez pour confirmer"
+      - "§8» §aCliquez pour sauvegarder"
     actions:
       left_click: "save_settings"
   reset:
     slot: 42
-    material: "REDSTONE"
+    head_id: "9056"
     name: "§c🔄 Réinitialiser"
     lore:
-      - "§7Revenir aux valeurs par défaut"
+      - "§7Remettre les paramètres par défaut"
       - ""
       - "§c⚠ Action irréversible"
+      - ""
       - "§8» §cCliquez pour réinitialiser"
     actions:
       left_click: "reset_settings"
-  close:
-    slot: 53
-    material: "BARRIER"
-    name: "§c✕ Fermer"
-    lore:
-      - "§7Fermer le menu"
-    actions:
-      left_click: "close_menu"
 
 items:
-  friend_requests:
-    slot: 19
-    material: "PAPER"
-    name: "§b📝 Demandes d'Amitié"
-    lore:
-      - "§7Qui peut vous inviter"
-      - "§8▸ §aActuel: {friend_requests_display}"
-      - ""
-      - "§8» §eCliquez pour modifier"
-    values: ["EVERYONE", "NONE"]
-    action: "toggle_friend_requests"
   notifications:
-    slot: 20
-    material: "BELL"
-    name: "§e🔔 Notifications"
+    slot: 10
+    head_id: "4120"
+    name: "§e🔔 Notifications d'Amis"
     lore:
-      - "§7Recevoir les alertes"
-      - "§8▸ §aActuel: {notifications_display}"
+      - "§7Recevoir des alertes de vos amis"
       - ""
-      - "§8» §eCliquez pour modifier"
-    values: ["ENABLED", "DISABLED"]
+      - "§8▸ §aActuel: §f%notifications_setting%"
+      - ""
+      - "§7Types:"
+      - "§8• §aConnexion/Déconnexion"
+      - "§8• §aMessages privés"
+      - "§8• §aInvitations de jeu"
+      - ""
+      - "§8» §eCliquez pour activer/désactiver"
+    values: ["ALL", "IMPORTANT", "FAVORITES", "NONE"]
     action: "toggle_notifications"
+
   online_status:
-    slot: 21
-    material: "EMERALD_BLOCK"
+    slot: 11
+    head_id: "3644"
     name: "§a🟢 Statut en Ligne"
     lore:
-      - "§7Visibilité actuelle"
-      - "§8▸ §aActuel: {online_status_display}"
+      - "§7Qui voit votre statut de connexion"
+      - ""
+      - "§8▸ §aActuel: §f%online_status_setting%"
+      - ""
+      - "§7Options:"
+      - "§8• §aVisible - Tout le monde"
+      - "§8• §eAmis seulement"
+      - "§8• §6Favoris"
+      - "§8• §cInvisible"
+      - ""
+      - "§8» §eCliquez pour changer"
+    values: ["PUBLIC", "FRIENDS", "FAVORITES", "INVISIBLE"]
+    action: "toggle_online_status"
+
+  friend_requests:
+    slot: 12
+    head_id: "5568"
+    name: "§b📝 Demandes d'Amitié"
+    lore:
+      - "§7Qui peut vous envoyer des demandes"
+      - ""
+      - "§8▸ §aActuel: §f%auto_requests_setting%"
+      - ""
+      - "§7Options:"
+      - "§8• §aAcceptation automatique"
+      - "§8• §eAmis mutuels requis"
+      - "§8• §6Validation manuelle"
+      - "§8• §cRefus automatique"
       - ""
       - "§8» §eCliquez pour modifier"
-    values: ["VISIBLE", "FRIENDS_ONLY", "INVISIBLE"]
-    action: "toggle_online_status"
+    values: ["ACCEPT", "MUTUAL", "MANUAL", "REJECT"]
+    action: "toggle_auto_requests"
+
+  sounds:
+    slot: 13
+    head_id: "3045"
+    name: "§d🎵 Sons d'Amitié"
+    lore:
+      - "§7Personnaliser les sons d'alerte"
+      - ""
+      - "§8▸ §aActuel: §f%sounds_setting%"
+      - ""
+      - "§8» §eCliquez pour basculer"
+    values: ["ENABLED", "DISABLED"]
+    action: "toggle_sounds"
+
   private_messages:
-    slot: 22
-    material: "WRITABLE_BOOK"
+    slot: 14
+    head_id: "2177"
     name: "§d💬 Messages Privés"
     lore:
-      - "§7Autoriser les messages"
-      - "§8▸ §aActuel: {private_messages_display}"
+      - "§7Qui peut vous écrire"
       - ""
-      - "§8» §eCliquez pour modifier"
+      - "§8▸ §aActuel: §f%private_messages_setting%"
+      - ""
+      - "§7Options:"
+      - "§8• §aTous"
+      - "§8• §eAmis"
+      - "§8• §6Favoris"
+      - "§8• §cDésactivé"
+      - ""
+      - "§8» §eCliquez pour ajuster"
     values: ["ALL", "FRIENDS", "FAVORITES", "DISABLED"]
     action: "toggle_private_messages"
+
   teleportation:
-    slot: 23
-    material: "ENDER_PEARL"
+    slot: 15
+    head_id: "7129"
     name: "§5🌀 Téléportation"
     lore:
-      - "§7Accès à votre position"
-      - "§8▸ §aActuel: {teleportation_display}"
+      - "§7Contrôler les téléportations vers vous"
+      - ""
+      - "§8▸ §aActuel: §f%teleportation_setting%"
+      - ""
+      - "§7Options:"
+      - "§8• §aLibre - Tout le monde"
+      - "§8• §eDemander permission"
+      - "§8• §6Favoris uniquement"
+      - "§8• §cDésactivé"
       - ""
       - "§8» §eCliquez pour modifier"
     values: ["FREE", "ASK_PERMISSION", "FAVORITES", "DISABLED"]
     action: "toggle_teleportation"
-  auto_accept:
-    slot: 25
-    material: "NETHER_STAR"
-    name: "§6⭐ Auto-accepter Favoris"
-    lore:
-      - "§7Accepter automatiquement"
-      - "§7les demandes des favoris"
-      - ""
-      - "§8▸ §aActuel: {auto_accept_display}"
-      - "§8» §eCliquez pour modifier"
-    values: ["ENABLED", "DISABLED"]
-    action: "toggle_auto_accept"
