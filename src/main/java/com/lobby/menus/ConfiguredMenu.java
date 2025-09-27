@@ -1,12 +1,15 @@
 package com.lobby.menus;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.menu.FriendsMainMenu;
 import com.lobby.servers.ServerManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -205,6 +208,7 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
                 }
             }
             case COMMAND -> executeCommand(player, action.argument);
+            case FRIENDS_MENU -> openFriendsMenu(player);
         }
     }
 
@@ -245,6 +249,20 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         }
         player.closeInventory();
         Bukkit.getScheduler().runTask(plugin, () -> player.performCommand(command));
+    }
+
+    private void openFriendsMenu(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final FriendsManager friendsManager = plugin.getFriendsManager();
+        if (friendsManager == null) {
+            player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
+            return;
+        }
+        player.closeInventory();
+        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
     }
 
     private Map<String, String> buildPlaceholderMap(final Player player) {
@@ -351,7 +369,8 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
         MENU,
         CLOSE_MENU,
         MESSAGE,
-        COMMAND
+        COMMAND,
+        FRIENDS_MENU
     }
 
     private record MenuAction(ActionType type, String argument) {
@@ -375,6 +394,7 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
                 case "CLOSE_MENU" -> new MenuAction(ActionType.CLOSE_MENU, argument);
                 case "MESSAGE" -> new MenuAction(ActionType.MESSAGE, argument);
                 case "COMMAND" -> new MenuAction(ActionType.COMMAND, argument);
+                case "FRIENDS_MENU" -> new MenuAction(ActionType.FRIENDS_MENU, argument);
                 default -> NONE;
             };
         }

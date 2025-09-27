@@ -50,6 +50,7 @@ public class FriendsMainMenu implements Listener {
         }
         this.viewer = player;
         this.inventory = Bukkit.createInventory(null, INVENTORY_SIZE, MENU_TITLE);
+        setupMenuWithDefaults();
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
         loadDataAndCreateMenu(player);
@@ -65,11 +66,22 @@ public class FriendsMainMenu implements Listener {
                     final int size = friends != null ? friends.size() : 0;
                     totalFriends = size;
                     if (friends != null && !friends.isEmpty()) {
-                        onlineFriends = (int) friends.stream().filter(friend -> friend != null && friend.isOnline()).count();
+                        onlineFriends = (int) friends.stream()
+                                .filter(friend -> friend != null && friend.isOnline())
+                                .count();
                     }
+                })
+                .exceptionally(throwable -> {
+                    totalFriends = 0;
+                    onlineFriends = 0;
+                    return null;
                 });
         final CompletableFuture<?> requestsFuture = friendsManager.getPendingRequests(player)
-                .thenAccept(requests -> pendingRequests = requests != null ? requests.size() : 0);
+                .thenAccept(requests -> pendingRequests = requests != null ? requests.size() : 0)
+                .exceptionally(throwable -> {
+                    pendingRequests = 0;
+                    return null;
+                });
 
         CompletableFuture.allOf(friendsFuture, requestsFuture)
                 .whenComplete((ignored, throwable) -> Bukkit.getScheduler().runTask(plugin, () -> {
@@ -79,27 +91,34 @@ public class FriendsMainMenu implements Listener {
                     if (viewer == null || !viewer.isOnline()) {
                         return;
                     }
-                    setupMenu();
+                    setupMenuWithRealData();
                     viewer.updateInventory();
                 }));
     }
 
-    private void setupMenu() {
+    private void setupMenuWithDefaults() {
         if (inventory == null) {
             return;
         }
         inventory.clear();
 
         final ItemStack greenGlass = createItem(Material.GREEN_STAINED_GLASS_PANE, " ");
-        final int[] glassSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 53};
+        final int[] glassSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : glassSlots) {
             inventory.setItem(slot, greenGlass);
         }
 
-        setupMainItems();
+        setupMainItems(0, 0, 0);
     }
 
-    private void setupMainItems() {
+    private void setupMenuWithRealData() {
+        if (inventory == null) {
+            return;
+        }
+        setupMainItems(totalFriends, onlineFriends, pendingRequests);
+    }
+
+    private void setupMainItems(final int friends, final int online, final int requestCount) {
         if (inventory == null) {
             return;
         }
@@ -110,9 +129,9 @@ public class FriendsMainMenu implements Listener {
             friendsMeta.setLore(Arrays.asList(
                     "§7Consultez et gérez votre liste d'amis",
                     "",
-                    "§a▸ Total d'amis: §2" + totalFriends,
-                    "§a▸ En ligne: §2" + onlineFriends,
-                    "§a▸ Hors ligne: §8" + Math.max(0, totalFriends - onlineFriends),
+                    "§a▸ Total d'amis: §2" + friends,
+                    "§a▸ En ligne: §2" + online,
+                    "§a▸ Hors ligne: §8" + Math.max(0, friends - online),
                     "",
                     "§8» §aCliquez pour ouvrir"
             ));
@@ -142,8 +161,8 @@ public class FriendsMainMenu implements Listener {
             requestsMeta.setLore(Arrays.asList(
                     "§7Gérez vos demandes d'amitié",
                     "",
-                    "§6▸ Demandes reçues: §c" + pendingRequests,
-                    pendingRequests > 0 ? "§c⚠ Demandes en attente !" : "§7Aucune demande",
+                    "§6▸ Demandes reçues: §c" + requestCount,
+                    requestCount > 0 ? "§c⚠ Demandes en attente !" : "§7Aucune demande",
                     "",
                     "§8» §6Cliquez pour gérer"
             ));
