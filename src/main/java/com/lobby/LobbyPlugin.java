@@ -19,10 +19,12 @@ import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
 import com.lobby.friends.commands.FriendsTestCommand;
 import com.lobby.friends.listeners.FriendAddChatListener;
+import com.lobby.friends.listeners.FriendsListClickHandler;
 import com.lobby.friends.manager.BlockedPlayersManager;
 import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.manager.FriendsSettingsManager;
 import com.lobby.friends.manager.MenuUpdateManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
@@ -87,6 +89,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private FriendsMenuManager friendsMenuManager;
     private FriendAddChatListener friendAddChatListener;
     private MenuUpdateManager menuUpdateManager;
+    private FriendsSettingsManager friendsSettingsManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -141,12 +144,14 @@ public final class LobbyPlugin extends JavaPlugin {
         getLogger().info("Gestionnaire de codes d'amis initialisé !");
         blockedPlayersManager = new BlockedPlayersManager(this);
         friendsManager = new FriendsManager(this);
+        friendsSettingsManager = new FriendsSettingsManager(this);
         friendAddChatListener = new FriendAddChatListener(this);
         getServer().getPluginManager().registerEvents(friendAddChatListener, this);
         getLogger().info("Listener d'ajout d'amis enregistré !");
         new FriendsConfigGenerator(this).generate();
         friendsMenuManager = new FriendsMenuManager(this);
         getServer().getPluginManager().registerEvents(friendsMenuManager, this);
+        getServer().getPluginManager().registerEvents(new FriendsListClickHandler(this), this);
         menuUpdateManager = new MenuUpdateManager(this);
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
                 friendsManager, friendsMenuManager, new DefaultFriendsMenuActionHandler(this, friendsManager));
@@ -242,6 +247,7 @@ public final class LobbyPlugin extends JavaPlugin {
         friendsMenuController = null;
         friendsDataProvider = null;
         friendAddChatListener = null;
+        friendsSettingsManager = null;
         instance = null;
     }
 
@@ -367,6 +373,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendCodeManager getFriendCodeManager() {
         return friendCodeManager;
+    }
+
+    public FriendsSettingsManager getFriendsSettingsManager() {
+        return friendsSettingsManager;
     }
 
     public void reloadLobbyConfig() {

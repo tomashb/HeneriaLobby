@@ -322,65 +322,8 @@ public class FriendsListMenu implements Listener {
     }
 
     private void handleFriendClick(final FriendData friend, final ClickType clickType) {
-        if (friend == null) {
-            return;
-        }
-        switch (clickType) {
-            case LEFT -> handleTeleport(friend);
-            case MIDDLE -> handleMessage(friend);
-            case RIGHT -> handleOptions(friend);
-            case SHIFT_LEFT -> toggleFavorite(friend);
-            default -> {
-            }
-        }
-    }
-
-    private void handleTeleport(final FriendData friend) {
-        final Player targetPlayer = friend.getPlayer();
-        if (targetPlayer == null || !targetPlayer.isOnline()) {
-            player.sendMessage("§c" + friend.getPlayerName() + " n'est pas en ligne !");
-            player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
-            return;
-        }
-        player.closeInventory();
-        player.teleport(targetPlayer.getLocation());
-        player.sendMessage("§a🚀 Téléportation vers " + friend.getPlayerName() + " !");
-        player.playSound(player.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 1.5f);
-    }
-
-    private void handleMessage(final FriendData friend) {
-        player.closeInventory();
-        player.sendMessage("§e💬 Message à " + friend.getPlayerName() + ":");
-        player.sendMessage("§7Tapez votre message dans le chat:");
-        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
-    }
-
-    private void handleOptions(final FriendData friend) {
-        player.sendMessage("§6⚙️ Options pour " + friend.getPlayerName() + ":");
-        player.sendMessage("§7- Voir le profil détaillé");
-        player.sendMessage("§7- Supprimer de la liste d'amis");
-        player.sendMessage("§7- Bloquer ce joueur");
-        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-    }
-
-    private void toggleFavorite(final FriendData friend) {
-        friendsManager.toggleFavorite(player, friend.getPlayerName()).whenComplete((ignored, throwable) -> {
-            if (throwable != null) {
-                plugin.getLogger().log(Level.SEVERE, "Erreur toggle favori", throwable);
-                player.sendMessage("§cImpossible de modifier le statut favori maintenant.");
-                return;
-            }
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                final boolean newStatus = !friend.isFavorite();
-                friend.setFavorite(newStatus);
-                if (newStatus) {
-                    player.sendMessage("§e⭐ " + friend.getPlayerName() + " ajouté aux favoris !");
-                } else {
-                    player.sendMessage("§7💔 " + friend.getPlayerName() + " retiré des favoris");
-                }
-                renderMenu();
-                player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-            });
-        });
+        // Les actions détaillées (téléportation, messagerie, favoris, options)
+        // sont désormais gérées par {@link FriendsListClickHandler}. Ce menu se
+        // concentre sur l'affichage et la navigation.
     }
 }
