@@ -1,0 +1,39 @@
+# ===============================
+# CONFIGURATION AJOUT D'AMIS
+# ===============================
+
+menu:
+  title: "§8» §aAjouter un Ami"
+  size: 36
+  
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,18,26,27,28,29,33,34,35]
+
+items:
+  search_player:
+    slot: 10
+    hdb_id: 8726
+    name: "§a§l🔍 Rechercher un Joueur"
+    lore:
+      - "§7Tapez le nom du joueur"
+      - "§7que vous voulez ajouter"
+      - ""
+      - "§8» §aCliquez pour rechercher"
+      
+  back_to_main:
+    slot: 31
+    hdb_id: 3593
+    name: "§e🏠 Retour Menu Principal"
+    lore:
+      - "§7Revenir au menu principal"
+      - ""
+      - "§8» §eCliquez pour retourner"
+
+sounds:
+  open_menu: "ENTITY_EXPERIENCE_ORB_PICKUP"
+
+messages:
+  search_prompt: "§aTapez le nom du joueur à rechercher:"

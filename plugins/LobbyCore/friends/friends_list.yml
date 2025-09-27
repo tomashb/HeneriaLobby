@@ -1,0 +1,48 @@
+# ===============================
+# CONFIGURATION LISTE DES AMIS
+# ===============================
+
+menu:
+  title: "§8» §aListe des Amis ({page}/{total_pages})"
+  size: 54
+  items_per_page: 28
+  auto_refresh: true
+  refresh_interval: 10
+
+decoration:
+  green_glass:
+    material: "GREEN_STAINED_GLASS_PANE"
+    name: " "
+    slots: [0,1,2,6,7,8,9,17,45,46,52,53]
+
+friend_slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+
+navigation:
+  previous_page:
+    slot: 47
+    hdb_id: 7827
+    name: "§c◀ Page Précédente"
+  back_to_main:
+    slot: 49
+    hdb_id: 3593
+    name: "§e🏠 Retour Menu Principal"
+  next_page:
+    slot: 51
+    hdb_id: 7828
+    name: "§a▶ Page Suivante"
+
+friend_online:
+  name: "§a§l{nom_joueur} §2●"
+  lore:
+    - "§7Statut: §aEn ligne"
+    - "§7Serveur: §e{serveur_actuel}"
+    - "§7Ami depuis: §b{date_amitie}"
+    - ""
+    - "§8» §aCliquez pour interagir"
+
+messages:
+  no_friends: "§7Vous n'avez pas encore d'amis !"
+  loading: "§7Chargement des amis..."
+
+sounds:
+  open_list: "ENTITY_EXPERIENCE_ORB_PICKUP"
