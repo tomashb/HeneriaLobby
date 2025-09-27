@@ -447,6 +447,22 @@ public final class FriendStatisticsMenu implements Listener {
         return hours + "h " + remaining + "m";
     }
 
+    private String resolveSocialRank(final int points) {
+        if (points >= 5000) {
+            return "Maître Social";
+        }
+        if (points >= 3000) {
+            return "Expert";
+        }
+        if (points >= 2000) {
+            return "Avancé";
+        }
+        if (points >= 1000) {
+            return "Intermédiaire";
+        }
+        return "Débutant";
+    }
+
     private String apply(final String input, final Map<String, String> placeholders) {
         if (input == null) {
             return "";
