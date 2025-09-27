@@ -6,6 +6,7 @@ import com.lobby.friends.manager.FriendsSettingsManager;
 import com.lobby.friends.menu.FriendsListMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,6 +15,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.List;
@@ -341,31 +343,12 @@ public final class FriendsListClickHandler implements Listener {
                 "",
                 "§8» §dCliquez pour envoyer un message")));
 
-        inventory.setItem(12, createOptionItem(Material.STAR, "§6★ Ajouter aux favoris", List.of(
-                "§7Ajouter " + friendName + " à vos favoris",
-                "",
-                "§7Les favoris bénéficient de:",
-                "§8• §7Notifications prioritaires",
-                "§8• §7Téléportation rapide (selon paramètres)",
-                "§8• §7Auto-acceptation des demandes",
-                "",
-                "§8» §6Cliquez pour ajouter")));
+        inventory.setItem(12, createFavoriteOptionItem(false, friendName));
 
         final CompletableFuture<Boolean> favoriteFuture = friendsManager.isFavorite(player.getUniqueId(), friendName);
         favoriteFuture.thenAccept(isFavorite -> Bukkit.getScheduler().runTask(plugin, () -> {
             final boolean favourite = Boolean.TRUE.equals(isFavorite);
-            inventory.setItem(12, createOptionItem(favourite ? Material.NETHER_STAR : Material.STAR,
-                    favourite ? "§c★ Retirer des favoris" : "§6★ Ajouter aux favoris",
-                    List.of(
-                            favourite ? "§7Retirer " + friendName + " de vos favoris" : "§7Ajouter " + friendName + " à vos favoris",
-                            "",
-                            "§7Les favoris bénéficient de:",
-                            "§8• §7Notifications prioritaires",
-                            "§8• §7Téléportation rapide (selon paramètres)",
-                            "§8• §7Auto-acceptation des demandes",
-                            "",
-                            "§8» " + (favourite ? "§cCliquez pour retirer" : "§6Cliquez pour ajouter")
-                    )));
+            inventory.setItem(12, createFavoriteOptionItem(favourite, friendName));
         }));
 
         inventory.setItem(13, createOptionItem(Material.PLAYER_HEAD, "§b📊 Voir le profil détaillé", List.of(
@@ -412,6 +395,46 @@ public final class FriendsListClickHandler implements Listener {
 
         player.openInventory(inventory);
         player.playSound(player.getLocation(), "block.chest.open", 0.5f, 1.2f);
+    }
+
+    private ItemStack createFavoriteOptionItem(final boolean favourite, final String friendName) {
+        final ItemStack item = new ItemStack(Material.NETHER_STAR);
+        final ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+            if (favourite) {
+                meta.setDisplayName("§c★ Retirer des favoris");
+                meta.setLore(List.of(
+                        "§7Retirer " + friendName + " de vos favoris",
+                        "",
+                        "§c▸ Statut actuel: §6★ EN FAVORIS",
+                        "",
+                        "§7Les favoris bénéficient de:",
+                        "§8• §7Notifications prioritaires",
+                        "§8• §7Téléportation rapide (selon paramètres)",
+                        "§8• §7Auto-acceptation des demandes",
+                        "",
+                        "§8» §cCliquez pour retirer des favoris"
+                ));
+                meta.addEnchant(Enchantment.UNBREAKING, 1, true);
+                meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            } else {
+                meta.setDisplayName("§6★ Ajouter aux favoris");
+                meta.setLore(List.of(
+                        "§7Ajouter " + friendName + " à vos favoris",
+                        "",
+                        "§7▸ Statut actuel: §8Ami normal",
+                        "",
+                        "§7Les favoris bénéficient de:",
+                        "§8• §6Notifications prioritaires",
+                        "§8• §6Téléportation rapide (selon paramètres)",
+                        "§8• §6Auto-acceptation des demandes",
+                        "",
+                        "§8» §6Cliquez pour ajouter aux favoris"
+                ));
+            }
+            item.setItemMeta(meta);
+        }
+        return item;
     }
 
     private ItemStack createOptionItem(final Material material,
