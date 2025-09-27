@@ -138,6 +138,10 @@ public final class FriendsMenuConfigurationLoader {
     }
 
     private static String resolveMaterialKey(final ConfigurationSection section) {
+        final String headId = section.getString("head_id");
+        if (headId != null && !headId.isBlank()) {
+            return "hdb:" + headId.trim();
+        }
         final String hdb = section.getString("hdb_id");
         if (hdb != null && !hdb.isBlank()) {
             return "hdb:" + hdb.trim();
