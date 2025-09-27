@@ -22,8 +22,11 @@ import java.util.List;
 
 public class FavoriteFriendsMenu extends BaseFriendsMenu {
 
+    private static final String BASE_TITLE = "§8» §eAmis Favoris";
+
     private Inventory inventory;
     private List<FriendData> favoriteFriends;
+    private String currentTitle = BASE_TITLE;
 
     // Slots pour favoris
     private final int[] favoriteSlots = {
@@ -77,8 +80,8 @@ public class FavoriteFriendsMenu extends BaseFriendsMenu {
         int favoriteCount = favoriteFriends.size();
         int favoriteLimit = 5;
         
-        String title = "§8» §eAmis Favoris (" + favoriteCount + "/" + favoriteLimit + ")";
-        this.inventory = Bukkit.createInventory(null, 54, title);
+        currentTitle = BASE_TITLE + " (" + favoriteCount + "/" + favoriteLimit + ")";
+        this.inventory = Bukkit.createInventory(null, 54, currentTitle);
         setupMenu();
     }
     
@@ -236,7 +239,7 @@ public class FavoriteFriendsMenu extends BaseFriendsMenu {
     @Override
     public void handleMenuClick(final InventoryClickEvent event) {
         final String title = event.getView().getTitle();
-        if (title == null || !title.contains("§8» §eAmis Favoris")) {
+        if (title == null || !title.contains(BASE_TITLE)) {
             return;
         }
         final Player clicker = getPlayer();
@@ -317,7 +320,7 @@ public class FavoriteFriendsMenu extends BaseFriendsMenu {
 
     @Override
     public void handleMenuClose(final InventoryCloseEvent event) {
-        if (event.getView().getTitle() == null || !event.getView().getTitle().contains("§8» §eAmis Favoris")) {
+        if (event.getView().getTitle() == null || !event.getView().getTitle().contains(BASE_TITLE)) {
             return;
         }
         inventory = null;
@@ -331,7 +334,7 @@ public class FavoriteFriendsMenu extends BaseFriendsMenu {
 
     @Override
     public String getTitle() {
-        return inventory != null ? inventory.getTitle() : "§8» §eAmis Favoris";
+        return currentTitle;
     }
 }
 
