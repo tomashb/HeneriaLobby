@@ -4,124 +4,107 @@ import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.Sound;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Simple showcase menu for the blocked players feature. The implementation is
- * still mostly cosmetic and uses simulated data while the backend is being
- * developed. The class follows the same conventions as the other temporary
- * menus used throughout the friends system so that it can be replaced later
- * without touching the caller side.
- */
 public class BlockedPlayersMenu implements Listener {
-
-    private static final String TITLE = "§8» §cJoueurs Bloqués";
-    private static final int SIZE = 54;
-    private static final int UNBLOCK_ALL_SLOT = 46;
-    private static final int BACK_SLOT = 49;
-    private static final int[] RED_GLASS_SLOTS = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 53};
-    private static final int[] PLAYER_SLOTS = {
-            10, 11, 12, 13, 14, 15, 16,
-            19, 20, 21, 22, 23, 24, 25,
-            28, 29, 30, 31, 32, 33, 34,
-            37, 38, 39, 40, 41, 42, 43
-    };
-
+    
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
     private final Player player;
     private final Inventory inventory;
-    private final List<BlockedPlayerData> blockedPlayers = new ArrayList<>();
-
-    public BlockedPlayersMenu(final LobbyPlugin plugin, final FriendsManager friendsManager, final Player player) {
+    private List<BlockedPlayerData> blockedPlayers;
+    
+    // Slots pour joueurs bloqués
+    private final int[] blockedSlots = {10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43};
+    
+    public BlockedPlayersMenu(LobbyPlugin plugin, FriendsManager friendsManager, Player player) {
         this.plugin = plugin;
         this.friendsManager = friendsManager;
         this.player = player;
-        this.inventory = Bukkit.createInventory(null, SIZE, TITLE);
+        this.inventory = Bukkit.createInventory(null, 54, "§8» §cJoueurs Bloqués");
+        this.blockedPlayers = new ArrayList<>();
+        
         Bukkit.getPluginManager().registerEvents(this, plugin);
         loadBlockedPlayers();
         setupMenu();
     }
-
+    
     private void loadBlockedPlayers() {
-        // TODO: replace with real data from FriendsManager once available.
-        blockedPlayers.add(new BlockedPlayerData("SpammerBot", "Spam de messages", System.currentTimeMillis() - 86_400_000L));
-        blockedPlayers.add(new BlockedPlayerData("ToxicPlayer", "Harcèlement", System.currentTimeMillis() - 172_800_000L));
+        // TODO: Charger depuis BDD - Pour l'instant simuler
+        blockedPlayers.add(new BlockedPlayerData("SpammerBot", "Spam de messages", System.currentTimeMillis() - 86400000));
+        blockedPlayers.add(new BlockedPlayerData("ToxicPlayer", "Harcèlement", System.currentTimeMillis() - 172800000));
     }
-
+    
     private void setupMenu() {
         inventory.clear();
-
-        final ItemStack redGlass = createItem(Material.RED_STAINED_GLASS_PANE, " ");
-        for (int slot : RED_GLASS_SLOTS) {
+        
+        // Vitres rouges
+        ItemStack redGlass = createItem(Material.RED_STAINED_GLASS_PANE, " ");
+        int[] redSlots = {0,1,2,6,7,8,9,17,36,44,45,53};
+        for (int slot : redSlots) {
             inventory.setItem(slot, redGlass);
         }
-
+        
+        // Afficher joueurs bloqués
         displayBlockedPlayers();
+        
+        // Actions
         setupActions();
     }
-
+    
     private void displayBlockedPlayers() {
         if (blockedPlayers.isEmpty()) {
-            final ItemStack placeholder = createItem(Material.PAPER, "§7§lAucun joueur bloqué");
-            final ItemMeta meta = placeholder.getItemMeta();
-            if (meta != null) {
-                meta.setLore(Arrays.asList(
-                        "§7Vous n'avez bloqué aucun joueur",
-                        "",
-                        "§a✓ Parfait !",
-                        "§7Votre liste de blocage est vide",
-                        "",
-                        "§7Les joueurs bloqués ne peuvent pas:",
-                        "§8▸ §7Vous envoyer des messages",
-                        "§8▸ §7Vous envoyer des demandes d'amitié",
-                        "§8▸ §7Voir votre statut en ligne"
-                ));
-                placeholder.setItemMeta(meta);
-            }
-            inventory.setItem(22, placeholder);
+            ItemStack noBlocked = createItem(Material.PAPER, "§7§lAucun joueur bloqué");
+            ItemMeta meta = noBlocked.getItemMeta();
+            meta.setLore(Arrays.asList(
+                "§7Vous n'avez bloqué aucun joueur",
+                "",
+                "§a✓ Parfait !",
+                "§7Votre liste de blocage est vide",
+                "",
+                "§7Les joueurs bloqués ne peuvent pas:",
+                "§8▸ §7Vous envoyer des messages",
+                "§8▸ §7Vous envoyer des demandes d'amitié",
+                "§8▸ §7Voir votre statut en ligne"
+            ));
+            noBlocked.setItemMeta(meta);
+            inventory.setItem(22, noBlocked);
             return;
         }
-
-        for (int index = 0; index < PLAYER_SLOTS.length && index < blockedPlayers.size(); index++) {
-            final BlockedPlayerData data = blockedPlayers.get(index);
-            inventory.setItem(PLAYER_SLOTS[index], createBlockedPlayerItem(data));
+        
+        // Afficher les joueurs bloqués
+        for (int i = 0; i < blockedSlots.length && i < blockedPlayers.size(); i++) {
+            BlockedPlayerData blockedData = blockedPlayers.get(i);
+            ItemStack blockedItem = createBlockedPlayerItem(blockedData);
+            inventory.setItem(blockedSlots[i], blockedItem);
         }
     }
-
-    private ItemStack createBlockedPlayerItem(final BlockedPlayerData data) {
-        final ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        final ItemMeta baseMeta = head.getItemMeta();
-        if (!(baseMeta instanceof SkullMeta meta)) {
-            return head;
-        }
-
-        final OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(data.playerName());
-        meta.setOwningPlayer(offlinePlayer);
-        meta.setDisplayName("§8§l" + data.playerName() + " §c🚫");
-
-        final List<String> lore = new ArrayList<>();
+    
+    private ItemStack createBlockedPlayerItem(BlockedPlayerData blockedData) {
+        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) head.getItemMeta();
+        
+        meta.setDisplayName("§8§l" + blockedData.getPlayerName() + " §c🚫");
+        
+        List<String> lore = new ArrayList<>();
         lore.add("§7Joueur bloqué");
         lore.add("");
         lore.add("§7Informations du blocage:");
-        lore.add("§8▸ §7Date: §c" + formatBlockDate(data.blockDate()));
-        lore.add("§8▸ §7Raison: §e" + data.reason());
-        lore.add("§8▸ §7Temps écoulé: §8" + getTimeElapsed(data.blockDate()));
+        lore.add("§8▸ §7Date: §c" + formatBlockDate(blockedData.getBlockDate()));
+        lore.add("§8▸ §7Raison: §e" + blockedData.getReason());
+        lore.add("§8▸ §7Temps écoulé: §8" + getTimeElapsed(blockedData.getBlockDate()));
         lore.add("");
         lore.add("§7Restrictions actives:");
         lore.add("§8▸ §c✗ Messages privés");
@@ -130,164 +113,152 @@ public class BlockedPlayersMenu implements Listener {
         lore.add("");
         lore.add("§8▸ §aClique gauche §8: §2Débloquer");
         lore.add("§8▸ §cClique droit §8: §4Modifier la raison");
+        
         meta.setLore(lore);
-
         head.setItemMeta(meta);
         return head;
     }
-
+    
     private void setupActions() {
         if (!blockedPlayers.isEmpty()) {
-            final ItemStack unblockAll = createItem(Material.EMERALD, "§a§l✓ Débloquer Tous");
-            final ItemMeta unblockMeta = unblockAll.getItemMeta();
-            if (unblockMeta != null) {
-                unblockMeta.setLore(Arrays.asList(
-                        "§7Débloquer tous les joueurs bloqués",
-                        "",
-                        "§a▸ Joueurs à débloquer: §2" + blockedPlayers.size(),
-                        "",
-                        "§8» §aCliquez pour débloquer tous"
-                ));
-                unblockAll.setItemMeta(unblockMeta);
-            }
-            inventory.setItem(UNBLOCK_ALL_SLOT, unblockAll);
-        }
-
-        final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
-        final ItemMeta backMeta = back.getItemMeta();
-        if (backMeta != null) {
-            backMeta.setLore(Arrays.asList(
-                    "§7Revenir au menu principal des amis",
-                    "",
-                    "§8» §eCliquez pour retourner"
+            // Débloquer tous
+            ItemStack unblockAll = createItem(Material.EMERALD, "§a§l✓ Débloquer Tous");
+            ItemMeta unblockMeta = unblockAll.getItemMeta();
+            unblockMeta.setLore(Arrays.asList(
+                "§7Débloquer tous les joueurs bloqués",
+                "",
+                "§a▸ Joueurs à débloquer: §2" + blockedPlayers.size(),
+                "",
+                "§8» §aCliquez pour débloquer tous"
             ));
-            back.setItemMeta(backMeta);
+            unblockAll.setItemMeta(unblockMeta);
+            inventory.setItem(46, unblockAll);
         }
-        inventory.setItem(BACK_SLOT, back);
+        
+        // Retour
+        ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
+        ItemMeta backMeta = back.getItemMeta();
+        backMeta.setLore(Arrays.asList(
+            "§7Revenir au menu principal des amis",
+            "",
+            "§8» §eCliquez pour retourner"
+        ));
+        back.setItemMeta(backMeta);
+        inventory.setItem(49, back);
     }
-
-    private ItemStack createItem(final Material material, final String name) {
-        final ItemStack item = new ItemStack(material);
-        final ItemMeta meta = item.getItemMeta();
+    
+    private String formatBlockDate(long timestamp) {
+        long days = (System.currentTimeMillis() - timestamp) / (24 * 60 * 60 * 1000);
+        if (days == 0) return "Aujourd'hui";
+        if (days == 1) return "Hier";
+        return "Il y a " + days + " jour(s)";
+    }
+    
+    private String getTimeElapsed(long timestamp) {
+        long diff = System.currentTimeMillis() - timestamp;
+        long hours = diff / (60 * 60 * 1000);
+        if (hours < 24) return hours + " heure(s)";
+        long days = hours / 24;
+        return days + " jour(s)";
+    }
+    
+    private ItemStack createItem(Material material, String name) {
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(name);
             item.setItemMeta(meta);
         }
         return item;
     }
-
+    
     public void open() {
         player.openInventory(inventory);
         player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
     }
-
+    
     @EventHandler
-    public void onInventoryClick(final InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player clicker)) {
+    public void onInventoryClick(InventoryClickEvent event) {
+        if (!event.getView().getTitle().equals("§8» §cJoueurs Bloqués")) {
             return;
         }
-        if (!clicker.getUniqueId().equals(player.getUniqueId())) {
-            return;
-        }
-        if (!TITLE.equals(event.getView().getTitle())) {
-            return;
-        }
-
+        
+        // CRITICAL: Protection IMMÉDIATE - PREMIÈRE LIGNE ABSOLUE
         event.setCancelled(true);
-        final int slot = event.getSlot();
-
-        if (slot == UNBLOCK_ALL_SLOT && !blockedPlayers.isEmpty()) {
+        
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player clicker = (Player) event.getWhoClicked();
+        
+        if (!clicker.getUniqueId().equals(player.getUniqueId())) return;
+        
+        int slot = event.getSlot();
+        
+        if (slot == 46 && !blockedPlayers.isEmpty()) {
+            // Débloquer tous
             handleUnblockAll();
-            return;
-        }
-        if (slot == BACK_SLOT) {
-            handleBack();
-            return;
-        }
-
-        for (int index = 0; index < PLAYER_SLOTS.length && index < blockedPlayers.size(); index++) {
-            if (PLAYER_SLOTS[index] == slot) {
-                handleBlockedPlayerClick(blockedPlayers.get(index), event);
-                break;
+        } else if (slot == 49) {
+            // Retour
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                new FriendsMainMenu(plugin, friendsManager).open(player);
+            }, 3L);
+        } else {
+            // Vérifier si c'est un slot de joueur bloqué
+            for (int i = 0; i < blockedSlots.length; i++) {
+                if (blockedSlots[i] == slot && i < blockedPlayers.size()) {
+                    handleBlockedPlayerClick(blockedPlayers.get(i), event);
+                    break;
+                }
             }
         }
     }
-
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player viewer)) {
-            return;
-        }
-        if (!viewer.getUniqueId().equals(player.getUniqueId())) {
-            return;
-        }
-        if (TITLE.equals(event.getView().getTitle())) {
-            HandlerList.unregisterAll(this);
-        }
-    }
-
+    
     private void handleUnblockAll() {
         player.sendMessage("§a✅ Déblocage de tous les joueurs (" + blockedPlayers.size() + ")...");
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-
-        final int total = blockedPlayers.size();
+        
+        int count = blockedPlayers.size();
         blockedPlayers.clear();
         setupMenu();
-        player.updateInventory();
-
-        player.sendMessage("§a✓ " + total + " joueur(s) débloqué(s) avec succès !");
+        
+        player.sendMessage("§a✓ " + count + " joueur(s) débloqué(s) avec succès !");
     }
-
-    private void handleBlockedPlayerClick(final BlockedPlayerData data, final InventoryClickEvent event) {
-        if (event.isLeftClick()) {
-            player.sendMessage("§a✓ " + data.playerName() + " a été débloqué");
+    
+    private void handleBlockedPlayerClick(BlockedPlayerData blockedData, InventoryClickEvent event) {
+        if (event.getClick().isLeftClick()) {
+            // Débloquer
+            player.sendMessage("§a✓ " + blockedData.getPlayerName() + " a été débloqué");
             player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-            blockedPlayers.remove(data);
+            
+            blockedPlayers.remove(blockedData);
             setupMenu();
-            player.updateInventory();
-            return;
-        }
-        if (event.isRightClick()) {
+        } else if (event.getClick().isRightClick()) {
+            // Modifier raison
             player.closeInventory();
-            player.sendMessage("§e✏️ Modification raison pour " + data.playerName());
+            player.sendMessage("§e✏️ Modification raison pour " + blockedData.getPlayerName());
             player.sendMessage("§7Tapez la nouvelle raison dans le chat:");
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
         }
     }
-
-    private void handleBack() {
-        player.closeInventory();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            final FriendsMenuController controller = plugin.getFriendsMenuController();
-            if (controller != null) {
-                controller.openMainMenu(player);
-            }
-        }, 3L);
-    }
-
-    private String formatBlockDate(final long timestamp) {
-        final long days = (System.currentTimeMillis() - timestamp) / (24L * 60L * 60L * 1000L);
-        if (days <= 0) {
-            return "Aujourd'hui";
+    
+    // Classe interne pour les données
+    private static class BlockedPlayerData {
+        private final String playerName;
+        private String reason;
+        private final long blockDate;
+        
+        public BlockedPlayerData(String playerName, String reason, long blockDate) {
+            this.playerName = playerName;
+            this.reason = reason;
+            this.blockDate = blockDate;
         }
-        if (days == 1) {
-            return "Hier";
-        }
-        return "Il y a " + days + " jour(s)";
-    }
-
-    private String getTimeElapsed(final long timestamp) {
-        final long diff = System.currentTimeMillis() - timestamp;
-        final long hours = diff / (60L * 60L * 1000L);
-        if (hours < 24) {
-            return hours + " heure(s)";
-        }
-        final long days = hours / 24L;
-        return days + " jour(s)";
-    }
-
-    private record BlockedPlayerData(String playerName, String reason, long blockDate) {
+        
+        public String getPlayerName() { return playerName; }
+        public String getReason() { return reason; }
+        public long getBlockDate() { return blockDate; }
+        public void setReason(String reason) { this.reason = reason; }
     }
 }
 
