@@ -119,6 +119,30 @@ public class FriendsManager {
         });
     }
 
+    /**
+     * Removes a friendship relationship between two players using their UUIDs.
+     * This helper is primarily used by systems such as the block manager which
+     * operate outside the traditional command flow and therefore cannot rely on
+     * {@link Player} instances being available on the main thread.
+     *
+     * @param playerUuid the UUID of the player initiating the removal
+     * @param friendUuid the UUID of the friend to remove
+     * @return a future completed with {@code true} if the friendship was removed
+     */
+    public CompletableFuture<Boolean> removeFriendship(final UUID playerUuid, final UUID friendUuid) {
+        if (playerUuid == null || friendUuid == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+
+        return database.removeFriendship(playerUuid.toString(), friendUuid.toString()).thenApply(success -> {
+            if (success) {
+                friendsCache.remove(playerUuid);
+                friendsCache.remove(friendUuid);
+            }
+            return success;
+        });
+    }
+
     public CompletableFuture<Boolean> toggleFavorite(final Player player, final String friendName) {
         return getFriends(player).thenCompose(friends -> {
             final FriendData friendData = friends.stream()

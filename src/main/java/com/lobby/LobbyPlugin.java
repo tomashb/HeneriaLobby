@@ -19,6 +19,7 @@ import com.lobby.menus.confirmation.ConfirmationManager;
 import com.lobby.friends.DefaultFriendsDataProvider;
 import com.lobby.friends.commands.FriendsTestCommand;
 import com.lobby.friends.listeners.FriendAddChatListener;
+import com.lobby.friends.manager.BlockedPlayersManager;
 import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
@@ -76,6 +77,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private DefaultFriendsDataProvider friendsDataProvider;
     private FriendCodeManager friendCodeManager;
     private FriendsManager friendsManager;
+    private BlockedPlayersManager blockedPlayersManager;
     private FriendsMenuController friendsMenuController;
     private FriendsMenuManager friendsMenuManager;
     private FriendAddChatListener friendAddChatListener;
@@ -127,6 +129,7 @@ public final class LobbyPlugin extends JavaPlugin {
         friendsDataProvider = new DefaultFriendsDataProvider();
         friendCodeManager = new FriendCodeManager(this);
         getLogger().info("Gestionnaire de codes d'amis initialisé !");
+        blockedPlayersManager = new BlockedPlayersManager(this);
         friendsManager = new FriendsManager(this);
         friendAddChatListener = new FriendAddChatListener(this);
         getServer().getPluginManager().registerEvents(friendAddChatListener, this);
@@ -218,6 +221,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (friendsManager != null) {
             friendsManager.shutdown();
+        }
+        if (blockedPlayersManager != null) {
+            blockedPlayersManager.shutdown();
         }
         friendsMenuController = null;
         friendsDataProvider = null;
@@ -315,6 +321,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendsManager getFriendsManager() {
         return friendsManager;
+    }
+
+    public BlockedPlayersManager getBlockedPlayersManager() {
+        return blockedPlayersManager;
     }
 
     public DefaultFriendsDataProvider getFriendsDataProvider() {
