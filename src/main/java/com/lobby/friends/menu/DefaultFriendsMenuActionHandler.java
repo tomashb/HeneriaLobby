@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -80,12 +81,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openStatistics(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu statistiques ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bstatistics.yml §7disponible");
-        });
+        runLater(player, () -> new FriendStatisticsMenu(plugin, friendsManager, player).open());
         return true;
     }
 
