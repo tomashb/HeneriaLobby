@@ -1,0 +1,10 @@
+menu:
+  title: "§8» §cJoueurs Bloqués"
+  size: 54
+navigation:
+  back_to_main:
+    slot: 49
+    hdb_id: 3593
+    name: "§e🏠 Retour Menu Principal"
+sounds:
+  open_blocked: "ENTITY_EXPERIENCE_ORB_PICKUP"

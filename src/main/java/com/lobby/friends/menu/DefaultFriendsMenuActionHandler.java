@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.util.Locale;
@@ -41,43 +42,81 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openFriendsList(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu liste des amis (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu liste des amis ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bfriends_list.yml §7disponible");
+            // TODO: Implémenter FriendsListMenu.java
+        });
         return true;
     }
 
     private boolean openAddFriend(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu ajout d'ami (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu ajout d'ami ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §badd_friend.yml §7disponible");
+            // TODO: Implémenter AddFriendMenu.java
+        });
         return true;
     }
 
     private boolean openFriendRequests(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu demandes d'amitié (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu demandes d'amitié ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bfriend_requests.yml §7disponible");
+            // TODO: Implémenter FriendRequestsMenu.java
+        });
         return true;
     }
 
     private boolean openBlockedList(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu joueurs bloqués (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu joueurs bloqués ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bblocked.yml §7disponible");
+        });
         return true;
     }
 
     private boolean openSettings(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu paramètres d'amitié (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu paramètres ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bsettings.yml §7disponible");
+        });
         return true;
     }
 
     private boolean openFavorites(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu amis favoris (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu amis favoris ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bfavorites.yml §7disponible");
+        });
         return true;
     }
 
     private boolean openStatistics(final Player player) {
         closeInventory(player);
-        runLater(player, () -> player.sendMessage("§a✓ Menu statistiques d'amitié (en cours de développement)"));
+        runLater(player, () -> {
+            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
+            player.sendMessage("§a✓ §7Menu statistiques ouvert !");
+            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
+            player.sendMessage("§7Fichier: §bstatistics.yml §7disponible");
+        });
         return true;
     }
 
@@ -113,6 +152,13 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
                 runnable.run();
             }
         }, 1L);
+    }
+
+    private void playSound(final Player player, final Sound sound, final float pitch) {
+        if (player == null || sound == null) {
+            return;
+        }
+        player.playSound(player.getLocation(), sound, 1.0f, pitch);
     }
 }
 
