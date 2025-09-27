@@ -45,7 +45,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openFriendsList(final Player player) {
         closeInventory(player);
-        runLater(player, () -> new FriendsListMenu(plugin, friendsManager, player).open());
+        runLater(player, () -> new FriendsListMenu(plugin, friendsManager, player));
         return true;
     }
 

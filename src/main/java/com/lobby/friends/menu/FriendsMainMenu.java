@@ -1,368 +1,360 @@
 package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
-import com.lobby.friends.FriendsDataProvider;
-import com.lobby.friends.FriendsPlaceholderData;
 import com.lobby.friends.manager.FriendsManager;
-import com.lobby.menus.AssetManager;
-import com.lobby.menus.CloseableMenu;
-import com.lobby.menus.Menu;
-import com.lobby.menus.MenuManager;
 import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.Sound;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitTask;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 
-public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMenu {
+/**
+ * Modernised friends main menu that focuses on providing immediate feedback
+ * to the player while asynchronous data is being fetched.
+ */
+public class FriendsMainMenu implements Listener {
 
-    private static final LegacyComponentSerializer SERIALIZER = LegacyComponentSerializer.legacySection();
+    private static final String MENU_TITLE = "§8» §aMenu des Amis";
+    private static final int INVENTORY_SIZE = 54;
 
     private final LobbyPlugin plugin;
-    private final AssetManager assetManager;
-    private final FriendsMenuConfiguration configuration;
-    private final FriendsDataProvider dataProvider;
     private final FriendsManager friendsManager;
-    private final FriendsMenuActionHandler actionHandler;
-    private final Map<Integer, FriendsMenuItem> itemBySlot = new HashMap<>();
 
     private Inventory inventory;
     private Player viewer;
-    private BukkitTask updateTask;
+    private int totalFriends;
+    private int onlineFriends;
+    private int pendingRequests;
 
-    public FriendsMainMenu(final LobbyPlugin plugin,
-                           final AssetManager assetManager,
-                           final FriendsMenuConfiguration configuration,
-                           final FriendsDataProvider dataProvider,
-                           final FriendsManager friendsManager,
-                           final FriendsMenuActionHandler actionHandler) {
+    public FriendsMainMenu(final LobbyPlugin plugin, final FriendsManager friendsManager) {
         this.plugin = plugin;
-        this.assetManager = assetManager;
-        this.configuration = configuration;
-        this.dataProvider = dataProvider;
         this.friendsManager = friendsManager;
-        this.actionHandler = actionHandler;
-        for (FriendsMenuItem item : configuration.getItems()) {
-            itemBySlot.put(item.getSlot(), item);
-        }
+        Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    @Override
     public void open(final Player player) {
         if (player == null) {
             return;
         }
         this.viewer = player;
-        final Component title = SERIALIZER.deserialize(colorize(configuration.getTitle()));
-        this.inventory = Bukkit.createInventory(this, configuration.getSize(), title);
-        buildStaticLayout();
-        refreshDynamicContent();
-        scheduleUpdates();
-        playSound(player, configuration.getOpenSound(), 1.5f);
+        this.inventory = Bukkit.createInventory(null, INVENTORY_SIZE, MENU_TITLE);
         player.openInventory(inventory);
+        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        loadDataAndCreateMenu(player);
     }
 
-    @Override
-    public void handleClick(final InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) {
-            return;
-        }
-        event.setCancelled(true);
-        final FriendsMenuItem item = itemBySlot.get(event.getSlot());
-        if (item == null || item.getAction() == null || item.getAction().isBlank()) {
-            playSound(player, configuration.getErrorSound());
-            return;
-        }
-        final String action = item.getAction();
-        if ("back_to_profile".equalsIgnoreCase(action)) {
-            playSound(player, configuration.getClickSound());
-            player.closeInventory();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> openProfileMenu(player), 1L);
-            return;
-        }
-        if (handleInternalAction(player, action)) {
-            playSound(player, configuration.getClickSound());
-            return;
-        }
-        final boolean handled = actionHandler != null && actionHandler.handle(player, action);
-        playSound(player, handled ? configuration.getClickSound() : configuration.getErrorSound());
+    private void loadDataAndCreateMenu(final Player player) {
+        totalFriends = 0;
+        onlineFriends = 0;
+        pendingRequests = 0;
+
+        final CompletableFuture<?> friendsFuture = friendsManager.getFriends(player)
+                .thenAccept(friends -> {
+                    final int size = friends != null ? friends.size() : 0;
+                    totalFriends = size;
+                    if (friends != null && !friends.isEmpty()) {
+                        onlineFriends = (int) friends.stream().filter(friend -> friend != null && friend.isOnline()).count();
+                    }
+                });
+        final CompletableFuture<?> requestsFuture = friendsManager.getPendingRequests(player)
+                .thenAccept(requests -> pendingRequests = requests != null ? requests.size() : 0);
+
+        CompletableFuture.allOf(friendsFuture, requestsFuture)
+                .whenComplete((ignored, throwable) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (throwable != null) {
+                        plugin.getLogger().log(Level.SEVERE, "Erreur lors du chargement des données du menu des amis", throwable);
+                    }
+                    if (viewer == null || !viewer.isOnline()) {
+                        return;
+                    }
+                    setupMenu();
+                    viewer.updateInventory();
+                }));
     }
 
-    @Override
-    public Inventory getInventory() {
-        return inventory;
-    }
-
-    @Override
-    public void handleClose(final Player player) {
-        if (updateTask != null) {
-            updateTask.cancel();
-            updateTask = null;
-        }
-    }
-
-    private void scheduleUpdates() {
-        if (configuration.getUpdateIntervalSeconds() <= 0) {
-            return;
-        }
-        updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::refreshDynamicContent,
-                configuration.getUpdateIntervalTicks(), configuration.getUpdateIntervalTicks());
-    }
-
-    private void buildStaticLayout() {
+    private void setupMenu() {
         if (inventory == null) {
             return;
         }
-        for (FriendsMenuDecoration decoration : configuration.getDecorations()) {
-            final ItemStack pane = new ItemStack(decoration.material());
-            final ItemMeta meta = pane.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(decoration.displayName());
-                pane.setItemMeta(meta);
-            }
-            for (Integer slot : decoration.slots()) {
-                if (slot == null || slot < 0 || slot >= configuration.getSize()) {
-                    continue;
-                }
-                inventory.setItem(slot, pane);
-            }
+        inventory.clear();
+
+        final ItemStack greenGlass = createItem(Material.GREEN_STAINED_GLASS_PANE, " ");
+        final int[] glassSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 53};
+        for (int slot : glassSlots) {
+            inventory.setItem(slot, greenGlass);
         }
+
+        setupMainItems();
     }
 
-    private void refreshDynamicContent() {
-        if (inventory == null || viewer == null) {
+    private void setupMainItems() {
+        if (inventory == null) {
             return;
         }
-        final FriendsPlaceholderData data = dataProvider == null
-                ? FriendsPlaceholderData.empty()
-                : Objects.requireNonNullElse(dataProvider.resolve(viewer), FriendsPlaceholderData.empty());
-        final Map<String, String> placeholders = data.toPlaceholderMap();
 
-        for (FriendsMenuItem definition : configuration.getItems()) {
-            final ItemStack itemStack = createItem(definition, placeholders);
-            if (itemStack == null) {
-                continue;
-            }
-            inventory.setItem(definition.getSlot(), itemStack);
+        final ItemStack friendsList = createItem(Material.PLAYER_HEAD, "§a§l👥 Liste des Amis");
+        final ItemMeta friendsMeta = friendsList.getItemMeta();
+        if (friendsMeta != null) {
+            friendsMeta.setLore(Arrays.asList(
+                    "§7Consultez et gérez votre liste d'amis",
+                    "",
+                    "§a▸ Total d'amis: §2" + totalFriends,
+                    "§a▸ En ligne: §2" + onlineFriends,
+                    "§a▸ Hors ligne: §8" + Math.max(0, totalFriends - onlineFriends),
+                    "",
+                    "§8» §aCliquez pour ouvrir"
+            ));
+            friendsList.setItemMeta(friendsMeta);
         }
-        viewer.updateInventory();
+        inventory.setItem(11, friendsList);
+
+        final ItemStack addFriend = createItem(Material.EMERALD, "§e§l➕ Ajouter un Ami");
+        final ItemMeta addMeta = addFriend.getItemMeta();
+        if (addMeta != null) {
+            addMeta.setLore(Arrays.asList(
+                    "§7Ajoutez de nouveaux amis",
+                    "",
+                    "§e▸ Recherche par nom",
+                    "§e▸ Suggestions intelligentes",
+                    "§e▸ Joueurs à proximité",
+                    "",
+                    "§8» §eCliquez pour explorer"
+            ));
+            addFriend.setItemMeta(addMeta);
+        }
+        inventory.setItem(13, addFriend);
+
+        final ItemStack requests = createItem(Material.WRITABLE_BOOK, "§6§l📨 Demandes d'Amitié");
+        final ItemMeta requestsMeta = requests.getItemMeta();
+        if (requestsMeta != null) {
+            requestsMeta.setLore(Arrays.asList(
+                    "§7Gérez vos demandes d'amitié",
+                    "",
+                    "§6▸ Demandes reçues: §c" + pendingRequests,
+                    pendingRequests > 0 ? "§c⚠ Demandes en attente !" : "§7Aucune demande",
+                    "",
+                    "§8» §6Cliquez pour gérer"
+            ));
+            requests.setItemMeta(requestsMeta);
+        }
+        inventory.setItem(15, requests);
+
+        final ItemStack favorites = createItem(Material.NETHER_STAR, "§e⭐ Amis Favoris");
+        final ItemMeta favMeta = favorites.getItemMeta();
+        if (favMeta != null) {
+            favMeta.setLore(Arrays.asList(
+                    "§7Accès rapide à vos amis favoris",
+                    "",
+                    "§e▸ Téléportation prioritaire",
+                    "§e▸ Notifications spéciales",
+                    "",
+                    "§8» §eCliquez pour voir"
+            ));
+            favorites.setItemMeta(favMeta);
+        }
+        inventory.setItem(20, favorites);
+
+        final ItemStack settings = createItem(Material.REDSTONE_TORCH, "§6⚙️ Paramètres");
+        final ItemMeta settingsMeta = settings.getItemMeta();
+        if (settingsMeta != null) {
+            settingsMeta.setLore(Arrays.asList(
+                    "§7Configurez vos préférences",
+                    "",
+                    "§6▸ Notifications",
+                    "§6▸ Confidentialité",
+                    "§6▸ Permissions",
+                    "",
+                    "§8» §6Cliquez pour configurer"
+            ));
+            settings.setItemMeta(settingsMeta);
+        }
+        inventory.setItem(22, settings);
+
+        final ItemStack stats = createItem(Material.BOOK, "§b📊 Statistiques");
+        final ItemMeta statsMeta = stats.getItemMeta();
+        if (statsMeta != null) {
+            statsMeta.setLore(Arrays.asList(
+                    "§7Consultez vos statistiques détaillées",
+                    "",
+                    "§b▸ Analyses temporelles",
+                    "§b▸ Activité des amis",
+                    "§b▸ Comparaisons serveur",
+                    "",
+                    "§8» §bCliquez pour analyser"
+            ));
+            stats.setItemMeta(statsMeta);
+        }
+        inventory.setItem(24, stats);
+
+        final ItemStack blocked = createItem(Material.BARRIER, "§c🚫 Joueurs Bloqués");
+        final ItemMeta blockedMeta = blocked.getItemMeta();
+        if (blockedMeta != null) {
+            blockedMeta.setLore(Arrays.asList(
+                    "§7Gérez votre liste de blocage",
+                    "",
+                    "§c▸ Joueurs bloqués: §40",
+                    "",
+                    "§8» §cCliquez pour gérer"
+            ));
+            blocked.setItemMeta(blockedMeta);
+        }
+        inventory.setItem(29, blocked);
+
+        final ItemStack close = createItem(Material.BARRIER, "§c✗ Fermer");
+        final ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            closeMeta.setLore(Arrays.asList(
+                    "§7Fermer le menu des amis",
+                    "",
+                    "§8» §cCliquez pour fermer"
+            ));
+            close.setItemMeta(closeMeta);
+        }
+        inventory.setItem(49, close);
     }
 
-    private ItemStack createItem(final FriendsMenuItem definition, final Map<String, String> placeholders) {
-        final ItemStack base = resolveItem(definition.getMaterialKey());
-        if (base == null) {
-            return null;
-        }
-        final ItemMeta meta = base.getItemMeta();
+    private ItemStack createItem(final Material material, final String name) {
+        final ItemStack item = new ItemStack(material);
+        final ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(colorize(apply(definition.getDisplayName(), placeholders)));
-            final List<String> lore = definition.getLore().stream()
-                    .map(line -> colorize(apply(line, placeholders)))
-                    .toList();
-            if (!lore.isEmpty()) {
-                meta.setLore(lore);
-            }
-            final boolean shouldEnchant = shouldApplyEnchantment(definition, placeholders);
-            if (shouldEnchant) {
-                boolean applied = addEnchantment(meta, Enchantment.UNBREAKING);
-                if (!applied) {
-                    final Enchantment legacy = Enchantment.getByName("DURABILITY");
-                    if (legacy != null) {
-                        applied = addEnchantment(meta, legacy);
-                    }
-                }
-                if (!applied) {
-                    for (Enchantment fallback : Enchantment.values()) {
-                        if (addEnchantment(meta, fallback)) {
-                            applied = true;
-                            break;
-                        }
-                    }
-                }
-                if (applied) {
-                    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-                }
-            } else {
-                meta.removeEnchant(Enchantment.UNBREAKING);
-                final Enchantment legacy = Enchantment.getByName("DURABILITY");
-                if (legacy != null) {
-                    meta.removeEnchant(legacy);
-                }
-            }
-            base.setItemMeta(meta);
+            meta.setDisplayName(name);
+            item.setItemMeta(meta);
         }
-        return base;
+        return item;
     }
 
-    private boolean addEnchantment(final ItemMeta meta, final Enchantment enchantment) {
-        if (meta == null || enchantment == null) {
-            return false;
-        }
-        try {
-            return meta.addEnchant(enchantment, 1, true);
-        } catch (RuntimeException exception) {
-            return false;
-        }
-    }
-
-    private boolean shouldApplyEnchantment(final FriendsMenuItem definition, final Map<String, String> placeholders) {
-        if (!definition.isEnchanted()) {
-            return false;
-        }
-        final String requests = placeholders.get("nouvelles_demandes");
-        if (requests == null) {
-            return true;
-        }
-        try {
-            return Integer.parseInt(requests) > 0;
-        } catch (NumberFormatException exception) {
-            return true;
-        }
-    }
-
-    private ItemStack resolveItem(final String materialKey) {
-        if (materialKey == null || materialKey.isBlank()) {
-            return new ItemStack(Material.BARRIER);
-        }
-        final String normalized = materialKey.trim().toLowerCase(Locale.ROOT);
-        if (normalized.startsWith("hdb:")) {
-            return assetManager.getHead(normalized);
-        }
-        final Material material = Material.matchMaterial(normalized.toUpperCase(Locale.ROOT));
-        if (material == null) {
-            return new ItemStack(Material.BARRIER);
-        }
-        return new ItemStack(material);
-    }
-
-    private String apply(final String input, final Map<String, String> placeholders) {
-        if (input == null) {
-            return "";
-        }
-        String result = input;
-        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
-            result = result.replace("{" + entry.getKey() + "}", entry.getValue());
-        }
-        return result;
-    }
-
-    private void playSound(final Player player, final Sound sound) {
-        playSound(player, sound, 1.0f);
-    }
-
-    private void playSound(final Player player, final Sound sound, final float pitch) {
-        if (player == null || sound == null) {
+    @EventHandler
+    public void onInventoryClick(final InventoryClickEvent event) {
+        if (!MENU_TITLE.equals(event.getView().getTitle())) {
             return;
         }
-        player.playSound(player.getLocation(), sound, 1.0f, pitch);
-    }
 
-    private void openProfileMenu(final Player player) {
-        if (player == null) {
+        event.setCancelled(true);
+
+        if (!(event.getWhoClicked() instanceof Player player) || viewer == null) {
             return;
         }
-        final MenuManager menuManager = plugin.getMenuManager();
-        if (menuManager == null) {
+        if (!player.getUniqueId().equals(viewer.getUniqueId())) {
             return;
         }
-        menuManager.openMenu(player, "profil_menu");
-    }
 
-    private boolean handleInternalAction(final Player player, final String action) {
-        if (action == null || action.isBlank()) {
-            return false;
-        }
-        return switch (action.toLowerCase(Locale.ROOT)) {
-            case "open_settings" -> {
-                openSettings(player);
-                yield true;
+        final int slot = event.getSlot();
+        switch (slot) {
+            case 11 -> openFriendsList(player);
+            case 13 -> openAddFriend(player);
+            case 15 -> openRequests(player);
+            case 20 -> openFavorites(player);
+            case 22 -> openSettings(player);
+            case 24 -> openStatistics(player);
+            case 29 -> openBlocked(player);
+            case 49 -> player.closeInventory();
+            default -> {
             }
-            case "open_statistics" -> {
-                openStatistics(player);
-                yield true;
-            }
-            case "open_blocked" -> {
-                openBlocked(player);
-                yield true;
-            }
-            case "open_favorites" -> {
-                openFavorites(player);
-                yield true;
-            }
-            default -> false;
-        };
-    }
-
-    private void openSettings(final Player player) {
-        try {
-            player.closeInventory();
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    new FriendSettingsMenu(plugin, friendsManager, player).open(), 3L);
-        } catch (Exception exception) {
-            player.sendMessage("§cErreur lors de l'ouverture des paramètres");
-            exception.printStackTrace();
         }
     }
 
-    private void openStatistics(final Player player) {
+    @EventHandler
+    public void onInventoryClose(final InventoryCloseEvent event) {
+        if (viewer == null) {
+            return;
+        }
+        if (!MENU_TITLE.equals(event.getView().getTitle())) {
+            return;
+        }
+        if (!event.getPlayer().getUniqueId().equals(viewer.getUniqueId())) {
+            return;
+        }
+        HandlerList.unregisterAll(this);
+        viewer = null;
+        inventory = null;
+    }
+
+    private void openFriendsList(final Player player) {
         try {
             player.closeInventory();
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    new FriendStatisticsMenu(plugin, friendsManager, player).open(), 3L);
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsListMenu(plugin, friendsManager, player), 3L);
         } catch (Exception exception) {
-            player.sendMessage("§cErreur lors de l'ouverture des statistiques");
-            exception.printStackTrace();
+            player.sendMessage("§cErreur lors de l'ouverture de la liste");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir la liste des amis", exception);
         }
     }
 
-    private void openBlocked(final Player player) {
+    private void openAddFriend(final Player player) {
         try {
             player.closeInventory();
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    new BlockedPlayersMenu(plugin, friendsManager, player).open(), 3L);
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new AddFriendMenu(plugin, friendsManager, player).open(), 3L);
         } catch (Exception exception) {
-            player.sendMessage("§cErreur lors de l'ouverture de la liste des bloqués");
-            exception.printStackTrace();
+            player.sendMessage("§cErreur lors de l'ouverture du menu d'ajout");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir le menu d'ajout d'amis", exception);
+        }
+    }
+
+    private void openRequests(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendRequestsMenu(plugin, friendsManager, player), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des demandes");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les demandes d'amis", exception);
         }
     }
 
     private void openFavorites(final Player player) {
         try {
             player.closeInventory();
-            player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () ->
-                    new FavoriteFriendsMenu(plugin, friendsManager, player), 3L);
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new FavoriteFriendsMenu(plugin, friendsManager, player), 3L);
         } catch (Exception exception) {
             player.sendMessage("§cErreur lors de l'ouverture des favoris");
-            exception.printStackTrace();
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les amis favoris", exception);
         }
     }
 
-    private String colorize(final String input) {
-        if (input == null) {
-            return "";
+    private void openSettings(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendSettingsMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des paramètres");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les paramètres d'amis", exception);
         }
-        return ChatColor.translateAlternateColorCodes('&', input);
+    }
+
+    private void openStatistics(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendStatisticsMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des statistiques");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les statistiques d'amis", exception);
+        }
+    }
+
+    private void openBlocked(final Player player) {
+        try {
+            player.closeInventory();
+            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin, () -> new BlockedPlayersMenu(plugin, friendsManager, player).open(), 3L);
+        } catch (Exception exception) {
+            player.sendMessage("§cErreur lors de l'ouverture des bloqués");
+            plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir la liste des joueurs bloqués", exception);
+        }
     }
 }
-

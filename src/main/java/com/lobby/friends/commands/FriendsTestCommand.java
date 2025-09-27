@@ -52,7 +52,7 @@ public final class FriendsTestCommand implements CommandExecutor {
             switch (subCommand) {
                 case "main" -> openMainMenu(player);
                 case "list" -> {
-                    new FriendsListMenu(plugin, friendsManager, player).open();
+                    new FriendsListMenu(plugin, friendsManager, player);
                     player.sendMessage("§a✓ Liste des amis ouverte");
                 }
                 case "add" -> {
@@ -144,7 +144,7 @@ public final class FriendsTestCommand implements CommandExecutor {
         try {
             switch (menuIndex) {
                 case 0 -> openMainMenu(player);
-                case 1 -> new FriendsListMenu(plugin, friendsManager, player).open();
+                case 1 -> new FriendsListMenu(plugin, friendsManager, player);
                 case 2 -> new AddFriendMenu(plugin, friendsManager, player).open();
                 case 3 -> new FriendRequestsMenu(plugin, friendsManager, player).open();
                 case 4 -> new FriendSettingsMenu(plugin, friendsManager, player).open();
