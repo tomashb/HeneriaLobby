@@ -1,5 +1,6 @@
 package com.lobby.friends.manager;
 
+import com.lobby.LobbyPlugin;
 import com.lobby.friends.data.FriendData;
 import com.lobby.friends.data.FriendRequest;
 import com.lobby.friends.data.FriendSettings;
@@ -319,6 +320,14 @@ public class FriendsManager {
             if (sender != null) {
                 sender.sendMessage("§a✓ " + player.getName() + " a accepté votre demande d'amitié !");
                 playSound(sender, Sound.ENTITY_PLAYER_LEVELUP, 1.0f);
+            }
+            if (plugin instanceof LobbyPlugin lobbyPlugin && lobbyPlugin.getMenuUpdateManager() != null) {
+                Bukkit.getScheduler().runTask(lobbyPlugin, () -> {
+                    lobbyPlugin.getMenuUpdateManager().forceUpdate(player);
+                    if (sender != null) {
+                        lobbyPlugin.getMenuUpdateManager().forceUpdate(sender);
+                    }
+                });
             }
             return true;
         });

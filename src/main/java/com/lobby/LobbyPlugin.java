@@ -23,6 +23,7 @@ import com.lobby.friends.manager.BlockedPlayersManager;
 import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsConfigGenerator;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.manager.MenuUpdateManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
 import com.lobby.friends.menu.FriendsMenuManager;
@@ -85,6 +86,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private FriendsMenuController friendsMenuController;
     private FriendsMenuManager friendsMenuManager;
     private FriendAddChatListener friendAddChatListener;
+    private MenuUpdateManager menuUpdateManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -145,6 +147,7 @@ public final class LobbyPlugin extends JavaPlugin {
         new FriendsConfigGenerator(this).generate();
         friendsMenuManager = new FriendsMenuManager(this);
         getServer().getPluginManager().registerEvents(friendsMenuManager, this);
+        menuUpdateManager = new MenuUpdateManager(this);
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
                 friendsManager, friendsMenuManager, new DefaultFriendsMenuActionHandler(this, friendsManager));
         shopManager = new ShopManager(this);
@@ -195,6 +198,9 @@ public final class LobbyPlugin extends JavaPlugin {
         }
         if (shopManager != null) {
             shopManager.shutdown();
+        }
+        if (menuUpdateManager != null) {
+            menuUpdateManager.shutdown();
         }
         if (headDatabaseManager != null) {
             headDatabaseManager.clearCache();
@@ -353,6 +359,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public FriendAddChatListener getFriendAddChatListener() {
         return friendAddChatListener;
+    }
+
+    public MenuUpdateManager getMenuUpdateManager() {
+        return menuUpdateManager;
     }
 
     public FriendCodeManager getFriendCodeManager() {

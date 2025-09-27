@@ -191,6 +191,13 @@ public class FriendAddChatListener implements Listener {
                                 target.sendMessage("§7Ou ouvrez le menu amis §a/friends");
                                 target.playSound(target.getLocation(), "entity.experience_orb.pickup", 1.0f, 1.2f);
                             }
+
+                            if (plugin.getMenuUpdateManager() != null) {
+                                plugin.getMenuUpdateManager().forceUpdate(sender);
+                                if (target != null) {
+                                    plugin.getMenuUpdateManager().forceUpdate(target);
+                                }
+                            }
                         });
                         return;
                     }

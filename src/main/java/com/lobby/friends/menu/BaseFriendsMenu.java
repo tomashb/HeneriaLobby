@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.manager.MenuUpdateManager;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -89,6 +90,10 @@ public abstract class BaseFriendsMenu {
     public void handleMenuClose(final InventoryCloseEvent event) {
         final UUID viewerId = event.getPlayer().getUniqueId();
         menuManager.unregisterMenu(viewerId, this);
+        final MenuUpdateManager updateManager = plugin.getMenuUpdateManager();
+        if (updateManager != null && event.getPlayer() instanceof Player player) {
+            updateManager.unregisterMenu(player);
+        }
     }
 
     /**
