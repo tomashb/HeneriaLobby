@@ -2,7 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
-import com.lobby.friends.menu.FriendsMenuController;
+import com.lobby.friends.menu.FriendsMainMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -17,23 +17,21 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * Rich add-friend menu that offers multiple entry points to find and add
- * players. Each submenu is implemented as its own inventory.
+ * Menu dedicated to the different options available when adding a friend.
  */
 public class AddFriendMenu implements Listener {
 
     private static final String TITLE = "§8» §aAjouter un Ami";
     private static final int SIZE = 36;
-    private static final int BACK_SLOT = 31;
+
     private static final int SEARCH_SLOT = 10;
     private static final int SUGGESTIONS_SLOT = 11;
     private static final int NEARBY_SLOT = 12;
-    private static final int HISTORY_SLOT = 13;
     private static final int IMPORT_SLOT = 14;
+    private static final int PENDING_SLOT = 15;
+    private static final int BACK_SLOT = 31;
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
@@ -47,121 +45,117 @@ public class AddFriendMenu implements Listener {
         this.inventory = Bukkit.createInventory(null, SIZE, TITLE);
         Bukkit.getPluginManager().registerEvents(this, plugin);
         setupMenu();
+        updatePendingInvitations();
     }
 
     private void setupMenu() {
         final ItemStack greenGlass = createItem(Material.GREEN_STAINED_GLASS_PANE, " ");
-        final int[] greenSlots = {0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 28, 29, 33, 34, 35};
+        final int[] greenSlots = {0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 35};
         for (int slot : greenSlots) {
             inventory.setItem(slot, greenGlass);
         }
 
-        final ItemStack searchButton = createItem(Material.COMPASS, "§a§l🔍 Rechercher un Joueur");
-        final ItemMeta searchMeta = searchButton.getItemMeta();
+        final ItemStack search = createItem(Material.COMPASS, "§b🔍 Recherche par Nom");
+        final ItemMeta searchMeta = search.getItemMeta();
         if (searchMeta != null) {
             searchMeta.setLore(Arrays.asList(
                     "§7Recherchez un joueur par son nom",
-                    "§7pour lui envoyer une demande d'ami",
                     "",
-                    "§a▸ Recherches récentes: §20",
-                    "§7▸ Dernière recherche: §8Aucune",
-                    "§e▸ Réussite: §6100%",
+                    "§b▸ Recherche exacte",
+                    "§b▸ Suggestions automatiques",
+                    "§b▸ Historique des recherches",
                     "",
-                    "§8» §aCliquez pour rechercher"
+                    "§8» §bCliquez pour rechercher"
             ));
-            searchButton.setItemMeta(searchMeta);
+            search.setItemMeta(searchMeta);
         }
-        inventory.setItem(SEARCH_SLOT, searchButton);
+        inventory.setItem(SEARCH_SLOT, search);
 
-        final ItemStack suggestionsButton = createItem(Material.BOOK, "§e§l📝 Joueurs Suggérés");
-        final ItemMeta suggestionsMeta = suggestionsButton.getItemMeta();
+        final ItemStack suggestions = createItem(Material.LIGHT_BLUE_DYE, "§e💡 Suggestions Intelligentes");
+        final ItemMeta suggestionsMeta = suggestions.getItemMeta();
         if (suggestionsMeta != null) {
             suggestionsMeta.setLore(Arrays.asList(
-                    "§7Suggestions intelligentes basées sur:",
-                    "§8▸ §7Amis en commun",
-                    "§8▸ §7Serveurs fréquentés",
-                    "§8▸ §7Activités similaires",
-                    "§8▸ §7Compatibilité horaire",
+                    "§7Découvrez des joueurs compatibles",
                     "",
-                    "§e▸ Suggestions disponibles: §6?",
-                    "§7▸ Dernière mise à jour: §8À l'instant",
+                    "§e▸ Basé sur vos activités",
+                    "§e▸ Amis d'amis",
+                    "§e▸ Centres d'intérêt communs",
                     "",
                     "§8» §eCliquez pour voir les suggestions"
             ));
-            suggestionsButton.setItemMeta(suggestionsMeta);
+            suggestions.setItemMeta(suggestionsMeta);
         }
-        inventory.setItem(SUGGESTIONS_SLOT, suggestionsButton);
+        inventory.setItem(SUGGESTIONS_SLOT, suggestions);
 
-        final ItemStack nearbyButton = createItem(Material.COMPASS, "§b§l📍 Joueurs Proches");
-        final ItemMeta nearbyMeta = nearbyButton.getItemMeta();
+        final ItemStack nearby = createItem(Material.ENDER_PEARL, "§6🌍 Joueurs à Proximité");
+        final ItemMeta nearbyMeta = nearby.getItemMeta();
         if (nearbyMeta != null) {
-            final List<Player> nearbyPlayers = Bukkit.getOnlinePlayers().stream()
-                    .filter(p -> !p.getUniqueId().equals(player.getUniqueId()))
-                    .filter(p -> p.getWorld().equals(player.getWorld()))
-                    .filter(p -> p.getLocation().distance(player.getLocation()) <= 100)
-                    .collect(Collectors.toList());
-            final int totalOnline = Math.max(0, Bukkit.getOnlinePlayers().size() - 1);
             nearbyMeta.setLore(Arrays.asList(
-                    "§7Joueurs actuellement détectés:",
+                    "§7Trouvez des joueurs près de vous",
                     "",
-                    "§b▸ À proximité (<100m): §3" + nearbyPlayers.size(),
-                    "§7▸ Dans votre monde: §8" + player.getWorld().getPlayers().size(),
-                    "§6▸ Sur le serveur: §e" + totalOnline,
-                    "§d▸ Sur le réseau: §5" + totalOnline,
+                    "§6▸ Même serveur",
+                    "§6▸ Même monde",
+                    "§6▸ Distance configurable",
                     "",
-                    "§8» §bCliquez pour voir la liste"
+                    "§8» §6Cliquez pour explorer"
             ));
-            nearbyButton.setItemMeta(nearbyMeta);
+            nearby.setItemMeta(nearbyMeta);
         }
-        inventory.setItem(NEARBY_SLOT, nearbyButton);
+        inventory.setItem(NEARBY_SLOT, nearby);
 
-        final ItemStack historyButton = createItem(Material.PAPER, "§7§l📋 Historique & Statistiques");
-        final ItemMeta historyMeta = historyButton.getItemMeta();
-        if (historyMeta != null) {
-            historyMeta.setLore(Arrays.asList(
-                    "§7Consultez vos données d'ajout d'amis",
-                    "",
-                    "§7▸ Recherches effectuées: §80",
-                    "§7▸ Demandes envoyées: §80",
-                    "§7▸ Taux d'acceptation: §8100%",
-                    "§7▸ Dernière activité: §8Maintenant",
-                    "",
-                    "§8» §7Cliquez pour consulter l'historique"
-            ));
-            historyButton.setItemMeta(historyMeta);
-        }
-        inventory.setItem(HISTORY_SLOT, historyButton);
-
-        final ItemStack importButton = createItem(Material.ENDER_CHEST, "§d§l💾 Importer des Amis");
-        final ItemMeta importMeta = importButton.getItemMeta();
+        final ItemStack importCode = createItem(Material.WRITABLE_BOOK, "§d💾 Code d'Ami");
+        final ItemMeta importMeta = importCode.getItemMeta();
         if (importMeta != null) {
+            final String code = "#" + player.getName().toUpperCase().substring(0, Math.min(4, player.getName().length())) + "1234";
             importMeta.setLore(Arrays.asList(
-                    "§7Importez vos amis depuis:",
-                    "§8▸ §7Autres serveurs du réseau",
-                    "§8▸ §7Fichiers de sauvegarde",
-                    "§8▸ §7Listes externes (Discord, etc.)",
-                    "§8▸ §7Anciens pseudos",
+                    "§7Utilisez un code d'ami pour",
+                    "§7ajouter rapidement quelqu'un",
                     "",
-                    "§d▸ Sources disponibles: §51",
+                    "§d▸ Votre code: §f" + code,
+                    "§d▸ Saisissez un code reçu",
                     "",
-                    "§8» §dCliquez pour importer"
+                    "§8» §dCliquez pour utiliser un code"
             ));
-            importButton.setItemMeta(importMeta);
+            importCode.setItemMeta(importMeta);
         }
-        inventory.setItem(IMPORT_SLOT, importButton);
+        inventory.setItem(IMPORT_SLOT, importCode);
 
-        final ItemStack backButton = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
-        final ItemMeta backMeta = backButton.getItemMeta();
+        setPendingItem(0);
+
+        final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
+        final ItemMeta backMeta = back.getItemMeta();
         if (backMeta != null) {
             backMeta.setLore(Arrays.asList(
-                    "§7Revenir au menu principal",
-                    "§7des amis",
+                    "§7Revenir au menu principal des amis",
                     "",
                     "§8» §eCliquez pour retourner"
             ));
-            backButton.setItemMeta(backMeta);
+            back.setItemMeta(backMeta);
         }
-        inventory.setItem(BACK_SLOT, backButton);
+        inventory.setItem(BACK_SLOT, back);
+    }
+
+    private void updatePendingInvitations() {
+        friendsManager.getPendingRequests(player).thenAccept(requests ->
+                Bukkit.getScheduler().runTask(plugin, () -> setPendingItem(requests != null ? requests.size() : 0))
+        );
+    }
+
+    private void setPendingItem(final int pendingCount) {
+        final ItemStack pending = createItem(Material.CLOCK, "§c⏳ Invitations Envoyées");
+        final ItemMeta pendingMeta = pending.getItemMeta();
+        if (pendingMeta != null) {
+            pendingMeta.setLore(Arrays.asList(
+                    "§7Consultez vos invitations en attente",
+                    "",
+                    "§c▸ En attente: §4" + pendingCount,
+                    "§c▸ Expirées: §40",
+                    "",
+                    "§8» §cCliquez pour gérer"
+            ));
+            pending.setItemMeta(pendingMeta);
+        }
+        inventory.setItem(PENDING_SLOT, pending);
     }
 
     private ItemStack createItem(final Material material, final String name) {
@@ -181,23 +175,23 @@ public class AddFriendMenu implements Listener {
 
     @EventHandler
     public void onInventoryClick(final InventoryClickEvent event) {
+        if (!TITLE.equals(event.getView().getTitle())) {
+            return;
+        }
+        event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player clicker)) {
             return;
         }
         if (!clicker.getUniqueId().equals(player.getUniqueId())) {
             return;
         }
-        if (!TITLE.equals(event.getView().getTitle())) {
-            return;
-        }
-        event.setCancelled(true);
-        final int slot = event.getSlot();
-        switch (slot) {
+
+        switch (event.getSlot()) {
             case SEARCH_SLOT -> handleSearch();
             case SUGGESTIONS_SLOT -> handleSuggestions();
             case NEARBY_SLOT -> handleNearbyPlayers();
-            case HISTORY_SLOT -> handleHistory();
-            case IMPORT_SLOT -> handleImport();
+            case IMPORT_SLOT -> handleFriendCode();
+            case PENDING_SLOT -> handlePendingInvitations();
             case BACK_SLOT -> handleBack();
             default -> {
             }
@@ -219,43 +213,64 @@ public class AddFriendMenu implements Listener {
 
     private void handleSearch() {
         player.closeInventory();
-        player.sendMessage("§a🔍 Recherche de joueur");
-        player.sendMessage("§7Tapez le nom du joueur que vous voulez ajouter en ami:");
+        player.sendMessage("§b🔍 Recherche de joueur");
+        player.sendMessage("§7Tapez le nom du joueur dans le chat:");
         player.sendMessage("§7(ou tapez 'cancel' pour annuler)");
         player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> new PlayerSearchMenu(plugin, friendsManager, player).open(), 1L);
     }
 
     private void handleSuggestions() {
-        player.closeInventory();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> new SuggestionsMenu(plugin, friendsManager, player).open(), 1L);
+        player.sendMessage("§e💡 Suggestions intelligentes:");
+        player.sendMessage("§7- Analyse des joueurs compatibles");
+        player.sendMessage("§7- Basé sur vos activités communes");
+        player.sendMessage("§7- Amis d'amis potentiels");
+        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
     }
 
     private void handleNearbyPlayers() {
+        player.sendMessage("§6🌍 Joueurs à proximité:");
+
+        int nearbyCount = 0;
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            if (online.getUniqueId().equals(player.getUniqueId())) {
+                continue;
+            }
+            if (!online.getWorld().equals(player.getWorld())) {
+                continue;
+            }
+            final double distance = online.getLocation().distance(player.getLocation());
+            if (distance <= 100) {
+                player.sendMessage("§8▸ §e" + online.getName() + " §7(§a" + String.format("%.1f", distance) + "m§7)");
+                nearbyCount++;
+            }
+        }
+
+        if (nearbyCount == 0) {
+            player.sendMessage("§7Aucun joueur trouvé dans un rayon de 100 blocs");
+        }
+
+        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+    }
+
+    private void handleFriendCode() {
         player.closeInventory();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> new NearbyPlayersMenu(plugin, friendsManager, player).open(), 1L);
+        player.sendMessage("§d💾 Code d'ami:");
+        player.sendMessage("§7Votre code: §f#" + player.getName().toUpperCase().substring(0, Math.min(4, player.getName().length())) + "1234");
+        player.sendMessage("§7Tapez le code d'un ami pour l'ajouter:");
+        player.sendMessage("§7(ou tapez 'cancel' pour annuler)");
+        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.5f);
     }
 
-    private void handleHistory() {
-        player.sendMessage("§7📋 Historique et statistiques en développement !");
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-    }
-
-    private void handleImport() {
-        player.sendMessage("§d💾 Import d'amis en développement !");
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+    private void handlePendingInvitations() {
+        player.sendMessage("§c⏳ Invitations envoyées:");
+        player.sendMessage("§7- Aucune invitation en attente");
+        player.sendMessage("§7- Toutes vos demandes ont été traitées");
+        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
     }
 
     private void handleBack() {
         player.closeInventory();
-        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            final FriendsMenuController controller = plugin.getFriendsMenuController();
-            if (controller != null) {
-                controller.openMainMenu(player);
-            }
-        }, 2L);
+        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
     }
 }
