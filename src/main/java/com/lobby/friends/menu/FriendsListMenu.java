@@ -295,18 +295,25 @@ public class FriendsListMenu implements Listener {
 
     @EventHandler
     public void onInventoryClick(final InventoryClickEvent event) {
+        final String title = event.getView().getTitle();
+        if (title == null || !title.contains("§8» §aListe des Amis")) {
+            return;
+        }
         if (!(event.getWhoClicked() instanceof Player clicker)) {
             return;
         }
         if (!clicker.getUniqueId().equals(player.getUniqueId())) {
             return;
         }
-        if (inventory == null || inventoryTitle == null || !event.getView().getTitle().equals(inventoryTitle)) {
+        if (inventory == null || inventoryTitle == null || !title.equals(inventoryTitle)) {
             return;
         }
+
         event.setCancelled(true);
 
         final int slot = event.getSlot();
+        clicker.sendMessage("§7[DEBUG] Clic sur slot: " + slot + " | Type: " + event.getClick());
+
         if (slot == 47 && currentPage > 1) {
             currentPage--;
             setupMenu();
@@ -321,9 +328,10 @@ public class FriendsListMenu implements Listener {
                 if (controller != null) {
                     controller.openMainMenu(player);
                 }
-            }, 1L);
+            }, 2L);
             return;
         }
+
         final int totalPages = Math.max(1, (int) Math.ceil((double) allFriends.size() / ITEMS_PER_PAGE));
         if (slot == 51 && currentPage < totalPages) {
             currentPage++;
