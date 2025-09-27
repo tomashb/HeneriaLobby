@@ -28,7 +28,7 @@ items:
       - '&e▸ Total: &6%total_amis%&7/&6%limite_amis%'
       - '&r'
       - '&8» &aCliquez pour ouvrir'
-    action: '[COMMAND] lobby friends'
+    action: '[FRIENDS_MENU]'
 
   party-button:
     slot: 4

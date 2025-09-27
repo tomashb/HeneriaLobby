@@ -3,7 +3,6 @@ package com.lobby.friends.menu;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.data.FriendRequest;
 import com.lobby.friends.manager.FriendsManager;
-import com.lobby.friends.menu.FriendsMainMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -11,7 +10,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
@@ -21,36 +19,35 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 /**
- * Menu listing all pending friend requests with quick actions to accept or
- * reject them.
+ * Ultra-protected friend requests menu providing immediate feedback while
+ * keeping the menu contents guarded against any interaction exploits.
  */
 public class FriendRequestsMenu implements Listener {
 
     private static final String TITLE_PREFIX = "§8» §6Demandes d'Amitié";
-    private static final int SIZE = 54;
-    private static final int ITEMS_PER_PAGE = 28;
+    private static final int INVENTORY_SIZE = 54;
     private static final int[] REQUEST_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
             28, 29, 30, 31, 32, 33, 34,
             37, 38, 39, 40, 41, 42, 43
     };
+    private static final int[] GLASS_SLOTS = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
     private final Player player;
 
     private Inventory inventory;
-    private List<FriendRequest> allRequests = Collections.emptyList();
-    private int currentPage = 1;
+    private List<FriendRequest> allRequests = new ArrayList<>();
 
-    public FriendRequestsMenu(final LobbyPlugin plugin, final FriendsManager friendsManager, final Player player) {
+    public FriendRequestsMenu(final LobbyPlugin plugin,
+                              final FriendsManager friendsManager,
+                              final Player player) {
         this.plugin = plugin;
         this.friendsManager = friendsManager;
         this.player = player;
@@ -60,17 +57,14 @@ public class FriendRequestsMenu implements Listener {
 
     private void loadRequestsAndCreateMenu() {
         friendsManager.getPendingRequests(player).thenAccept(requests -> {
-            allRequests = requests != null ? requests : Collections.emptyList();
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                createMenu();
-                open();
-            });
+            allRequests = requests != null ? new ArrayList<>(requests) : new ArrayList<>();
+            Bukkit.getScheduler().runTask(plugin, this::createMenu);
         }).exceptionally(throwable -> {
             plugin.getLogger().severe("Erreur chargement demandes: " + throwable.getMessage());
-            allRequests = Collections.emptyList();
             Bukkit.getScheduler().runTask(plugin, () -> {
+                player.sendMessage("§cErreur lors du chargement des demandes");
+                allRequests = new ArrayList<>();
                 createMenu();
-                open();
             });
             return null;
         });
@@ -78,20 +72,22 @@ public class FriendRequestsMenu implements Listener {
 
     private void createMenu() {
         final String title = TITLE_PREFIX + " (" + allRequests.size() + ")";
-        inventory = Bukkit.createInventory(null, SIZE, title);
+        inventory = Bukkit.createInventory(null, INVENTORY_SIZE, title);
         setupMenu();
+        open();
     }
 
     private void setupMenu() {
         if (inventory == null) {
             return;
         }
-        inventory.clear();
+        for (int slot = 0; slot < INVENTORY_SIZE; slot++) {
+            inventory.setItem(slot, null);
+        }
 
-        final ItemStack goldGlass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
-        final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
-        for (int slot : goldSlots) {
-            inventory.setItem(slot, goldGlass);
+        final ItemStack glass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
+        for (int slot : GLASS_SLOTS) {
+            inventory.setItem(slot, glass);
         }
 
         displayRequests();
@@ -104,16 +100,12 @@ public class FriendRequestsMenu implements Listener {
             final ItemMeta meta = noRequests.getItemMeta();
             if (meta != null) {
                 meta.setLore(Arrays.asList(
-                        "§7Vous n'avez aucune demande",
-                        "§7d'amitié en attente",
+                        "§7Vous n'avez aucune demande d'amitié en attente",
                         "",
                         "§a✓ Votre boîte de réception est vide !",
                         "",
                         "§7Les nouvelles demandes apparaîtront ici",
-                        "§7quand vous en recevrez",
-                        "",
-                        "§e💡 Partagez votre code d'ami:",
-                        "§f#" + player.getName().toUpperCase().substring(0, Math.min(4, player.getName().length())) + "1234"
+                        "§7quand vous en recevrez"
                 ));
                 noRequests.setItemMeta(meta);
             }
@@ -121,10 +113,8 @@ public class FriendRequestsMenu implements Listener {
             return;
         }
 
-        final int startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        final int endIndex = Math.min(startIndex + ITEMS_PER_PAGE, allRequests.size());
-        for (int i = 0; i < REQUEST_SLOTS.length && (startIndex + i) < endIndex; i++) {
-            final FriendRequest request = allRequests.get(startIndex + i);
+        for (int i = 0; i < REQUEST_SLOTS.length && i < allRequests.size(); i++) {
+            final FriendRequest request = allRequests.get(i);
             inventory.setItem(REQUEST_SLOTS[i], createRequestItem(request));
         }
     }
@@ -139,12 +129,13 @@ public class FriendRequestsMenu implements Listener {
         try {
             meta.setOwningPlayer(Bukkit.getOfflinePlayer(UUID.fromString(request.getSenderUuid())));
         } catch (IllegalArgumentException ignored) {
-            // keep default skin
+            // Fallback to default skin
         }
 
         final String senderName = request.getSenderName();
-        meta.setDisplayName("§6§l📨 " + senderName);
+        final String message = request.getDisplayMessage();
 
+        meta.setDisplayName("§6§l📨 " + senderName);
         final List<String> lore = new ArrayList<>();
         lore.add("§7Demande d'amitié reçue");
         lore.add("");
@@ -152,12 +143,10 @@ public class FriendRequestsMenu implements Listener {
         lore.add("§7Date: §b" + request.getRelativeDate());
         lore.add("");
         lore.add("§7Message personnel:");
-        lore.add("§f\"" + request.getDisplayMessage() + "\"");
+        lore.add("§f\"" + message + "\"");
         lore.add("");
-        lore.add("§7Actions disponibles:");
         lore.add("§8▸ §aClique gauche §8: §2✓ Accepter");
         lore.add("§8▸ §cClique droit §8: §4✗ Refuser");
-        lore.add("§8▸ §eClique milieu §8: §6👤 Voir le profil");
 
         meta.setLore(lore);
         head.setItemMeta(meta);
@@ -165,38 +154,17 @@ public class FriendRequestsMenu implements Listener {
     }
 
     private void setupActions() {
-        if (!allRequests.isEmpty()) {
-            final ItemStack acceptAll = createItem(Material.EMERALD, "§a§l✓ Accepter Toutes");
-            final ItemMeta acceptMeta = acceptAll.getItemMeta();
-            if (acceptMeta != null) {
-                acceptMeta.setLore(Arrays.asList(
-                        "§7Accepter toutes les demandes en attente",
-                        "",
-                        "§a▸ Demandes à accepter: §2" + allRequests.size(),
-                        "",
-                        "§8» §aCliquez pour accepter toutes"
-                ));
-                acceptAll.setItemMeta(acceptMeta);
-            }
-            inventory.setItem(47, acceptAll);
-
-            final ItemStack rejectAll = createItem(Material.REDSTONE, "§c§l✗ Refuser Toutes");
-            final ItemMeta rejectMeta = rejectAll.getItemMeta();
-            if (rejectMeta != null) {
-                rejectMeta.setLore(Arrays.asList(
-                        "§7Refuser toutes les demandes en attente",
-                        "",
-                        "§c▸ Demandes à refuser: §4" + allRequests.size(),
-                        "",
-                        "§8» §cCliquez pour refuser toutes"
-                ));
-                rejectAll.setItemMeta(rejectMeta);
-            }
-            inventory.setItem(51, rejectAll);
-        } else {
-            inventory.setItem(47, null);
-            inventory.setItem(51, null);
+        final ItemStack refresh = createItem(Material.CLOCK, "§b🔄 Actualiser");
+        final ItemMeta refreshMeta = refresh.getItemMeta();
+        if (refreshMeta != null) {
+            refreshMeta.setLore(Arrays.asList(
+                    "§7Actualiser la liste des demandes",
+                    "",
+                    "§8» §bCliquez pour actualiser"
+            ));
+            refresh.setItemMeta(refreshMeta);
         }
+        inventory.setItem(48, refresh);
 
         final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
         final ItemMeta backMeta = back.getItemMeta();
@@ -209,18 +177,6 @@ public class FriendRequestsMenu implements Listener {
             back.setItemMeta(backMeta);
         }
         inventory.setItem(49, back);
-
-        final ItemStack refresh = createItem(Material.CLOCK, "§b🔄 Actualiser");
-        final ItemMeta refreshMeta = refresh.getItemMeta();
-        if (refreshMeta != null) {
-            refreshMeta.setLore(Arrays.asList(
-                    "§7Actualiser la liste des demandes",
-                    "",
-                    "§8» §bCliquez pour actualiser"
-            ));
-            refresh.setItemMeta(refreshMeta);
-        }
-        inventory.setItem(48, refresh);
     }
 
     private ItemStack createItem(final Material material, final String name) {
@@ -249,6 +205,7 @@ public class FriendRequestsMenu implements Listener {
         }
 
         event.setCancelled(true);
+        event.setResult(org.bukkit.event.Event.Result.DENY);
 
         if (!(event.getWhoClicked() instanceof Player clicker)) {
             return;
@@ -258,24 +215,19 @@ public class FriendRequestsMenu implements Listener {
         }
 
         final int slot = event.getSlot();
-        if (slot == 47 && !allRequests.isEmpty()) {
-            handleAcceptAll();
-            return;
-        }
-        if (slot == 51 && !allRequests.isEmpty()) {
-            handleRejectAll();
+        clicker.sendMessage("§7[DEBUG] Clic sur slot: " + slot);
+
+        if (slot == 48) {
+            clicker.sendMessage("§b🔄 Actualisation des demandes...");
+            clicker.playSound(clicker.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
+            loadRequestsAndCreateMenu();
             return;
         }
         if (slot == 49) {
-            player.closeInventory();
-            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
-            return;
-        }
-        if (slot == 48) {
-            player.sendMessage("§b🔄 Actualisation des demandes...");
-            player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
-            loadRequestsAndCreateMenu();
+            clicker.closeInventory();
+            clicker.playSound(clicker.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> new FriendsMainMenu(plugin, friendsManager).open(clicker), 3L);
             return;
         }
 
@@ -283,13 +235,49 @@ public class FriendRequestsMenu implements Listener {
             if (REQUEST_SLOTS[i] != slot) {
                 continue;
             }
-            final int requestIndex = (currentPage - 1) * ITEMS_PER_PAGE + i;
-            if (requestIndex >= allRequests.size()) {
+            if (i >= allRequests.size()) {
                 return;
             }
-            handleRequestClick(allRequests.get(requestIndex), event.getClick());
+            handleRequestClick(allRequests.get(i), event);
             break;
         }
+    }
+
+    private void handleRequestClick(final FriendRequest request, final InventoryClickEvent event) {
+        switch (event.getClick()) {
+            case LEFT -> acceptRequest(request);
+            case RIGHT -> rejectRequest(request);
+            default -> {
+            }
+        }
+    }
+
+    private void acceptRequest(final FriendRequest request) {
+        friendsManager.acceptFriendRequest(player, request.getSenderName()).thenAccept(success ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (success) {
+                        player.sendMessage("§a✓ Demande de " + request.getSenderName() + " acceptée !");
+                        allRequests.remove(request);
+                        setupMenu();
+                    } else {
+                        player.sendMessage("§cErreur lors de l'acceptation");
+                    }
+                    player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                }));
+    }
+
+    private void rejectRequest(final FriendRequest request) {
+        friendsManager.rejectFriendRequest(player, request.getSenderName()).thenAccept(success ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (success) {
+                        player.sendMessage("§c✗ Demande de " + request.getSenderName() + " refusée");
+                        allRequests.remove(request);
+                        setupMenu();
+                    } else {
+                        player.sendMessage("§cErreur lors du refus de la demande");
+                    }
+                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                }));
     }
 
     @EventHandler
@@ -300,90 +288,9 @@ public class FriendRequestsMenu implements Listener {
         if (!viewer.getUniqueId().equals(player.getUniqueId())) {
             return;
         }
-        if (event.getView().getTitle() != null && event.getView().getTitle().contains(TITLE_PREFIX)) {
-            HandlerList.unregisterAll(this);
-        }
-    }
-
-    private void handleRequestClick(final FriendRequest request, final ClickType clickType) {
-        switch (clickType) {
-            case LEFT -> handleAcceptRequest(request);
-            case RIGHT -> handleRejectRequest(request);
-            case MIDDLE -> handleViewProfile(request);
-            default -> {
-            }
-        }
-    }
-
-    private void handleAcceptRequest(final FriendRequest request) {
-        player.sendMessage("§a✓ Demande de " + request.getSenderName() + " acceptée !");
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-        friendsManager.acceptFriendRequest(player, request.getSenderName()).thenAccept(result ->
-                Bukkit.getScheduler().runTask(plugin, this::loadRequestsAndCreateMenu));
-    }
-
-    private void handleRejectRequest(final FriendRequest request) {
-        player.sendMessage("§c✗ Demande de " + request.getSenderName() + " refusée");
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
-        friendsManager.rejectFriendRequest(player, request.getSenderName()).thenAccept(result ->
-                Bukkit.getScheduler().runTask(plugin, this::loadRequestsAndCreateMenu));
-    }
-
-    private void handleViewProfile(final FriendRequest request) {
-        player.sendMessage("§6👤 Profil de " + request.getSenderName() + ":");
-        player.sendMessage("§7- Niveau: §aInconnu");
-        player.sendMessage("§7- Temps de jeu: §bInconnu");
-        player.sendMessage("§7- Dernière connexion: §e" + (request.isSenderOnline() ? "En ligne" : request.getRelativeDate()));
-        player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-    }
-
-    private void handleAcceptAll() {
-        if (allRequests.isEmpty()) {
+        if (event.getView().getTitle() == null || !event.getView().getTitle().contains(TITLE_PREFIX)) {
             return;
         }
-
-        player.sendMessage("§a✅ Acceptation de toutes les demandes (" + allRequests.size() + ")...");
-        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-
-        final List<CompletableFuture<Boolean>> futures = new ArrayList<>();
-        for (FriendRequest request : allRequests) {
-            futures.add(friendsManager.acceptFriendRequest(player, request.getSenderName()));
-        }
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).whenComplete((ignored, throwable) ->
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (throwable != null) {
-                        plugin.getLogger().warning("Erreur lors de l'acceptation de toutes les demandes: " + throwable.getMessage());
-                        player.sendMessage("§cUne erreur est survenue pendant l'acceptation des demandes.");
-                    } else {
-                        player.sendMessage("§a✓ Toutes les demandes ont été acceptées !");
-                    }
-                    loadRequestsAndCreateMenu();
-                }));
-    }
-
-    private void handleRejectAll() {
-        if (allRequests.isEmpty()) {
-            return;
-        }
-
-        player.sendMessage("§c❌ Refus de toutes les demandes (" + allRequests.size() + ")...");
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
-
-        final List<CompletableFuture<Boolean>> futures = new ArrayList<>();
-        for (FriendRequest request : allRequests) {
-            futures.add(friendsManager.rejectFriendRequest(player, request.getSenderName()));
-        }
-
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).whenComplete((ignored, throwable) ->
-                Bukkit.getScheduler().runTask(plugin, () -> {
-                    if (throwable != null) {
-                        plugin.getLogger().warning("Erreur lors du refus de toutes les demandes: " + throwable.getMessage());
-                        player.sendMessage("§cUne erreur est survenue pendant le refus des demandes.");
-                    } else {
-                        player.sendMessage("§c✗ Toutes les demandes ont été refusées");
-                    }
-                    loadRequestsAndCreateMenu();
-                }));
+        HandlerList.unregisterAll(this);
     }
 }
