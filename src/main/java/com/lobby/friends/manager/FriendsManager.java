@@ -2,6 +2,7 @@ package com.lobby.friends.manager;
 
 import com.lobby.friends.data.FriendData;
 import com.lobby.friends.data.FriendRequest;
+import com.lobby.friends.data.FriendSettings;
 import com.lobby.friends.database.FriendsDatabase;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -26,6 +27,7 @@ public class FriendsManager {
     private final FriendsDatabase database;
     private final Map<UUID, List<FriendData>> friendsCache = new ConcurrentHashMap<>();
     private final Map<UUID, List<FriendRequest>> requestsCache = new ConcurrentHashMap<>();
+    private final Map<UUID, FriendSettings> settingsCache = new ConcurrentHashMap<>();
 
     public FriendsManager(final Plugin plugin) {
         this.plugin = plugin;
@@ -44,6 +46,11 @@ public class FriendsManager {
     private void refreshPlayerCache(final UUID playerUuid) {
         database.getFriends(playerUuid.toString()).thenAccept(friends -> friendsCache.put(playerUuid, friends));
         database.getPendingRequests(playerUuid.toString()).thenAccept(requests -> requestsCache.put(playerUuid, requests));
+        database.getFriendSettings(playerUuid.toString()).thenAccept(settings -> {
+            if (settings != null) {
+                settingsCache.put(playerUuid, settings);
+            }
+        });
     }
 
     // region Friends
@@ -139,6 +146,52 @@ public class FriendsManager {
             });
         });
     }
+
+    // region Settings
+
+    public CompletableFuture<FriendSettings> getFriendSettings(final Player player) {
+        if (player == null) {
+            return CompletableFuture.completedFuture(null);
+        }
+        final UUID uuid = player.getUniqueId();
+        final FriendSettings cached = settingsCache.get(uuid);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return database.getFriendSettings(uuid.toString()).thenApply(settings -> {
+            final FriendSettings resolved = settings != null ? settings : FriendSettings.defaults(uuid.toString());
+            settingsCache.put(uuid, resolved);
+            return resolved;
+        });
+    }
+
+    public CompletableFuture<Boolean> saveFriendSettings(final Player player, final FriendSettings settings) {
+        if (player == null || settings == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        final UUID uuid = player.getUniqueId();
+        final String uuidString = uuid.toString();
+        final FriendSettings payload = settings.getPlayerUuid().equals(uuidString)
+                ? settings
+                : new FriendSettings(uuidString, settings.getNotifications(), settings.getVisibility(),
+                settings.getAutoRequests(), settings.isSoundsEnabled(), settings.getPrivateMessages(), settings.getTeleportation());
+        return database.saveFriendSettings(payload).thenApply(success -> {
+            if (success) {
+                settingsCache.put(uuid, payload);
+            }
+            return success;
+        });
+    }
+
+    public CompletableFuture<Boolean> resetFriendSettings(final Player player) {
+        if (player == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        final FriendSettings defaults = FriendSettings.defaults(player.getUniqueId().toString());
+        return saveFriendSettings(player, defaults);
+    }
+
+    // endregion
 
     // endregion
 

@@ -2,6 +2,7 @@ package com.lobby.friends.database;
 
 import com.lobby.friends.data.FriendData;
 import com.lobby.friends.data.FriendRequest;
+import com.lobby.friends.data.FriendSettings;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
@@ -118,6 +119,93 @@ public class FriendsDatabase {
             statement.execute(settingsTable);
         }
     }
+
+    // region Settings
+
+    public CompletableFuture<FriendSettings> getFriendSettings(final String playerUuid) {
+        if (playerUuid == null || playerUuid.isBlank()) {
+            return CompletableFuture.completedFuture(null);
+        }
+        return supplyAsync(() -> loadFriendSettings(playerUuid));
+    }
+
+    public CompletableFuture<Boolean> saveFriendSettings(final FriendSettings settings) {
+        if (settings == null) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return supplyAsync(() -> {
+            synchronized (this) {
+                return writeFriendSettings(settings);
+            }
+        });
+    }
+
+    private FriendSettings loadFriendSettings(final String playerUuid) {
+        final String query = """
+            SELECT notifications, visibility, auto_requests, sounds, private_messages, teleportation
+            FROM friend_settings
+            WHERE player_uuid = ?
+        """;
+
+        synchronized (this) {
+            try (PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, playerUuid);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return mapFriendSettings(playerUuid, resultSet);
+                    }
+                }
+            } catch (SQLException exception) {
+                plugin.getLogger().severe("Erreur lors du chargement des paramètres d'amis : " + exception.getMessage());
+            }
+            final FriendSettings defaults = FriendSettings.defaults(playerUuid);
+            writeFriendSettings(defaults);
+            return defaults;
+        }
+    }
+
+    private boolean writeFriendSettings(final FriendSettings settings) {
+        final String query = """
+            INSERT INTO friend_settings (player_uuid, notifications, visibility, auto_requests, sounds, private_messages, teleportation)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(player_uuid) DO UPDATE SET
+                notifications = excluded.notifications,
+                visibility = excluded.visibility,
+                auto_requests = excluded.auto_requests,
+                sounds = excluded.sounds,
+                private_messages = excluded.private_messages,
+                teleportation = excluded.teleportation,
+                updated_at = CURRENT_TIMESTAMP
+        """;
+
+        try (PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, settings.getPlayerUuid());
+            statement.setString(2, settings.getNotifications());
+            statement.setString(3, settings.getVisibility());
+            statement.setString(4, settings.getAutoRequests());
+            statement.setBoolean(5, settings.isSoundsEnabled());
+            statement.setString(6, settings.getPrivateMessages());
+            statement.setString(7, settings.getTeleportation());
+            return statement.executeUpdate() > 0;
+        } catch (SQLException exception) {
+            plugin.getLogger().severe("Erreur lors de la sauvegarde des paramètres d'amis : " + exception.getMessage());
+            return false;
+        }
+    }
+
+    private FriendSettings mapFriendSettings(final String playerUuid, final ResultSet resultSet) throws SQLException {
+        return new FriendSettings(
+                playerUuid,
+                resultSet.getString("notifications"),
+                resultSet.getString("visibility"),
+                resultSet.getString("auto_requests"),
+                resultSet.getBoolean("sounds"),
+                resultSet.getString("private_messages"),
+                resultSet.getString("teleportation")
+        );
+    }
+
+    // endregion
 
     // region Friendships
 
