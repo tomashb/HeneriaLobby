@@ -3,6 +3,7 @@ package com.lobby.friends.menu;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
+import com.lobby.friends.menu.FriendsMenuManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -19,9 +20,11 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
+    private final FriendsMenuManager menuManager;
     public DefaultFriendsMenuActionHandler(final LobbyPlugin plugin, final FriendsManager friendsManager) {
         this.plugin = plugin;
         this.friendsManager = friendsManager;
+        this.menuManager = plugin.getFriendsMenuManager();
     }
 
     @Override
@@ -57,7 +60,11 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openFriendRequests(final Player player) {
         closeInventory(player);
-        runLater(player, () -> new FriendRequestsMenu(plugin, friendsManager, player));
+        if (menuManager == null) {
+            runLater(player, () -> player.sendMessage("§cLe système de menus d'amis est indisponible."));
+            return false;
+        }
+        runLater(player, () -> new FriendRequestsMenu(plugin, friendsManager, menuManager, player).open());
         return true;
     }
 
@@ -69,13 +76,21 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openSettings(final Player player) {
         closeInventory(player);
-        runLater(player, () -> new FriendSettingsMenu(plugin, friendsManager, player).open());
+        if (menuManager == null) {
+            runLater(player, () -> player.sendMessage("§cLes paramètres d'amis sont indisponibles."));
+            return false;
+        }
+        runLater(player, () -> new FriendSettingsMenu(plugin, friendsManager, menuManager, player).open());
         return true;
     }
 
     private boolean openFavorites(final Player player) {
         closeInventory(player);
-        runLater(player, () -> new FavoriteFriendsMenu(plugin, friendsManager, player));
+        if (menuManager == null) {
+            runLater(player, () -> player.sendMessage("§cLe gestionnaire de menus favoris est indisponible."));
+            return false;
+        }
+        runLater(player, () -> new FavoriteFriendsMenu(plugin, friendsManager, menuManager, player).open());
         return true;
     }
 

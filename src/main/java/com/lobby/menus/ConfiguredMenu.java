@@ -3,6 +3,7 @@ package com.lobby.menus;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.FriendsMainMenu;
+import com.lobby.friends.menu.FriendsMenuManager;
 import com.lobby.servers.ServerManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -260,9 +261,15 @@ public final class ConfiguredMenu implements Menu, InventoryHolder {
             player.sendMessage("§cLe système d'amis est indisponible pour le moment.");
             return;
         }
+        final FriendsMenuManager friendsMenuManager = plugin.getFriendsMenuManager();
+        if (friendsMenuManager == null) {
+            player.sendMessage("§cLe gestionnaire de menus d'amis est indisponible.");
+            return;
+        }
         player.closeInventory();
         player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
+        Bukkit.getScheduler().runTaskLater(plugin,
+                () -> new FriendsMainMenu(plugin, friendsManager, friendsMenuManager, player).open(), 3L);
     }
 
     private Map<String, String> buildPlaceholderMap(final Player player) {

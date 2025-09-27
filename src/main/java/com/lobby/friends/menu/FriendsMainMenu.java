@@ -7,9 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
@@ -24,16 +21,12 @@ import java.util.logging.Level;
  * Modernised friends main menu that focuses on providing immediate feedback
  * to the player while asynchronous data is being fetched.
  */
-public class FriendsMainMenu implements Listener {
+public class FriendsMainMenu extends BaseFriendsMenu {
 
     private static final String MENU_TITLE = "§8» §aMenu des Amis";
     private static final int INVENTORY_SIZE = 54;
 
-    private final LobbyPlugin plugin;
-    private final FriendsManager friendsManager;
-
     private Inventory inventory;
-    private Player viewer;
     private int totalFriends;
     private int onlineFriends;
     private int pendingRequests;
@@ -44,16 +37,24 @@ public class FriendsMainMenu implements Listener {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
-    public void open(final Player player) {
-        if (player == null) {
+    public FriendsMainMenu(final LobbyPlugin plugin,
+                           final FriendsManager friendsManager,
+                           final FriendsMenuManager menuManager,
+                           final Player player) {
+        super(plugin, friendsManager, menuManager, player);
+    }
+
+    @Override
+    protected void openMenu() {
+        final Player viewer = getPlayer();
+        if (viewer == null || !viewer.isOnline()) {
             return;
         }
-        this.viewer = player;
         this.inventory = Bukkit.createInventory(null, INVENTORY_SIZE, MENU_TITLE);
         setupMenuWithDefaults();
-        player.openInventory(inventory);
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-        loadDataAndCreateMenu(player);
+        viewer.openInventory(inventory);
+        viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        loadDataAndCreateMenu(viewer);
     }
 
     private void loadDataAndCreateMenu(final Player player) {
@@ -88,11 +89,11 @@ public class FriendsMainMenu implements Listener {
                     if (throwable != null) {
                         plugin.getLogger().log(Level.SEVERE, "Erreur lors du chargement des données du menu des amis", throwable);
                     }
-                    if (viewer == null || !viewer.isOnline()) {
+                    if (player == null || !player.isOnline()) {
                         return;
                     }
                     setupMenuWithRealData();
-                    viewer.updateInventory();
+                    player.updateInventory();
                 }));
     }
 
@@ -254,50 +255,47 @@ public class FriendsMainMenu implements Listener {
         return item;
     }
 
-    @EventHandler
-    public void onInventoryClick(final InventoryClickEvent event) {
-        if (!MENU_TITLE.equals(event.getView().getTitle())) {
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    @Override
+    public String getTitle() {
+        return MENU_TITLE;
+    }
+
+    @Override
+    public void handleMenuClick(final InventoryClickEvent event) {
+        if (!titlesMatch(MENU_TITLE, event.getView().getTitle())) {
             return;
         }
-
-        event.setCancelled(true);
-
-        if (!(event.getWhoClicked() instanceof Player player) || viewer == null) {
+        final Player clicker = getPlayer();
+        if (clicker == null) {
             return;
         }
-        if (!player.getUniqueId().equals(viewer.getUniqueId())) {
-            return;
-        }
-
         final int slot = event.getSlot();
         switch (slot) {
-            case 11 -> openFriendsList(player);
-            case 13 -> openAddFriend(player);
-            case 15 -> openRequests(player);
-            case 20 -> openFavorites(player);
-            case 22 -> openSettings(player);
-            case 24 -> openStatistics(player);
-            case 29 -> openBlocked(player);
-            case 49 -> player.closeInventory();
+            case 11 -> openFriendsList(clicker);
+            case 13 -> openAddFriend(clicker);
+            case 15 -> openRequests(clicker);
+            case 20 -> openFavorites(clicker);
+            case 22 -> openSettings(clicker);
+            case 24 -> openStatistics(clicker);
+            case 29 -> openBlocked(clicker);
+            case 49 -> clicker.closeInventory();
             default -> {
             }
         }
     }
 
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (viewer == null) {
+    @Override
+    public void handleMenuClose(final InventoryCloseEvent event) {
+        if (!titlesMatch(MENU_TITLE, event.getView().getTitle())) {
             return;
         }
-        if (!MENU_TITLE.equals(event.getView().getTitle())) {
-            return;
-        }
-        if (!event.getPlayer().getUniqueId().equals(viewer.getUniqueId())) {
-            return;
-        }
-        HandlerList.unregisterAll(this);
-        viewer = null;
         inventory = null;
+        super.handleMenuClose(event);
     }
 
     private void openFriendsList(final Player player) {
@@ -326,7 +324,8 @@ public class FriendsMainMenu implements Listener {
         try {
             player.closeInventory();
             player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendRequestsMenu(plugin, friendsManager, player), 3L);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> new FriendRequestsMenu(plugin, friendsManager, menuManager, player).open(), 3L);
         } catch (Exception exception) {
             player.sendMessage("§cErreur lors de l'ouverture des demandes");
             plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les demandes d'amis", exception);
@@ -337,7 +336,8 @@ public class FriendsMainMenu implements Listener {
         try {
             player.closeInventory();
             player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> new FavoriteFriendsMenu(plugin, friendsManager, player), 3L);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> new FavoriteFriendsMenu(plugin, friendsManager, menuManager, player).open(), 3L);
         } catch (Exception exception) {
             player.sendMessage("§cErreur lors de l'ouverture des favoris");
             plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les amis favoris", exception);
@@ -348,7 +348,8 @@ public class FriendsMainMenu implements Listener {
         try {
             player.closeInventory();
             player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-            Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendSettingsMenu(plugin, friendsManager, player).open(), 3L);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> new FriendSettingsMenu(plugin, friendsManager, menuManager, player).open(), 3L);
         } catch (Exception exception) {
             player.sendMessage("§cErreur lors de l'ouverture des paramètres");
             plugin.getLogger().log(Level.SEVERE, "Impossible d'ouvrir les paramètres d'amis", exception);

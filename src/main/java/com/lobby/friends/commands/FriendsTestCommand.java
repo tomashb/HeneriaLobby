@@ -8,6 +8,7 @@ import com.lobby.friends.menu.FavoriteFriendsMenu;
 import com.lobby.friends.menu.FriendRequestsMenu;
 import com.lobby.friends.menu.FriendSettingsMenu;
 import com.lobby.friends.menu.FriendsListMenu;
+import com.lobby.friends.menu.FriendsMenuManager;
 import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -48,6 +49,12 @@ public final class FriendsTestCommand implements CommandExecutor {
 
         final String subCommand = args[0].toLowerCase();
 
+        final FriendsMenuManager menuManager = plugin.getFriendsMenuManager();
+        if (menuManager == null) {
+            player.sendMessage("§cLe gestionnaire de menus d'amis est indisponible.");
+            return true;
+        }
+
         try {
             switch (subCommand) {
                 case "main" -> openMainMenu(player);
@@ -60,11 +67,11 @@ public final class FriendsTestCommand implements CommandExecutor {
                     player.sendMessage("§a✓ Menu d'ajout d'amis ouvert");
                 }
                 case "requests" -> {
-                    new FriendRequestsMenu(plugin, friendsManager, player).open();
+                    new FriendRequestsMenu(plugin, friendsManager, menuManager, player).open();
                     player.sendMessage("§a✓ Menu des demandes ouvert");
                 }
                 case "settings" -> {
-                    new FriendSettingsMenu(plugin, friendsManager, player).open();
+                    new FriendSettingsMenu(plugin, friendsManager, menuManager, player).open();
                     player.sendMessage("§a✓ Menu des paramètres ouvert");
                 }
                 case "stats" -> {
@@ -76,7 +83,7 @@ public final class FriendsTestCommand implements CommandExecutor {
                     player.sendMessage("§a✓ Menu des joueurs bloqués ouvert");
                 }
                 case "favorites" -> {
-                    new FavoriteFriendsMenu(plugin, friendsManager, player);
+                    new FavoriteFriendsMenu(plugin, friendsManager, menuManager, player).open();
                     player.sendMessage("§a✓ Menu des favoris ouvert");
                 }
                 case "all" -> testAllMenus(player);
@@ -122,6 +129,11 @@ public final class FriendsTestCommand implements CommandExecutor {
     }
 
     private void testMenuSequentially(final Player player, final int menuIndex) {
+        final FriendsMenuManager menuManager = plugin.getFriendsMenuManager();
+        if (menuManager == null) {
+            player.sendMessage("§cLe gestionnaire de menus d'amis est indisponible, test interrompu.");
+            return;
+        }
         final String[] menuNames = {
                 "Menu Principal",
                 "Liste des Amis",
@@ -146,11 +158,11 @@ public final class FriendsTestCommand implements CommandExecutor {
                 case 0 -> openMainMenu(player);
                 case 1 -> new FriendsListMenu(plugin, friendsManager, player);
                 case 2 -> new AddFriendMenu(plugin, friendsManager, player).open();
-                case 3 -> new FriendRequestsMenu(plugin, friendsManager, player).open();
-                case 4 -> new FriendSettingsMenu(plugin, friendsManager, player).open();
+                case 3 -> new FriendRequestsMenu(plugin, friendsManager, menuManager, player).open();
+                case 4 -> new FriendSettingsMenu(plugin, friendsManager, menuManager, player).open();
                 case 5 -> new FriendStatisticsMenu(plugin, friendsManager, player).open();
                 case 6 -> new BlockedPlayersMenu(plugin, friendsManager, player).open();
-                case 7 -> new FavoriteFriendsMenu(plugin, friendsManager, player);
+                case 7 -> new FavoriteFriendsMenu(plugin, friendsManager, menuManager, player).open();
                 default -> {
                     return;
                 }

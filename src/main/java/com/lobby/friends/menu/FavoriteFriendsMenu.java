@@ -6,9 +6,8 @@ import com.lobby.friends.data.FriendData;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -21,11 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class FavoriteFriendsMenu implements Listener {
-    
-    private final LobbyPlugin plugin;
-    private final FriendsManager friendsManager;
-    private final Player player;
+public class FavoriteFriendsMenu extends BaseFriendsMenu {
+
     private Inventory inventory;
     private List<FriendData> favoriteFriends;
 
@@ -37,22 +33,29 @@ public class FavoriteFriendsMenu implements Listener {
             37, 38, 39, 40, 41, 42, 43
     };
     
-    public FavoriteFriendsMenu(LobbyPlugin plugin, FriendsManager friendsManager, Player player) {
-        this.plugin = plugin;
-        this.friendsManager = friendsManager;
-        this.player = player;
+    public FavoriteFriendsMenu(final LobbyPlugin plugin,
+                               final FriendsManager friendsManager,
+                               final FriendsMenuManager menuManager,
+                               final Player player) {
+        super(plugin, friendsManager, menuManager, player);
         this.favoriteFriends = new ArrayList<>();
-        
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+    }
+
+    @Override
+    protected void openMenu() {
         loadFavoritesAndCreateMenu();
     }
-    
+
     private void loadFavoritesAndCreateMenu() {
         friendsManager.getFavorites(player).thenAccept(favorites -> {
             this.favoriteFriends = favorites != null ? favorites : new ArrayList<>();
             Bukkit.getScheduler().runTask(plugin, () -> {
                 createMenu();
-                open();
+                final Player viewer = getPlayer();
+                if (viewer != null && viewer.isOnline()) {
+                    viewer.openInventory(inventory);
+                    viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                }
             });
         }).exceptionally(throwable -> {
             plugin.getLogger().severe("Erreur chargement favoris: " + throwable.getMessage());
@@ -60,7 +63,11 @@ public class FavoriteFriendsMenu implements Listener {
                 player.sendMessage("§cErreur lors du chargement des favoris");
                 this.favoriteFriends = new ArrayList<>();
                 createMenu();
-                open();
+                final Player viewer = getPlayer();
+                if (viewer != null && viewer.isOnline()) {
+                    viewer.openInventory(inventory);
+                    viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                }
             });
             return null;
         });
@@ -80,14 +87,14 @@ public class FavoriteFriendsMenu implements Listener {
 
         // Vitres dorées
         ItemStack goldGlass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
-        int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
+        int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 46, 52, 53};
         for (int slot : goldSlots) {
             inventory.setItem(slot, goldGlass);
         }
-        
+
         // Afficher favoris
         displayFavorites();
-        
+
         // Actions et navigation
         setupActions();
     }
@@ -191,20 +198,31 @@ public class FavoriteFriendsMenu implements Listener {
     }
     
     private void setupActions() {
-        // Retour
-        ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
+        ItemStack refresh = createItem(Material.EMERALD, "§a⟲ Actualiser");
+        ItemMeta refreshMeta = refresh.getItemMeta();
+        if (refreshMeta != null) {
+            refreshMeta.setLore(Arrays.asList(
+                    "§7Recharge la liste des favoris",
+                    "",
+                    "§8» §aCliquez pour mettre à jour"
+            ));
+            refresh.setItemMeta(refreshMeta);
+        }
+        inventory.setItem(49, refresh);
+
+        ItemStack back = createItem(Material.ARROW, "§c« Retour");
         ItemMeta backMeta = back.getItemMeta();
-        backMeta.setLore(Arrays.asList(
-            "§7Revenir au menu principal des amis",
-            "",
-            "§e▸ Total favoris: §6" + favoriteFriends.size(),
-            "",
-            "§8» §eCliquez pour retourner"
-        ));
-        back.setItemMeta(backMeta);
-        inventory.setItem(49, back);
+        if (backMeta != null) {
+            backMeta.setLore(Arrays.asList(
+                    "§7Revenir au menu principal",
+                    "",
+                    "§8» §cCliquez pour retourner"
+            ));
+            back.setItemMeta(backMeta);
+        }
+        inventory.setItem(45, back);
     }
-    
+
     private ItemStack createItem(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
@@ -214,46 +232,36 @@ public class FavoriteFriendsMenu implements Listener {
         }
         return item;
     }
-    
-    public void open() {
-        if (inventory != null) {
-            player.openInventory(inventory);
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-        }
-    }
-    
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        String title = event.getView().getTitle();
-        if (!title.contains("§8» §eAmis Favoris")) {
+
+    @Override
+    public void handleMenuClick(final InventoryClickEvent event) {
+        final String title = event.getView().getTitle();
+        if (title == null || !title.contains("§8» §eAmis Favoris")) {
             return;
         }
-        
-        // CRITICAL: Protection IMMÉDIATE - PREMIÈRE LIGNE ABSOLUE
-        event.setCancelled(true);
-        
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        Player clicker = (Player) event.getWhoClicked();
-        
-        if (!clicker.getUniqueId().equals(player.getUniqueId())) return;
-        
-        int slot = event.getSlot();
-        
+        final Player clicker = getPlayer();
+        if (clicker == null) {
+            return;
+        }
+
+        final int slot = event.getSlot();
+        if (slot == 45) {
+            clicker.closeInventory();
+            clicker.playSound(clicker.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> new FriendsMainMenu(plugin, friendsManager, menuManager, clicker).open(), 3L);
+            return;
+        }
         if (slot == 49) {
-            // Retour
-            player.closeInventory();
-            player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-            
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                new FriendsMainMenu(plugin, friendsManager).open(player);
-            }, 3L);
-        } else {
-            // Vérifier si c'est un slot de favori
-            for (int i = 0; i < favoriteSlots.length; i++) {
-                if (favoriteSlots[i] == slot && i < favoriteFriends.size()) {
-                    handleFavoriteClick(favoriteFriends.get(i), event);
-                    break;
-                }
+            clicker.playSound(clicker.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
+            safeRefresh();
+            return;
+        }
+
+        for (int i = 0; i < favoriteSlots.length; i++) {
+            if (favoriteSlots[i] == slot && i < favoriteFriends.size()) {
+                handleFavoriteClick(favoriteFriends.get(i), event);
+                break;
             }
         }
     }
@@ -305,6 +313,25 @@ public class FavoriteFriendsMenu implements Listener {
                 });
                 break;
         }
+    }
+
+    @Override
+    public void handleMenuClose(final InventoryCloseEvent event) {
+        if (event.getView().getTitle() == null || !event.getView().getTitle().contains("§8» §eAmis Favoris")) {
+            return;
+        }
+        inventory = null;
+        super.handleMenuClose(event);
+    }
+
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    @Override
+    public String getTitle() {
+        return inventory != null ? inventory.getTitle() : "§8» §eAmis Favoris";
     }
 }
 

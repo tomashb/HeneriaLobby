@@ -3,6 +3,7 @@ package com.lobby.friends.menu;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.FriendsMainMenu;
+import com.lobby.friends.menu.FriendsMenuManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -271,6 +272,12 @@ public class AddFriendMenu implements Listener {
     private void handleBack() {
         player.closeInventory();
         player.playSound(player.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
+        final FriendsMenuManager menuManager = plugin.getFriendsMenuManager();
+        if (menuManager == null) {
+            player.sendMessage("§cLe gestionnaire de menus d'amis est indisponible.");
+            return;
+        }
+        Bukkit.getScheduler().runTaskLater(plugin,
+                () -> new FriendsMainMenu(plugin, friendsManager, menuManager, player).open(), 3L);
     }
 }

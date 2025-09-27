@@ -16,15 +16,18 @@ public class FriendsMenuController {
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
+    private final FriendsMenuManager friendsMenuManager;
 
     public FriendsMenuController(final LobbyPlugin plugin,
                                  final MenuManager menuManager,
                                  final AssetManager assetManager,
                                  final FriendsDataProvider dataProvider,
                                  final FriendsManager friendsManager,
+                                 final FriendsMenuManager friendsMenuManager,
                                  final FriendsMenuActionHandler actionHandler) {
         this.plugin = plugin;
         this.friendsManager = friendsManager;
+        this.friendsMenuManager = friendsMenuManager;
     }
 
     public void reload() {
@@ -39,7 +42,7 @@ public class FriendsMenuController {
         if (player == null) {
             return false;
         }
-        new FriendsMainMenu(plugin, friendsManager).open(player);
+        new FriendsMainMenu(plugin, friendsManager, friendsMenuManager, player).open();
         return true;
     }
 }
