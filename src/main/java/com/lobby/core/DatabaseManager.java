@@ -71,6 +71,39 @@ public class DatabaseManager {
         }
     }
 
+    public String getPlayerName(final UUID playerUUID) {
+        if (playerUUID == null) {
+            return null;
+        }
+
+        final String[] possibleQueries = {
+                "SELECT username FROM players WHERE player_uuid = ? ORDER BY last_seen DESC LIMIT 1",
+                "SELECT name FROM player_data WHERE uuid = ? ORDER BY last_login DESC LIMIT 1",
+                "SELECT player_name FROM lobby_players WHERE player_id = ? ORDER BY join_date DESC LIMIT 1"
+        };
+
+        for (final String query : possibleQueries) {
+            try (Connection connection = getConnection();
+                 PreparedStatement statement = connection.prepareStatement(query)) {
+                statement.setString(1, playerUUID.toString());
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        final String value = resultSet.getString(1);
+                        if (value != null && !value.trim().isEmpty()) {
+                            return value.trim();
+                        }
+                    }
+                }
+            } catch (final SQLException exception) {
+                plugin.getLogger().fine("Requête échouée: " + query + " - " + exception.getMessage());
+            }
+        }
+
+        plugin.getLogger().warning("Impossible de récupérer le nom pour UUID: " + playerUUID);
+        return null;
+    }
+
     public DatabaseType getDatabaseType() {
         return databaseType;
     }

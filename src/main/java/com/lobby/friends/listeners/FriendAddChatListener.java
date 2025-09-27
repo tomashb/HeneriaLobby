@@ -4,8 +4,10 @@ import com.lobby.LobbyPlugin;
 import com.lobby.core.DatabaseManager;
 import com.lobby.friends.data.FriendData;
 import com.lobby.friends.data.FriendRequest;
+import com.lobby.friends.manager.BlockedPlayersManager;
 import com.lobby.friends.manager.FriendCodeManager;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.menu.BlockedPlayersMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,6 +35,7 @@ public class FriendAddChatListener implements Listener {
     private final FriendsManager friendsManager;
     private final Map<UUID, String> pendingRequests = new ConcurrentHashMap<>();
     private final Map<UUID, String> messageTargets = new ConcurrentHashMap<>();
+    private final Map<UUID, UUID> pendingBlockReasons = new ConcurrentHashMap<>();
 
     public FriendAddChatListener(final LobbyPlugin plugin) {
         this.plugin = plugin;
@@ -54,6 +57,12 @@ public class FriendAddChatListener implements Listener {
         if (messageTargets.containsKey(playerUUID)) {
             event.setCancelled(true);
             handlePrivateMessageInput(player, event.getMessage());
+            return;
+        }
+
+        if (pendingBlockReasons.containsKey(playerUUID)) {
+            event.setCancelled(true);
+            handleBlockReasonChange(event);
             return;
         }
 
@@ -85,6 +94,137 @@ public class FriendAddChatListener implements Listener {
         }
 
         Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ Mode d'ajout non reconnu !"));
+    }
+
+    public void activateBlockReasonMode(final Player player, final UUID blockedPlayerUUID) {
+        if (player == null || blockedPlayerUUID == null) {
+            return;
+        }
+
+        final UUID playerUUID = player.getUniqueId();
+        pendingBlockReasons.put(playerUUID, blockedPlayerUUID);
+
+        final String blockedPlayerName = getPlayerName(blockedPlayerUUID);
+
+        player.sendMessage("§e📝 §6Modification de la raison de blocage");
+        player.sendMessage("§7Joueur bloqué: §c" + blockedPlayerName);
+        player.sendMessage("");
+        player.sendMessage("§6Tapez la nouvelle raison de blocage :");
+        player.sendMessage("§7Exemple: §eComportement toxique en jeu");
+        player.sendMessage("§7Exemple: §eSpam de messages répétés");
+        player.sendMessage("§7Exemple: §eLanguage inapproprié");
+        player.sendMessage("");
+        player.sendMessage("§7Tapez §c'annuler'§7 pour annuler la modification");
+
+        plugin.getLogger().info("Mode modification raison activé pour " + player.getName()
+                + " -> " + blockedPlayerName);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (pendingBlockReasons.containsKey(playerUUID)) {
+                pendingBlockReasons.remove(playerUUID);
+                player.sendMessage("§c⏰ §7Modification de raison expirée - §cAucun changement effectué");
+            }
+        }, 20L * 60);
+    }
+
+    private void handleBlockReasonChange(final AsyncPlayerChatEvent event) {
+        final Player player = event.getPlayer();
+        final UUID playerUUID = player.getUniqueId();
+        final String rawMessage = event.getMessage();
+        final String newReason = rawMessage == null ? "" : rawMessage.trim();
+
+        final UUID blockedPlayerUUID = pendingBlockReasons.remove(playerUUID);
+        if (blockedPlayerUUID == null) {
+            plugin.getLogger().warning("Aucune cible pour la modification de raison de " + player.getName());
+            return;
+        }
+
+        final String blockedPlayerName = getPlayerName(blockedPlayerUUID);
+
+        plugin.getLogger().info("Tentative modification raison par " + player.getName()
+                + " pour " + blockedPlayerName + ": " + newReason);
+
+        if ("annuler".equalsIgnoreCase(newReason) || "cancel".equalsIgnoreCase(newReason)) {
+            player.sendMessage("§c❌ Modification de raison annulée");
+            player.sendMessage("§7Aucun changement n'a été effectué");
+            return;
+        }
+
+        if (newReason.length() < 3) {
+            player.sendMessage("§c❌ La raison doit contenir au moins 3 caractères !");
+            player.sendMessage("§7Tapez une raison plus détaillée pour justifier le blocage");
+            activateBlockReasonMode(player, blockedPlayerUUID);
+            return;
+        }
+
+        if (newReason.length() > 100) {
+            player.sendMessage("§c❌ La raison ne peut pas dépasser 100 caractères !");
+            player.sendMessage("§7Actuel: " + newReason.length() + " caractères");
+            player.sendMessage("§7Tapez une raison plus courte et concise");
+            activateBlockReasonMode(player, blockedPlayerUUID);
+            return;
+        }
+
+        final BlockedPlayersManager blockedPlayersManager = plugin.getBlockedPlayersManager();
+        if (blockedPlayersManager == null
+                || !blockedPlayersManager.isPlayerBlocked(playerUUID, blockedPlayerUUID)) {
+            player.sendMessage("§c❌ Ce joueur n'est plus bloqué !");
+            player.sendMessage("§7Impossible de modifier la raison d'un joueur non-bloqué");
+            return;
+        }
+
+        player.sendMessage("§e⏳ Mise à jour de la raison en cours...");
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            final boolean success = blockedPlayersManager.updateBlockReason(playerUUID, blockedPlayerUUID, newReason);
+
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (success) {
+                    player.sendMessage("§a✅ §2Raison de blocage mise à jour avec succès !");
+                    player.sendMessage("§7Joueur: §c" + blockedPlayerName);
+                    player.sendMessage("§7Nouvelle raison: §f\"" + newReason + "\"");
+                    player.sendMessage("§7Mise à jour: §a" + getCurrentTimestamp());
+
+                    player.playSound(player.getLocation(), "block.note_block.chime", 0.7f, 1.2f);
+
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                        try {
+                            player.sendMessage("§7Réouverture du menu des joueurs bloqués...");
+                            new BlockedPlayersMenu(plugin, friendsManager, player).open();
+                        } catch (final Exception exception) {
+                            plugin.getLogger().warning("Erreur réouverture menu bloqués: " + exception.getMessage());
+                            player.sendMessage("§7Utilisez §e/friends blocked§7 pour voir vos joueurs bloqués");
+                        }
+                    }, 40L);
+                } else {
+                    player.sendMessage("§c❌ §4Erreur lors de la mise à jour de la raison !");
+                    player.sendMessage("§7La base de données n'a pas pu être mise à jour");
+                    player.sendMessage("§7Veuillez réessayer plus tard ou contacter un administrateur");
+                    player.playSound(player.getLocation(), "block.note_block.bass", 0.7f, 0.8f);
+                }
+            });
+        });
+    }
+
+    public boolean isInBlockReasonMode(final Player player) {
+        return player != null && pendingBlockReasons.containsKey(player.getUniqueId());
+    }
+
+    public void cancelBlockReasonMode(final Player player) {
+        if (player == null) {
+            return;
+        }
+        final UUID removed = pendingBlockReasons.remove(player.getUniqueId());
+        if (removed != null) {
+            player.sendMessage("§c❌ Modification de raison annulée pour " + getPlayerName(removed));
+        }
+    }
+
+    public UUID getCurrentBlockReasonTarget(final Player player) {
+        if (player == null) {
+            return null;
+        }
+        return pendingBlockReasons.get(player.getUniqueId());
     }
 
     private void handlePrivateMessageInput(final Player player, final String rawInput) {
@@ -186,9 +326,51 @@ public class FriendAddChatListener implements Listener {
                 return;
             }
 
-            Bukkit.getScheduler().runTask(plugin, () ->
-                    processFriendRequest(player, targetUuid, targetName));
+        Bukkit.getScheduler().runTask(plugin, () ->
+                processFriendRequest(player, targetUuid, targetName));
         });
+    }
+
+    private String getPlayerName(final UUID playerUUID) {
+        if (playerUUID == null) {
+            return "Joueur-inconnu";
+        }
+
+        final Player onlinePlayer = Bukkit.getPlayer(playerUUID);
+        if (onlinePlayer != null) {
+            return onlinePlayer.getName();
+        }
+
+        final DatabaseManager databaseManager = plugin.getDatabaseManager();
+        if (databaseManager != null) {
+            try {
+                final String databaseName = databaseManager.getPlayerName(playerUUID);
+                if (databaseName != null && !databaseName.isBlank()) {
+                    return databaseName.trim();
+                }
+            } catch (final Exception exception) {
+                plugin.getLogger().warning("Erreur récupération nom pour " + playerUUID + ": "
+                        + exception.getMessage());
+            }
+        }
+
+        try {
+            final String offlineName = Bukkit.getOfflinePlayer(playerUUID).getName();
+            if (offlineName != null && !offlineName.isBlank()) {
+                return offlineName;
+            }
+        } catch (final Exception exception) {
+            plugin.getLogger().warning("Erreur OfflinePlayer pour " + playerUUID + ": " + exception.getMessage());
+        }
+
+        return "Joueur-" + playerUUID.toString().substring(0, 8);
+    }
+
+    private String getCurrentTimestamp() {
+        final java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        final java.time.format.DateTimeFormatter formatter =
+                java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        return now.format(formatter);
     }
 
     private void processFriendRequest(final Player sender, final UUID targetUUID, final String targetName) {
