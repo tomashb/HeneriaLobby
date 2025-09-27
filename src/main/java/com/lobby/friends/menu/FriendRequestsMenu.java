@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Menu listing all pending friend requests with quick actions to accept or
@@ -33,11 +34,12 @@ public class FriendRequestsMenu implements Listener {
 
     private static final String TITLE_PREFIX = "§8» §6Demandes d'Amitié";
     private static final int SIZE = 54;
-    private static final int ITEMS_PER_PAGE = 21;
+    private static final int ITEMS_PER_PAGE = 28;
     private static final int[] REQUEST_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
-            28, 29, 30, 31, 32, 33, 34
+            28, 29, 30, 31, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
     };
 
     private final LobbyPlugin plugin;
@@ -87,7 +89,7 @@ public class FriendRequestsMenu implements Listener {
         inventory.clear();
 
         final ItemStack goldGlass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
-        final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 53};
+        final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : goldSlots) {
             inventory.setItem(slot, goldGlass);
         }
@@ -172,14 +174,11 @@ public class FriendRequestsMenu implements Listener {
                         "",
                         "§a▸ Demandes à accepter: §2" + allRequests.size(),
                         "",
-                        "§7Cette action ajoutera tous les",
-                        "§7expéditeurs à votre liste d'amis",
-                        "",
                         "§8» §aCliquez pour accepter toutes"
                 ));
                 acceptAll.setItemMeta(acceptMeta);
             }
-            inventory.setItem(45, acceptAll);
+            inventory.setItem(47, acceptAll);
 
             final ItemStack rejectAll = createItem(Material.REDSTONE, "§c§l✗ Refuser Toutes");
             final ItemMeta rejectMeta = rejectAll.getItemMeta();
@@ -189,13 +188,14 @@ public class FriendRequestsMenu implements Listener {
                         "",
                         "§c▸ Demandes à refuser: §4" + allRequests.size(),
                         "",
-                        "§c⚠ Cette action est irréversible !",
-                        "",
                         "§8» §cCliquez pour refuser toutes"
                 ));
                 rejectAll.setItemMeta(rejectMeta);
             }
-            inventory.setItem(46, rejectAll);
+            inventory.setItem(51, rejectAll);
+        } else {
+            inventory.setItem(47, null);
+            inventory.setItem(51, null);
         }
 
         final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
@@ -220,7 +220,7 @@ public class FriendRequestsMenu implements Listener {
             ));
             refresh.setItemMeta(refreshMeta);
         }
-        inventory.setItem(52, refresh);
+        inventory.setItem(48, refresh);
     }
 
     private ItemStack createItem(final Material material, final String name) {
@@ -258,11 +258,11 @@ public class FriendRequestsMenu implements Listener {
         }
 
         final int slot = event.getSlot();
-        if (slot == 45 && !allRequests.isEmpty()) {
+        if (slot == 47 && !allRequests.isEmpty()) {
             handleAcceptAll();
             return;
         }
-        if (slot == 46 && !allRequests.isEmpty()) {
+        if (slot == 51 && !allRequests.isEmpty()) {
             handleRejectAll();
             return;
         }
@@ -272,7 +272,7 @@ public class FriendRequestsMenu implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> new FriendsMainMenu(plugin, friendsManager).open(player), 3L);
             return;
         }
-        if (slot == 52) {
+        if (slot == 48) {
             player.sendMessage("§b🔄 Actualisation des demandes...");
             player.playSound(player.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
             loadRequestsAndCreateMenu();
@@ -338,16 +338,52 @@ public class FriendRequestsMenu implements Listener {
     }
 
     private void handleAcceptAll() {
+        if (allRequests.isEmpty()) {
+            return;
+        }
+
         player.sendMessage("§a✅ Acceptation de toutes les demandes (" + allRequests.size() + ")...");
         player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-        allRequests.forEach(request -> friendsManager.acceptFriendRequest(player, request.getSenderName()));
-        Bukkit.getScheduler().runTaskLater(plugin, this::loadRequestsAndCreateMenu, 20L);
+
+        final List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        for (FriendRequest request : allRequests) {
+            futures.add(friendsManager.acceptFriendRequest(player, request.getSenderName()));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).whenComplete((ignored, throwable) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (throwable != null) {
+                        plugin.getLogger().warning("Erreur lors de l'acceptation de toutes les demandes: " + throwable.getMessage());
+                        player.sendMessage("§cUne erreur est survenue pendant l'acceptation des demandes.");
+                    } else {
+                        player.sendMessage("§a✓ Toutes les demandes ont été acceptées !");
+                    }
+                    loadRequestsAndCreateMenu();
+                }));
     }
 
     private void handleRejectAll() {
+        if (allRequests.isEmpty()) {
+            return;
+        }
+
         player.sendMessage("§c❌ Refus de toutes les demandes (" + allRequests.size() + ")...");
         player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
-        allRequests.forEach(request -> friendsManager.rejectFriendRequest(player, request.getSenderName()));
-        Bukkit.getScheduler().runTaskLater(plugin, this::loadRequestsAndCreateMenu, 20L);
+
+        final List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        for (FriendRequest request : allRequests) {
+            futures.add(friendsManager.rejectFriendRequest(player, request.getSenderName()));
+        }
+
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture<?>[0])).whenComplete((ignored, throwable) ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (throwable != null) {
+                        plugin.getLogger().warning("Erreur lors du refus de toutes les demandes: " + throwable.getMessage());
+                        player.sendMessage("§cUne erreur est survenue pendant le refus des demandes.");
+                    } else {
+                        player.sendMessage("§c✗ Toutes les demandes ont été refusées");
+                    }
+                    loadRequestsAndCreateMenu();
+                }));
     }
 }

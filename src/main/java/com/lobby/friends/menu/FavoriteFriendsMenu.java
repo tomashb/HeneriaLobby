@@ -28,9 +28,14 @@ public class FavoriteFriendsMenu implements Listener {
     private final Player player;
     private Inventory inventory;
     private List<FriendData> favoriteFriends;
-    
+
     // Slots pour favoris
-    private final int[] favoriteSlots = {10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34};
+    private final int[] favoriteSlots = {
+            10, 11, 12, 13, 14, 15, 16,
+            19, 20, 21, 22, 23, 24, 25,
+            28, 29, 30, 31, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
+    };
     
     public FavoriteFriendsMenu(LobbyPlugin plugin, FriendsManager friendsManager, Player player) {
         this.plugin = plugin;
@@ -72,10 +77,10 @@ public class FavoriteFriendsMenu implements Listener {
     
     private void setupMenu() {
         inventory.clear();
-        
+
         // Vitres dorées
         ItemStack goldGlass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
-        int[] goldSlots = {0,1,2,6,7,8,9,17,36,44,45,53};
+        int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : goldSlots) {
             inventory.setItem(slot, goldGlass);
         }
@@ -91,20 +96,22 @@ public class FavoriteFriendsMenu implements Listener {
         if (favoriteFriends.isEmpty()) {
             ItemStack noFavorites = createItem(Material.NETHER_STAR, "§7§lAucun ami favori");
             ItemMeta meta = noFavorites.getItemMeta();
-            meta.setLore(Arrays.asList(
-                "§7Vous n'avez pas encore d'amis favoris",
-                "",
-                "§e💡 Comment ajouter des favoris ?",
-                "§8▸ §7Allez dans votre liste d'amis",
-                "§8▸ §7Shift+Clic sur un ami",
-                "§8▸ §7Maximum " + 5 + " favoris autorisés",
-                "",
-                "§6✨ Avantages des favoris:",
-                "§8▸ §7Accès prioritaire et rapide",
-                "§8▸ §7Notifications spéciales",
-                "§8▸ §7Téléportation privilégiée"
-            ));
-            noFavorites.setItemMeta(meta);
+            if (meta != null) {
+                meta.setLore(Arrays.asList(
+                        "§7Vous n'avez pas encore d'amis favoris",
+                        "",
+                        "§e💡 Comment ajouter des favoris ?",
+                        "§8▸ §7Allez dans votre liste d'amis",
+                        "§8▸ §7Shift+Clic sur un ami",
+                        "§8▸ §7Maximum " + 5 + " favoris autorisés",
+                        "",
+                        "§6✨ Avantages des favoris:",
+                        "§8▸ §7Accès prioritaire et rapide",
+                        "§8▸ §7Notifications spéciales",
+                        "§8▸ §7Téléportation privilégiée"
+                ));
+                noFavorites.setItemMeta(meta);
+            }
             inventory.setItem(22, noFavorites);
             return;
         }
@@ -120,14 +127,17 @@ public class FavoriteFriendsMenu implements Listener {
     private ItemStack createFavoriteItem(FriendData favorite) {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) head.getItemMeta();
-        
+        if (meta == null) {
+            return head;
+        }
+
         // Tête du joueur
         try {
             meta.setOwningPlayer(Bukkit.getOfflinePlayer(java.util.UUID.fromString(favorite.getUuid())));
         } catch (Exception e) {
             head.setType(Material.PLAYER_HEAD);
         }
-        
+
         // Nom spécial pour favoris
         String name;
         if (favorite.isOnline()) {
@@ -136,12 +146,12 @@ public class FavoriteFriendsMenu implements Listener {
             name = "§e⭐ §7§l" + favorite.getPlayerName() + " §8●";
         }
         meta.setDisplayName(name);
-        
+
         // Description enrichie
         List<String> lore = new ArrayList<>();
         lore.add("§6✨ AMI FAVORI SPÉCIAL ✨");
         lore.add("");
-        
+
         if (favorite.isOnline()) {
             lore.add("§7Statut: §aEn ligne §2⚡ Actif");
             Player friendPlayer = favorite.getPlayer();
@@ -152,14 +162,14 @@ public class FavoriteFriendsMenu implements Listener {
             lore.add("§7Statut: §cHors ligne");
             lore.add("§7Dernière connexion: §e" + favorite.getRelativeLastInteraction());
         }
-        
+
         lore.add("§7Ami depuis: §b" + favorite.getFormattedFriendshipDate());
         lore.add("");
         lore.add("§6🏆 Statistiques favoris:");
         lore.add("§8▸ §7Messages échangés: §6" + favorite.getMessagesExchanged());
         lore.add("§8▸ §7Temps ensemble: §6" + favorite.getFormattedTimeTogether());
         lore.add("");
-        
+
         // Actions privilégiées
         if (favorite.isOnline()) {
             lore.add("§8▸ §aClique gauche §8: §6🚀 Téléportation VIP");
@@ -169,13 +179,13 @@ public class FavoriteFriendsMenu implements Listener {
         }
         lore.add("§8▸ §cClique droit §8: §6⚙️ Actions spéciales");
         lore.add("§8▸ §7Shift-Clic §8: §c💔 Retirer des favoris");
-        
+
         meta.setLore(lore);
-        
+
         // Effet brillant
         meta.addEnchant(Enchantment.UNBREAKING, 1, true);
         meta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        
+
         head.setItemMeta(meta);
         return head;
     }
