@@ -21,6 +21,7 @@ import com.lobby.friends.commands.FriendsTestCommand;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.DefaultFriendsMenuActionHandler;
 import com.lobby.friends.menu.FriendsMenuController;
+import com.lobby.friends.menu.FriendsMenuManager;
 import com.lobby.npcs.NPCInteractionHandler;
 import com.lobby.npcs.NPCManager;
 import com.lobby.events.PlayerJoinLeaveEvent;
@@ -72,6 +73,7 @@ public final class LobbyPlugin extends JavaPlugin {
     private DefaultFriendsDataProvider friendsDataProvider;
     private FriendsManager friendsManager;
     private FriendsMenuController friendsMenuController;
+    private FriendsMenuManager friendsMenuManager;
 
     public static LobbyPlugin getInstance() {
         return instance;
@@ -119,8 +121,10 @@ public final class LobbyPlugin extends JavaPlugin {
         confirmationManager = new ConfirmationManager(this);
         friendsDataProvider = new DefaultFriendsDataProvider();
         friendsManager = new FriendsManager(this);
+        friendsMenuManager = new FriendsMenuManager(this);
+        getServer().getPluginManager().registerEvents(friendsMenuManager, this);
         friendsMenuController = new FriendsMenuController(this, menuManager, assetManager, friendsDataProvider,
-                friendsManager, new DefaultFriendsMenuActionHandler(this, friendsManager));
+                friendsManager, friendsMenuManager, new DefaultFriendsMenuActionHandler(this, friendsManager));
         shopManager = new ShopManager(this);
         shopManager.initialize();
         shopCommands = new ShopCommands(this, shopManager);
@@ -303,6 +307,10 @@ public final class LobbyPlugin extends JavaPlugin {
 
     public DefaultFriendsDataProvider getFriendsDataProvider() {
         return friendsDataProvider;
+    }
+
+    public FriendsMenuManager getFriendsMenuManager() {
+        return friendsMenuManager;
     }
 
     public void reloadLobbyConfig() {

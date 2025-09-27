@@ -7,9 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
@@ -25,25 +22,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * menu synchronises changes with the {@link FriendsManager} and persists them
  * asynchronously through the {@link com.lobby.friends.database.FriendsDatabase}.
  */
-public class FriendSettingsMenu implements Listener {
+public class FriendSettingsMenu extends BaseFriendsMenu {
 
     private static final String INVENTORY_TITLE = "§8» §6Paramètres d'Amitié";
     private static final int INVENTORY_SIZE = 54;
 
-    private final LobbyPlugin plugin;
-    private final FriendsManager friendsManager;
-    private final Player player;
     private Inventory inventory;
     private FriendSettings settings;
     private final AtomicBoolean opened = new AtomicBoolean(false);
 
     public FriendSettingsMenu(final LobbyPlugin plugin,
                               final FriendsManager friendsManager,
+                              final FriendsMenuManager menuManager,
                               final Player player) {
-        this.plugin = plugin;
-        this.friendsManager = friendsManager;
-        this.player = player;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        super(plugin, friendsManager, menuManager, player);
+    }
+
+    @Override
+    protected void openMenu() {
         loadSettings();
     }
 
@@ -59,9 +55,16 @@ public class FriendSettingsMenu implements Listener {
                 }
                 setupMenu();
                 if (opened.compareAndSet(false, true)) {
-                    open();
+                    final Player viewer = getPlayer();
+                    if (viewer != null && viewer.isOnline()) {
+                        viewer.openInventory(inventory);
+                        viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                    }
                 } else {
-                    player.updateInventory();
+                    final Player viewer = getPlayer();
+                    if (viewer != null) {
+                        viewer.updateInventory();
+                    }
                 }
             });
         }).exceptionally(throwable -> {
@@ -73,22 +76,20 @@ public class FriendSettingsMenu implements Listener {
                 }
                 setupMenu();
                 if (opened.compareAndSet(false, true)) {
-                    open();
+                    final Player viewer = getPlayer();
+                    if (viewer != null && viewer.isOnline()) {
+                        viewer.openInventory(inventory);
+                        viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+                    }
                 } else {
-                    player.updateInventory();
+                    final Player viewer = getPlayer();
+                    if (viewer != null) {
+                        viewer.updateInventory();
+                    }
                 }
             });
             return null;
         });
-    }
-
-    public void open() {
-        if (inventory == null) {
-            Bukkit.getScheduler().runTaskLater(plugin, this::open, 2L);
-            return;
-        }
-        player.openInventory(inventory);
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
     }
 
     private void setupMenu() {
@@ -362,18 +363,15 @@ public class FriendSettingsMenu implements Listener {
         };
     }
 
-    @EventHandler
-    public void onInventoryClick(final InventoryClickEvent event) {
+    @Override
+    public void handleMenuClick(final InventoryClickEvent event) {
         if (!INVENTORY_TITLE.equals(event.getView().getTitle())) {
             return;
         }
-        if (!(event.getWhoClicked() instanceof Player clicker)) {
+        final Player clicker = getPlayer();
+        if (clicker == null) {
             return;
         }
-        if (!clicker.getUniqueId().equals(player.getUniqueId())) {
-            return;
-        }
-        event.setCancelled(true);
         final int slot = event.getSlot();
         switch (slot) {
             case 10 -> cycleSetting("notifications", Arrays.asList("ALL", "IMPORTANT", "FAVORITES", "NONE"));
@@ -450,25 +448,17 @@ public class FriendSettingsMenu implements Listener {
     private void handleBack() {
         player.closeInventory();
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            final FriendsMenuController controller = plugin.getFriendsMenuController();
-            if (controller != null) {
-                controller.openMainMenu(player);
-            }
-        }, 2L);
+        Bukkit.getScheduler().runTaskLater(plugin,
+                () -> new FriendsMainMenu(plugin, friendsManager, menuManager, player).open(), 3L);
     }
 
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player viewer)) {
+    @Override
+    public void handleMenuClose(final InventoryCloseEvent event) {
+        if (!INVENTORY_TITLE.equals(event.getView().getTitle())) {
             return;
         }
-        if (!viewer.getUniqueId().equals(player.getUniqueId())) {
-            return;
-        }
-        if (INVENTORY_TITLE.equals(event.getView().getTitle())) {
-            HandlerList.unregisterAll(this);
-        }
+        opened.set(false);
+        super.handleMenuClose(event);
     }
 
     private ItemStack createItem(final Material material, final String name) {
@@ -479,6 +469,16 @@ public class FriendSettingsMenu implements Listener {
             item.setItemMeta(meta);
         }
         return item;
+    }
+
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    @Override
+    public String getTitle() {
+        return INVENTORY_TITLE;
     }
 
     private String formatSettingName(final String setting) {

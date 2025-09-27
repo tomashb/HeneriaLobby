@@ -1,0 +1,56 @@
+menu:
+  title: "§8» §bMes Amis"
+  size: 54
+
+glass_slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53]
+
+glass_item:
+  material: BLACK_STAINED_GLASS_PANE
+  name: "§7"
+  lore: []
+
+navigation:
+  back:
+    slot: 45
+    material: ARROW
+    name: "§c« Retour"
+    actions: ["[MENU] previous_menu"]
+  close:
+    slot: 53
+    material: BARRIER
+    name: "§c✕ Fermer"
+    actions: ["[CLOSE]"]
+
+content_slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+
+items:
+  friends_list:
+    slot: 20
+    material: PLAYER_HEAD
+    name: "§b⚡ Liste d'Amis §7(§3%online%§7/§3%total%§7)"
+    actions: ["[MENU] friends_list_menu"]
+  favorites:
+    slot: 21
+    material: NETHER_STAR
+    name: "§6★ Amis Favoris §7(§e%favorites%§7)"
+    actions: ["[MENU] friends_favorites_menu"]
+  requests:
+    slot: 22
+    material: PAPER
+    name: "§e✉ Demandes Reçues §7(§c%pending%§7)"
+    actions: ["[MENU] friends_requests_menu"]
+  sent_requests:
+    slot: 23
+    material: FEATHER
+    name: "§a✈ Demandes Envoyées §7(§a%sent%§7)"
+    actions: ["[MENU] friends_sent_requests_menu"]
+  search:
+    slot: 24
+    material: COMPASS
+    name: "§9🔍 Rechercher un Ami"
+    actions: ["[MENU] friends_search_menu"]
+  settings:
+    slot: 40
+    material: REDSTONE
+    name: "§c⚙ Paramètres d'Amitié"
+    actions: ["[MENU] friends_settings_menu"]

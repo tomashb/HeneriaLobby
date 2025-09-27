@@ -7,9 +7,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
-import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
@@ -26,7 +23,7 @@ import java.util.UUID;
  * Ultra-protected friend requests menu providing immediate feedback while
  * keeping the menu contents guarded against any interaction exploits.
  */
-public class FriendRequestsMenu implements Listener {
+public class FriendRequestsMenu extends BaseFriendsMenu {
 
     private static final String TITLE_PREFIX = "§8» §6Demandes d'Amitié";
     private static final int INVENTORY_SIZE = 54;
@@ -38,20 +35,18 @@ public class FriendRequestsMenu implements Listener {
     };
     private static final int[] GLASS_SLOTS = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
 
-    private final LobbyPlugin plugin;
-    private final FriendsManager friendsManager;
-    private final Player player;
-
     private Inventory inventory;
     private List<FriendRequest> allRequests = new ArrayList<>();
 
     public FriendRequestsMenu(final LobbyPlugin plugin,
                               final FriendsManager friendsManager,
+                              final FriendsMenuManager menuManager,
                               final Player player) {
-        this.plugin = plugin;
-        this.friendsManager = friendsManager;
-        this.player = player;
-        Bukkit.getPluginManager().registerEvents(this, plugin);
+        super(plugin, friendsManager, menuManager, player);
+    }
+
+    @Override
+    protected void openMenu() {
         loadRequestsAndCreateMenu();
     }
 
@@ -74,7 +69,11 @@ public class FriendRequestsMenu implements Listener {
         final String title = TITLE_PREFIX + " (" + allRequests.size() + ")";
         inventory = Bukkit.createInventory(null, INVENTORY_SIZE, title);
         setupMenu();
-        open();
+        final Player viewer = getPlayer();
+        if (viewer != null && viewer.isOnline()) {
+            viewer.openInventory(inventory);
+            viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
+        }
     }
 
     private void setupMenu() {
@@ -189,45 +188,28 @@ public class FriendRequestsMenu implements Listener {
         return item;
     }
 
-    public void open() {
-        if (inventory == null) {
-            return;
-        }
-        player.openInventory(inventory);
-        player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
-    }
-
-    @EventHandler
-    public void onInventoryClick(final InventoryClickEvent event) {
+    @Override
+    public void handleMenuClick(final InventoryClickEvent event) {
         final String title = event.getView().getTitle();
         if (title == null || !title.contains(TITLE_PREFIX)) {
             return;
         }
-
-        event.setCancelled(true);
-        event.setResult(org.bukkit.event.Event.Result.DENY);
-
-        if (!(event.getWhoClicked() instanceof Player clicker)) {
-            return;
-        }
-        if (!clicker.getUniqueId().equals(player.getUniqueId())) {
+        final Player clicker = getPlayer();
+        if (clicker == null) {
             return;
         }
 
         final int slot = event.getSlot();
-        clicker.sendMessage("§7[DEBUG] Clic sur slot: " + slot);
-
         if (slot == 48) {
-            clicker.sendMessage("§b🔄 Actualisation des demandes...");
             clicker.playSound(clicker.getLocation(), Sound.BLOCK_ENCHANTMENT_TABLE_USE, 1.0f, 1.0f);
-            loadRequestsAndCreateMenu();
+            safeRefresh();
             return;
         }
         if (slot == 49) {
             clicker.closeInventory();
             clicker.playSound(clicker.getLocation(), Sound.BLOCK_STONE_BUTTON_CLICK_ON, 1.0f, 1.0f);
             Bukkit.getScheduler().runTaskLater(plugin,
-                    () -> new FriendsMainMenu(plugin, friendsManager).open(clicker), 3L);
+                    () -> new FriendsMainMenu(plugin, friendsManager, menuManager, clicker).open(), 3L);
             return;
         }
 
@@ -259,6 +241,7 @@ public class FriendRequestsMenu implements Listener {
                         player.sendMessage("§a✓ Demande de " + request.getSenderName() + " acceptée !");
                         allRequests.remove(request);
                         setupMenu();
+                        clickerUpdate();
                     } else {
                         player.sendMessage("§cErreur lors de l'acceptation");
                     }
@@ -273,6 +256,7 @@ public class FriendRequestsMenu implements Listener {
                         player.sendMessage("§c✗ Demande de " + request.getSenderName() + " refusée");
                         allRequests.remove(request);
                         setupMenu();
+                        clickerUpdate();
                     } else {
                         player.sendMessage("§cErreur lors du refus de la demande");
                     }
@@ -280,17 +264,29 @@ public class FriendRequestsMenu implements Listener {
                 }));
     }
 
-    @EventHandler
-    public void onInventoryClose(final InventoryCloseEvent event) {
-        if (!(event.getPlayer() instanceof Player viewer)) {
-            return;
+    private void clickerUpdate() {
+        final Player viewer = getPlayer();
+        if (viewer != null) {
+            viewer.updateInventory();
         }
-        if (!viewer.getUniqueId().equals(player.getUniqueId())) {
-            return;
-        }
+    }
+
+    @Override
+    public void handleMenuClose(final InventoryCloseEvent event) {
         if (event.getView().getTitle() == null || !event.getView().getTitle().contains(TITLE_PREFIX)) {
             return;
         }
-        HandlerList.unregisterAll(this);
+        inventory = null;
+        super.handleMenuClose(event);
+    }
+
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    @Override
+    public String getTitle() {
+        return inventory != null ? inventory.getTitle() : TITLE_PREFIX;
     }
 }

@@ -1,0 +1,54 @@
+menu:
+  title: "§8» §6Paramètres d'Amitié"
+  size: 54
+
+glass_slots: [0,1,2,6,7,8,9,17,36,44,45,46,52,53]
+
+glass_item:
+  material: RED_STAINED_GLASS_PANE
+  name: "§7"
+  lore: []
+
+navigation:
+  back:
+    slot: 45
+    material: ARROW
+    name: "§c« Retour"
+    actions: ["[MENU] friends_main_menu"]
+  close:
+    slot: 53
+    material: BARRIER
+    name: "§c✕ Fermer"
+    actions: ["[CLOSE]"]
+
+content_slots: [10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43]
+
+items:
+  friend_requests:
+    slot: 20
+    material: PAPER
+    name: "§bDemandes d'Amitié"
+    current_value: "%friend_requests_setting%"
+    values: ["EVERYONE","NONE"]
+    actions: ["[TOGGLE] friend_requests"]
+  notifications:
+    slot: 21
+    material: BELL
+    name: "§eNotifications"
+    current_value: "%notifications_setting%"
+    values: ["ENABLED","DISABLED"]
+    actions: ["[TOGGLE] notifications"]
+  online_status:
+    slot: 22
+    material: EMERALD_BLOCK
+    name: "§aStatut en Ligne"
+    current_value: "%online_status_setting%"
+    values: ["VISIBLE","INVISIBLE","FRIENDS_ONLY"]
+    actions: ["[TOGGLE] online_status"]
+  auto_accept_favorites:
+    slot: 23
+    material: NETHER_STAR
+    name: "§6Auto-accepter Favoris"
+    current_value: "%auto_accept_setting%"
+    values: ["ENABLED","DISABLED"]
+    actions: ["[TOGGLE] auto_accept_favorites"]
