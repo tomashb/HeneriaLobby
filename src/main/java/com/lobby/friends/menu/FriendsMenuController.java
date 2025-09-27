@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.FriendsDataProvider;
+import com.lobby.friends.manager.FriendsManager;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.MenuManager;
 import org.bukkit.entity.Player;
@@ -15,6 +16,7 @@ public class FriendsMenuController {
     private final MenuManager menuManager;
     private final AssetManager assetManager;
     private final FriendsDataProvider dataProvider;
+    private final FriendsManager friendsManager;
     private FriendsMenuActionHandler actionHandler;
     private FriendsMenuConfiguration configuration;
 
@@ -22,11 +24,13 @@ public class FriendsMenuController {
                                  final MenuManager menuManager,
                                  final AssetManager assetManager,
                                  final FriendsDataProvider dataProvider,
+                                 final FriendsManager friendsManager,
                                  final FriendsMenuActionHandler actionHandler) {
         this.plugin = plugin;
         this.menuManager = menuManager;
         this.assetManager = assetManager;
         this.dataProvider = dataProvider;
+        this.friendsManager = friendsManager;
         this.actionHandler = actionHandler;
         reload();
     }
@@ -43,7 +47,7 @@ public class FriendsMenuController {
         if (player == null || configuration == null) {
             return false;
         }
-        final FriendsMainMenu menu = new FriendsMainMenu(plugin, assetManager, configuration, dataProvider, actionHandler);
+        final FriendsMainMenu menu = new FriendsMainMenu(plugin, assetManager, configuration, dataProvider, friendsManager, actionHandler);
         menuManager.displayMenu(player, menu);
         return true;
     }

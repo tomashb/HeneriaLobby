@@ -3,6 +3,7 @@ package com.lobby.friends.menu;
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.FriendsDataProvider;
 import com.lobby.friends.FriendsPlaceholderData;
+import com.lobby.friends.manager.FriendsManager;
 import com.lobby.menus.AssetManager;
 import com.lobby.menus.CloseableMenu;
 import com.lobby.menus.Menu;
@@ -37,6 +38,7 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
     private final AssetManager assetManager;
     private final FriendsMenuConfiguration configuration;
     private final FriendsDataProvider dataProvider;
+    private final FriendsManager friendsManager;
     private final FriendsMenuActionHandler actionHandler;
     private final Map<Integer, FriendsMenuItem> itemBySlot = new HashMap<>();
 
@@ -48,11 +50,13 @@ public final class FriendsMainMenu implements Menu, InventoryHolder, CloseableMe
                            final AssetManager assetManager,
                            final FriendsMenuConfiguration configuration,
                            final FriendsDataProvider dataProvider,
+                           final FriendsManager friendsManager,
                            final FriendsMenuActionHandler actionHandler) {
         this.plugin = plugin;
         this.assetManager = assetManager;
         this.configuration = configuration;
         this.dataProvider = dataProvider;
+        this.friendsManager = friendsManager;
         this.actionHandler = actionHandler;
         for (FriendsMenuItem item : configuration.getItems()) {
             itemBySlot.put(item.getSlot(), item);

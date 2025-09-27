@@ -1,6 +1,7 @@
 package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
+import com.lobby.friends.manager.FriendsManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -16,11 +17,12 @@ import java.util.Locale;
 public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler {
 
     private final LobbyPlugin plugin;
-    private FriendsListMenu friendsListMenu;
+    private final FriendsManager friendsManager;
     private AddFriendMenu addFriendMenu;
 
-    public DefaultFriendsMenuActionHandler(final LobbyPlugin plugin) {
+    public DefaultFriendsMenuActionHandler(final LobbyPlugin plugin, final FriendsManager friendsManager) {
         this.plugin = plugin;
+        this.friendsManager = friendsManager;
     }
 
     @Override
@@ -44,12 +46,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openFriendsList(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            if (friendsListMenu == null) {
-                friendsListMenu = new FriendsListMenu(plugin);
-            }
-            friendsListMenu.open(player);
-        });
+        runLater(player, () -> new FriendsListMenu(plugin, friendsManager, player).open());
         return true;
     }
 
