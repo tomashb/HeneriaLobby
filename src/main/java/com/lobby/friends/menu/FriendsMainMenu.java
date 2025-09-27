@@ -2,6 +2,7 @@ package com.lobby.friends.menu;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.manager.FriendsManager;
+import com.lobby.friends.manager.MenuUpdateManager;
 import com.lobby.friends.menu.statistics.FriendStatisticsMenu;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -49,13 +50,18 @@ public class FriendsMainMenu extends BaseFriendsMenu {
         viewer.openInventory(inventory);
         viewer.playSound(viewer.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.5f);
         loadDataAndCreateMenu(viewer);
+        registerForAutoUpdates(viewer);
     }
 
     private void loadDataAndCreateMenu(final Player player) {
+        if (inventory == null) {
+            return;
+        }
         totalFriends = 0;
         onlineFriends = 0;
         pendingRequests = 0;
 
+        final Inventory targetInventory = inventory;
         final CompletableFuture<?> friendsFuture = friendsManager.getFriends(player)
                 .thenAccept(friends -> {
                     final int size = friends != null ? friends.size() : 0;
@@ -86,9 +92,35 @@ public class FriendsMainMenu extends BaseFriendsMenu {
                     if (player == null || !player.isOnline()) {
                         return;
                     }
+                    if (inventory == null || inventory != targetInventory) {
+                        return;
+                    }
+                    if (player.getOpenInventory() == null
+                            || player.getOpenInventory().getTopInventory() != targetInventory) {
+                        return;
+                    }
                     setupMenuWithRealData();
                     player.updateInventory();
                 }));
+    }
+
+    public void refresh() {
+        final Player viewer = getPlayer();
+        if (viewer == null || !viewer.isOnline()) {
+            return;
+        }
+        if (inventory == null) {
+            return;
+        }
+        loadDataAndCreateMenu(viewer);
+    }
+
+    private void registerForAutoUpdates(final Player player) {
+        final MenuUpdateManager updateManager = plugin.getMenuUpdateManager();
+        if (updateManager == null || inventory == null) {
+            return;
+        }
+        updateManager.registerMenu(player, MenuUpdateManager.MenuType.FRIENDS_MAIN, inventory, ignored -> refresh());
     }
 
     private void setupMenuWithDefaults() {

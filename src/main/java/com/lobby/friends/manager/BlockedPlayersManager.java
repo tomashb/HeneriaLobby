@@ -16,6 +16,9 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
 /**
  * Centralises all persistence and caching logic related to the blocked players
  * feature. The manager keeps the database in sync with the in-memory cache and
@@ -98,6 +101,10 @@ public class BlockedPlayersManager {
             }
 
             plugin.getLogger().info("Joueur " + blocked + " bloqué par " + blocker + " - Raison: " + normalizedReason);
+            final Player blockerPlayer = Bukkit.getPlayer(blocker);
+            if (blockerPlayer != null && plugin.getMenuUpdateManager() != null) {
+                Bukkit.getScheduler().runTask(plugin, () -> plugin.getMenuUpdateManager().forceUpdate(blockerPlayer));
+            }
             return true;
         } catch (final SQLException exception) {
             plugin.getLogger().log(Level.SEVERE, "Erreur lors du blocage d'un joueur", exception);
