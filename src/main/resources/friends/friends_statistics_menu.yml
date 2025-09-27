@@ -1,0 +1,128 @@
+menu:
+  title: "§8» §3📊 Statistiques d'Amitié"
+  size: 54
+  auto_refresh: true
+  refresh_interval: 30
+
+decoration:
+  cyan_glass:
+    material: "CYAN_STAINED_GLASS_PANE"
+    name: "§7"
+    slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+
+statistics_categories:
+  general_stats:
+    slot: 20
+    material: "PLAYER_HEAD"
+    name: "§b⚡ Statistiques Générales"
+    lore:
+      - "§7Aperçu de votre vie sociale"
+      - ""
+      - "§b▸ Total d'amis: §3{total_friends}"
+      - "§b▸ Amis en ligne: §3{online_friends}"
+      - "§b▸ Amis favoris: §6{favorite_friends}"
+      - "§b▸ Demandes en attente: §e{pending_requests}"
+      - ""
+      - "§7Membre depuis: §3{member_since}"
+      - "§7Dernière connexion: §3{last_seen}"
+    actions:
+      left_click: "view_general_details"
+  activity_stats:
+    slot: 21
+    material: "COMPASS"
+    name: "§e📈 Activité Sociale"
+    lore:
+      - "§7Votre activité avec vos amis"
+      - ""
+      - "§e▸ Messages envoyés: §6{messages_sent}"
+      - "§e▸ Invitations envoyées: §6{invitations_sent}"
+      - "§e▸ Temps de jeu ensemble: §6{playtime_together}h"
+      - "§e▸ Sessions communes: §6{common_sessions}"
+      - ""
+      - "§7Cette semaine: §6{weekly_activity}"
+    actions:
+      left_click: "view_activity_details"
+  friendship_quality:
+    slot: 22
+    material: "EMERALD"
+    name: "§a💎 Qualité d'Amitié"
+    lore:
+      - "§7Analyse de vos relations"
+      - ""
+      - "§a▸ Score d'amitié moyen: §2{friendship_score}/100"
+      - "§a▸ Amis les plus proches: §2{closest_friends}"
+      - "§a▸ Durée moyenne d'amitié: §2{avg_friendship_duration}"
+      - "§a▸ Taux d'acceptation: §2{acceptance_rate}%"
+      - ""
+      - "§7Niveau: §2{friendship_level}"
+    actions:
+      left_click: "view_quality_details"
+  temporal_analysis:
+    slot: 23
+    material: "CLOCK"
+    name: "§d⏰ Analyse Temporelle"
+    lore:
+      - "§7Patterns de connexion"
+      - ""
+      - "§d▸ Heure la plus active: §5{peak_hour}"
+      - "§d▸ Jour préféré: §5{favorite_day}"
+      - "§d▸ Présence moyenne: §5{avg_presence}%"
+      - "§d▸ Compatibilité horaire: §5{time_compatibility}%"
+      - ""
+      - "§7Prochaine prédiction: §5{next_prediction}"
+    actions:
+      left_click: "view_temporal_details"
+  achievements:
+    slot: 24
+    material: "GOLDEN_APPLE"
+    name: "§6🏆 Succès Sociaux"
+    lore:
+      - "§7Vos accomplissements"
+      - ""
+      - "§6▸ Succès débloqués: §e{unlocked_achievements}§6/§e{total_achievements}"
+      - "§6▸ Points de réputation: §e{reputation_points}"
+      - "§6▸ Titre actuel: §e{current_title}"
+      - "§6▸ Rang social: §e{social_rank}"
+      - ""
+      - "§8» §eCliquez pour voir tous les succès"
+    actions:
+      left_click: "view_achievements_details"
+
+navigation:
+  back:
+    slot: 45
+    material: "ARROW"
+    name: "§c« Retour"
+    lore:
+      - "§7Revenir au menu principal"
+    actions:
+      left_click: "back_to_main"
+  refresh:
+    slot: 49
+    material: "EMERALD"
+    name: "§a⟲ Actualiser les Statistiques"
+    lore:
+      - "§7Mettre à jour les données"
+      - ""
+      - "§8» §aCliquez pour actualiser"
+    actions:
+      left_click: "refresh_statistics"
+  close:
+    slot: 53
+    material: "BARRIER"
+    name: "§c✕ Fermer"
+    lore:
+      - "§7Fermer le menu"
+    actions:
+      left_click: "close_menu"
+
+messages:
+  calculating: "§7Calcul des statistiques en cours..."
+  updated: "§aStatistiques mises à jour !"
+  export_success: "§aStatistiques exportées !"
+  share_link_created: "§aLien de partage créé: {link}"
+
+sounds:
+  stats_updated: "ENTITY_PLAYER_LEVELUP"
+  chart_generated: "BLOCK_NOTE_BLOCK_PLING"
+  export_complete: "UI_TOAST_CHALLENGE_COMPLETE"

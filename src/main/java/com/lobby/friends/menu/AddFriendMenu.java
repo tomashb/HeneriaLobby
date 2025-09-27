@@ -25,14 +25,15 @@ import java.util.Arrays;
 public class AddFriendMenu implements Listener {
 
     private static final String TITLE = "§8» §aAjouter un Ami";
-    private static final int SIZE = 36;
+    private static final int SIZE = 54;
 
-    private static final int SEARCH_SLOT = 10;
-    private static final int SUGGESTIONS_SLOT = 11;
-    private static final int NEARBY_SLOT = 12;
-    private static final int IMPORT_SLOT = 14;
-    private static final int PENDING_SLOT = 15;
-    private static final int BACK_SLOT = 31;
+    private static final int SEARCH_SLOT = 20;
+    private static final int SUGGESTIONS_SLOT = 22;
+    private static final int NEARBY_SLOT = 24;
+    private static final int IMPORT_SLOT = 30;
+    private static final int PENDING_SLOT = 32;
+    private static final int BACK_SLOT = 45;
+    private static final int CLOSE_SLOT = 53;
 
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
@@ -50,8 +51,8 @@ public class AddFriendMenu implements Listener {
     }
 
     private void setupMenu() {
-        final ItemStack greenGlass = createItem(Material.GREEN_STAINED_GLASS_PANE, " ");
-        final int[] greenSlots = {0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 35};
+        final ItemStack greenGlass = createItem(Material.LIME_STAINED_GLASS_PANE, " ");
+        final int[] greenSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : greenSlots) {
             inventory.setItem(slot, greenGlass);
         }
@@ -123,17 +124,29 @@ public class AddFriendMenu implements Listener {
 
         setPendingItem(0);
 
-        final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
+        final ItemStack back = createItem(Material.ARROW, "§c« Retour");
         final ItemMeta backMeta = back.getItemMeta();
         if (backMeta != null) {
             backMeta.setLore(Arrays.asList(
-                    "§7Revenir au menu principal des amis",
+                    "§7Revenir au menu principal",
                     "",
-                    "§8» §eCliquez pour retourner"
+                    "§8» §cCliquez pour retourner"
             ));
             back.setItemMeta(backMeta);
         }
         inventory.setItem(BACK_SLOT, back);
+
+        final ItemStack close = createItem(Material.BARRIER, "§c✕ Fermer");
+        final ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            closeMeta.setLore(Arrays.asList(
+                    "§7Fermer le menu",
+                    "",
+                    "§8» §cCliquez pour fermer"
+            ));
+            close.setItemMeta(closeMeta);
+        }
+        inventory.setItem(CLOSE_SLOT, close);
     }
 
     private void updatePendingInvitations() {
@@ -194,9 +207,16 @@ public class AddFriendMenu implements Listener {
             case IMPORT_SLOT -> handleFriendCode();
             case PENDING_SLOT -> handlePendingInvitations();
             case BACK_SLOT -> handleBack();
+            case CLOSE_SLOT -> handleClose();
             default -> {
             }
         }
+    }
+
+    private void handleClose() {
+        player.closeInventory();
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
+        HandlerList.unregisterAll(this);
     }
 
     @EventHandler

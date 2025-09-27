@@ -1,0 +1,118 @@
+menu:
+  title: "§8» §6⚙ Paramètres d'Amitié"
+  size: 54
+
+glass_slots: [0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53]
+
+glass_item:
+  material: "ORANGE_STAINED_GLASS_PANE"
+  name: "§7"
+  lore: []
+
+navigation:
+  back:
+    slot: 45
+    material: "ARROW"
+    name: "§c« Retour"
+    lore:
+      - "§7Revenir au menu principal"
+    actions:
+      left_click: "back_to_main"
+  save:
+    slot: 40
+    material: "EMERALD"
+    name: "§a💾 Sauvegarder"
+    lore:
+      - "§7Sauvegarder les paramètres"
+      - ""
+      - "§8» §aCliquez pour confirmer"
+    actions:
+      left_click: "save_settings"
+  reset:
+    slot: 42
+    material: "REDSTONE"
+    name: "§c🔄 Réinitialiser"
+    lore:
+      - "§7Revenir aux valeurs par défaut"
+      - ""
+      - "§c⚠ Action irréversible"
+      - "§8» §cCliquez pour réinitialiser"
+    actions:
+      left_click: "reset_settings"
+  close:
+    slot: 53
+    material: "BARRIER"
+    name: "§c✕ Fermer"
+    lore:
+      - "§7Fermer le menu"
+    actions:
+      left_click: "close_menu"
+
+items:
+  friend_requests:
+    slot: 19
+    material: "PAPER"
+    name: "§b📝 Demandes d'Amitié"
+    lore:
+      - "§7Qui peut vous inviter"
+      - "§8▸ §aActuel: {friend_requests_display}"
+      - ""
+      - "§8» §eCliquez pour modifier"
+    values: ["EVERYONE", "NONE"]
+    action: "toggle_friend_requests"
+  notifications:
+    slot: 20
+    material: "BELL"
+    name: "§e🔔 Notifications"
+    lore:
+      - "§7Recevoir les alertes"
+      - "§8▸ §aActuel: {notifications_display}"
+      - ""
+      - "§8» §eCliquez pour modifier"
+    values: ["ENABLED", "DISABLED"]
+    action: "toggle_notifications"
+  online_status:
+    slot: 21
+    material: "EMERALD_BLOCK"
+    name: "§a🟢 Statut en Ligne"
+    lore:
+      - "§7Visibilité actuelle"
+      - "§8▸ §aActuel: {online_status_display}"
+      - ""
+      - "§8» §eCliquez pour modifier"
+    values: ["VISIBLE", "FRIENDS_ONLY", "INVISIBLE"]
+    action: "toggle_online_status"
+  private_messages:
+    slot: 22
+    material: "WRITABLE_BOOK"
+    name: "§d💬 Messages Privés"
+    lore:
+      - "§7Autoriser les messages"
+      - "§8▸ §aActuel: {private_messages_display}"
+      - ""
+      - "§8» §eCliquez pour modifier"
+    values: ["ALL", "FRIENDS", "FAVORITES", "DISABLED"]
+    action: "toggle_private_messages"
+  teleportation:
+    slot: 23
+    material: "ENDER_PEARL"
+    name: "§5🌀 Téléportation"
+    lore:
+      - "§7Accès à votre position"
+      - "§8▸ §aActuel: {teleportation_display}"
+      - ""
+      - "§8» §eCliquez pour modifier"
+    values: ["FREE", "ASK_PERMISSION", "FAVORITES", "DISABLED"]
+    action: "toggle_teleportation"
+  auto_accept:
+    slot: 25
+    material: "NETHER_STAR"
+    name: "§6⭐ Auto-accepter Favoris"
+    lore:
+      - "§7Accepter automatiquement"
+      - "§7les demandes des favoris"
+      - ""
+      - "§8▸ §aActuel: {auto_accept_display}"
+      - "§8» §eCliquez pour modifier"
+    values: ["ENABLED", "DISABLED"]
+    action: "toggle_auto_accept"

@@ -2,6 +2,7 @@ package com.lobby.friends.menu.statistics;
 
 import com.lobby.LobbyPlugin;
 import com.lobby.friends.data.FriendData;
+import com.lobby.friends.data.FriendRequest;
 import com.lobby.friends.manager.FriendsManager;
 import com.lobby.friends.menu.FriendsMenuController;
 import com.lobby.friends.menu.FriendsMenuDecoration;
@@ -22,19 +23,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -46,15 +40,13 @@ import java.util.concurrent.CompletableFuture;
  */
 public final class FriendStatisticsMenu implements Listener {
 
-    private static final DateTimeFormatter MONTH_YEAR_FORMAT = DateTimeFormatter.ofPattern("MMMM yyyy", Locale.FRENCH);
-    private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH'h'mm", Locale.FRENCH);
-
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
     private final FriendStatisticsMenuConfiguration configuration;
     private final Player player;
     private final AssetManager assetManager;
     private final Map<Integer, FriendStatisticsMenuConfiguration.MenuItem> itemsBySlot = new HashMap<>();
+    private final FriendStatisticsCalculator calculator = new FriendStatisticsCalculator();
 
     private Inventory inventory;
     private BukkitTask refreshTask;
@@ -93,28 +85,36 @@ public final class FriendStatisticsMenu implements Listener {
         if (player == null) {
             return;
         }
-        final CompletableFuture<List<FriendData>> future = friendsManager.getFriends(player);
-        final long start = System.currentTimeMillis();
-        future.whenComplete((friends, error) -> {
-            final List<FriendData> safeFriends = friends != null ? friends : List.of();
-            final Map<String, String> placeholders = buildPlaceholders(safeFriends, start);
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                if (closed) {
-                    return;
-                }
-                ensureInventory();
-                render(placeholders);
-                if (openInventory) {
-                    player.openInventory(inventory);
-                } else {
-                    player.updateInventory();
-                }
-                playSound(configuration.getSounds().get("stats_updated"), 1.5f);
-                if (configuration.isAutoRefresh()) {
-                    scheduleAutoRefresh();
-                }
-            });
-        });
+        final CompletableFuture<List<FriendData>> friendsFuture = friendsManager.getFriends(player);
+        final CompletableFuture<List<FriendRequest>> requestsFuture = friendsManager.getPendingRequests(player);
+
+        friendsFuture.thenCombine(requestsFuture, (friends, requests) ->
+                        new StatisticsData(friends != null ? friends : List.of(),
+                                requests != null ? requests : List.of()))
+                .whenComplete((data, throwable) -> {
+                    if (throwable != null) {
+                        plugin.getLogger().warning("Impossible de calculer les statistiques d'amis: " + throwable.getMessage());
+                    }
+                    final List<FriendData> safeFriends = data != null ? data.friends() : List.of();
+                    final List<FriendRequest> safeRequests = data != null ? data.requests() : List.of();
+                    final Map<String, String> placeholders = calculator.calculate(player, safeFriends, safeRequests);
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (closed) {
+                            return;
+                        }
+                        ensureInventory();
+                        render(placeholders);
+                        if (openInventory) {
+                            player.openInventory(inventory);
+                        } else {
+                            player.updateInventory();
+                        }
+                        playSound(configuration.getSounds().get("stats_updated"), 1.5f);
+                        if (configuration.isAutoRefresh()) {
+                            scheduleAutoRefresh();
+                        }
+                    });
+                });
     }
 
     private void render(final Map<String, String> placeholders) {
@@ -181,288 +181,6 @@ public final class FriendStatisticsMenu implements Listener {
         return new ItemStack(material);
     }
 
-    private Map<String, String> buildPlaceholders(final List<FriendData> friends, final long startTime) {
-        final Map<String, String> placeholders = new HashMap<>();
-        final Random random = new Random(player.getUniqueId().getMostSignificantBits());
-
-        final int totalFriends = friends.size();
-        final long now = System.currentTimeMillis();
-        final long activeThreshold = now - ChronoUnit.DAYS.getDuration().toMillis() * 7;
-        final long veryRecentThreshold = now - ChronoUnit.DAYS.getDuration().toMillis() * 3;
-
-        final long activeFriends = friends.stream()
-                .map(FriendData::getLastInteraction)
-                .filter(Objects::nonNull)
-                .filter(interaction -> interaction.getTime() >= activeThreshold)
-                .count();
-
-        final FriendData newestFriend = friends.stream()
-                .filter(friend -> friend.getFriendshipDate() != null)
-                .max(Comparator.comparing(FriendData::getFriendshipDate))
-                .orElse(null);
-
-        final FriendData oldestFriend = friends.stream()
-                .filter(friend -> friend.getFriendshipDate() != null)
-                .min(Comparator.comparing(FriendData::getFriendshipDate))
-                .orElse(null);
-
-        final long totalMessages = friends.stream().mapToLong(FriendData::getMessagesExchanged).sum();
-        final long totalTimeTogether = friends.stream().mapToLong(FriendData::getTimeTogether).sum();
-        final long regularInteractions = friends.stream()
-                .map(FriendData::getLastInteraction)
-                .filter(Objects::nonNull)
-                .filter(interaction -> interaction.getTime() >= veryRecentThreshold)
-                .count();
-
-        final FriendData mostChattyFriend = friends.stream()
-                .max(Comparator.comparingInt(FriendData::getMessagesExchanged))
-                .orElse(null);
-        final FriendData favoriteGamingBuddy = friends.stream()
-                .max(Comparator.comparingLong(FriendData::getTimeTogether))
-                .orElse(null);
-
-        final double monthsActive = computeMonthsSince(oldestFriend);
-        final int friendsPerMonth = monthsActive > 0
-                ? (int) Math.max(1, Math.round(totalFriends / monthsActive))
-                : totalFriends;
-
-        final long stableFriendships = friends.stream()
-                .filter(friend -> friend.getFriendshipDate() != null)
-                .filter(friend -> friend.getFriendshipDate().getTime() <= now - ChronoUnit.DAYS.getDuration().toMillis() * 180)
-                .count();
-        final long recentFriendships = Math.max(0, totalFriends - stableFriendships);
-
-        final double activeRatio = totalFriends == 0 ? 0 : (double) activeFriends / totalFriends;
-        final double qualityScore = Math.min(9.8, 6.5 + activeRatio * 2.5 + Math.min(2.0, totalMessages / 500.0));
-        final String qualityRecommendation = qualityScore >= 8.5
-                ? "§aExcellente socialisation"
-                : qualityScore >= 7.5
-                ? "§eTrès bon engagement"
-                : "§6Bon potentiel d'amélioration";
-
-        final long messagesSent = Math.round(totalMessages * 0.55);
-        final long messagesReceived = Math.max(0, totalMessages - messagesSent);
-        final long activeConversations = friends.stream().filter(friend -> friend.getMessagesExchanged() > 0).count();
-        final long daysTracked = Math.max(1, Math.round(monthsActive * 30));
-        final long messagesPerDay = totalMessages > 0 ? Math.max(1, totalMessages / daysTracked) : Math.max(1, messagesSent / Math.max(1, daysTracked));
-
-        final long hoursTogether = totalTimeTogether / 3600;
-        final long minutesTogether = (totalTimeTogether % 3600) / 60;
-        final String formattedTogether = hoursTogether > 0
-                ? hoursTogether + "h " + minutesTogether + "m"
-                : minutesTogether + "m";
-
-        final long gamingSessions = Math.max(1, totalTimeTogether / (60 * 45));
-        final String longestSession = formatDuration((long) Math.max(1, (totalTimeTogether / Math.max(1, gamingSessions)) / 60));
-        final String thisWeekTime = formatDuration(Math.max(60, (int) (activeFriends * 75 + random.nextInt(120))));
-
-        final String[] peakHours = {"9h", "14h", "18h", "20h", "22h"};
-        final String[] peakDays = {"Samedi", "Dimanche", "Vendredi", "Mercredi"};
-        final String peakHour = peakHours[random.nextInt(peakHours.length)];
-        final String peakDay = peakDays[random.nextInt(peakDays.length)];
-
-        final int averagePresence = totalFriends == 0 ? 0 : Math.min(98, 60 + (int) (activeRatio * 35));
-        final int timezonesCount = Math.min(6, 1 + totalFriends / 4);
-        final int timeCompatibility = 65 + random.nextInt(25);
-
-        final int potentialFriends = Math.max(3, totalFriends + random.nextInt(4));
-        final int friendClusters = Math.max(1, totalFriends / 4);
-        final FriendData mainConnector = mostChattyFriend != null ? mostChattyFriend : favoriteGamingBuddy;
-        final double separationDegree = Math.max(1.8, 1.6 + totalFriends / 12.0);
-        final int socialInfluence = Math.min(10, 4 + (int) Math.round(activeRatio * 4) + totalFriends / 6);
-        final String networkSuggestion = totalFriends > 0
-                ? "Invitez " + friends.get(random.nextInt(totalFriends)).getPlayerName() + " à un mini-jeu"
-                : "Ajoutez de nouveaux amis pour découvrir des connexions";
-
-        final int unlockedAchievements = Math.min(25, Math.max(5, totalFriends * 2 + (int) activeFriends));
-        final int totalAchievements = 25;
-        final int friendshipPoints = (int) (totalMessages * 2 + hoursTogether * 45 + activeFriends * 30 + stableFriendships * 60);
-        final String socialRank = resolveSocialRank(friendshipPoints);
-        final String[] nextAchievements = {"Socialite", "Ambassadeur", "Connecteur", "Leader"};
-        final String nextAchievement = nextAchievements[random.nextInt(nextAchievements.length)];
-        final int achievementProgress = Math.min(100, (int) Math.round((unlockedAchievements * 100.0) / totalAchievements));
-        final String[] rareAchievements = {"Ambassadeur", "Émissaire", "Maître du réseau"};
-        final String latestRareAchievement = rareAchievements[random.nextInt(rareAchievements.length)];
-
-        final int yourSocialScore = Math.min(96, 68 + (int) (activeRatio * 25) + random.nextInt(8));
-        final int serverAverageScore = 70 + random.nextInt(8);
-        final int totalPlayers = 500 + random.nextInt(600);
-        final int yourRank = Math.max(1, Math.min(totalPlayers, 40 + random.nextInt(200)));
-        final int percentile = Math.min(95, 60 + random.nextInt(30));
-        final String comparisonText = yourSocialScore >= serverAverageScore ? "§aau-dessus" : "§edans";
-
-        final FriendData mostActiveFriend = favoriteGamingBuddy != null ? favoriteGamingBuddy : mostChattyFriend;
-        final String mostActiveFriendName = mostActiveFriend != null ? mostActiveFriend.getPlayerName() : "Aucun";
-        final int activityVsMostActive = Math.min(120, 70 + random.nextInt(40));
-        final String[] positions = {"Top 3", "Top 5", "Top 10"};
-        final String positionInGroup = positions[random.nextInt(positions.length)];
-        final String[] excellenceAreas = {"Sessions longues", "Conversations régulières", "Organisation d'événements"};
-        final String excellenceArea1 = excellenceAreas[random.nextInt(excellenceAreas.length)];
-        final String excellenceArea2 = excellenceAreas[random.nextInt(excellenceAreas.length)];
-
-        final int insightsCount = 2 + random.nextInt(3);
-        final String lastAnalysis = "Il y a " + (1 + random.nextInt(5)) + "h";
-        final String recommendation1 = totalFriends > 0
-                ? "Planifier une session avec " + (favoriteGamingBuddy != null ? favoriteGamingBuddy.getPlayerName() : "un ami")
-                : "Ajouter vos premiers amis";
-        final String recommendation2 = activeFriends > 0
-                ? "Envoyer un message de suivi à vos amis actifs"
-                : "Lancer une conversation avec un nouveau joueur";
-        final String recommendation3 = "Organiser une activité de groupe ce week-end";
-
-        final int activeSuggestions = 1 + random.nextInt(3);
-        final int recommendedGoals = Math.max(1, random.nextInt(3));
-        final String priority1 = totalFriends > 0
-                ? "Renforcer les liens avec " + friends.get(random.nextInt(totalFriends)).getPlayerName()
-                : "Créer votre premier cercle d'amis";
-        final String priority2 = "Inviter un ami inactif à revenir";
-        final String estimatedImpact = "§a+" + (10 + random.nextInt(15)) + "% d'activité";
-
-        final String lastUpdate = TIME_FORMAT.format(Instant.ofEpochMilli(now).atZone(ZoneId.systemDefault()));
-        final long calculationTime = Math.max(120, System.currentTimeMillis() - startTime + random.nextInt(60));
-        final String privacyLevel = totalFriends > 5 ? "Amis" : "Privé";
-        final int historicalMonths = Math.max(1, (int) Math.round(monthsActive));
-        final String firstRecord = oldestFriend != null && oldestFriend.getFriendshipDate() != null
-                ? MONTH_YEAR_FORMAT.format(oldestFriend.getFriendshipDate().toInstant().atZone(ZoneId.systemDefault()))
-                : MONTH_YEAR_FORMAT.format(LocalDate.now().minusMonths(3));
-
-        placeholders.put("total_friends", String.valueOf(totalFriends));
-        placeholders.put("active_friends", String.valueOf(activeFriends));
-        placeholders.put("newest_friend", newestFriend != null ? newestFriend.getPlayerName() : "Aucun");
-        placeholders.put("oldest_friend", oldestFriend != null ? oldestFriend.getPlayerName() : "Aucun");
-        placeholders.put("friends_per_month", String.valueOf(Math.max(1, friendsPerMonth)));
-        placeholders.put("trend_indicator", activeFriends >= totalFriends / 2 ? "§a↗" : "§e→");
-        placeholders.put("trend_text", activeFriends >= totalFriends / 2 ? "§aEn croissance" : "§eStable");
-
-        placeholders.put("messages_sent", String.valueOf(messagesSent));
-        placeholders.put("messages_received", String.valueOf(messagesReceived));
-        placeholders.put("active_conversations", String.valueOf(activeConversations));
-        placeholders.put("most_chatty_friend", mostChattyFriend != null ? mostChattyFriend.getPlayerName() : "Aucun");
-        placeholders.put("messages_per_day", String.valueOf(messagesPerDay));
-        placeholders.put("peak_chat_time", pickPeakChatTime(random));
-
-        placeholders.put("time_together", formattedTogether);
-        placeholders.put("gaming_sessions", String.valueOf(gamingSessions));
-        placeholders.put("favorite_gaming_buddy", favoriteGamingBuddy != null ? favoriteGamingBuddy.getPlayerName() : "Aucun");
-        placeholders.put("favorite_activity", pickFavoriteActivity(random));
-        placeholders.put("longest_session", longestSession);
-        placeholders.put("this_week_time", thisWeekTime);
-
-        placeholders.put("peak_hour", peakHour);
-        placeholders.put("peak_day", peakDay);
-        placeholders.put("average_presence", String.valueOf(averagePresence));
-        placeholders.put("timezones_count", String.valueOf(Math.max(1, timezonesCount)));
-        placeholders.put("time_compatibility", String.valueOf(timeCompatibility));
-        placeholders.put("next_prediction", "Dans " + (1 + random.nextInt(3)) + "h");
-
-        placeholders.put("average_quality", String.format(Locale.FRENCH, "%.1f", qualityScore));
-        placeholders.put("stable_friendships", String.valueOf(stableFriendships));
-        placeholders.put("recent_friendships", String.valueOf(recentFriendships));
-        placeholders.put("retention_rate", String.valueOf(Math.min(98, 85 + random.nextInt(10))));
-        placeholders.put("regular_interactions", String.valueOf(regularInteractions));
-        placeholders.put("quality_recommendation", qualityRecommendation);
-
-        placeholders.put("potential_friends", String.valueOf(potentialFriends));
-        placeholders.put("friend_clusters", String.valueOf(friendClusters));
-        placeholders.put("main_connector", mainConnector != null ? mainConnector.getPlayerName() : "Aucun");
-        placeholders.put("separation_degree", String.format(Locale.FRENCH, "%.1f", separationDegree));
-        placeholders.put("social_influence", String.valueOf(socialInfluence));
-        placeholders.put("network_suggestions", networkSuggestion);
-
-        placeholders.put("unlocked_achievements", String.valueOf(unlockedAchievements));
-        placeholders.put("total_achievements", String.valueOf(totalAchievements));
-        placeholders.put("friendship_points", String.valueOf(friendshipPoints));
-        placeholders.put("social_rank", socialRank);
-        placeholders.put("next_achievement", nextAchievement);
-        placeholders.put("achievement_progress", String.valueOf(achievementProgress));
-        placeholders.put("latest_rare_achievement", latestRareAchievement);
-
-        placeholders.put("chart_period", "30 jours");
-        placeholders.put("data_points", String.valueOf(30 + random.nextInt(10)));
-        placeholders.put("heatmap_days", String.valueOf(14 + random.nextInt(7)));
-
-        placeholders.put("your_social_score", String.valueOf(yourSocialScore));
-        placeholders.put("server_average_score", String.valueOf(serverAverageScore));
-        placeholders.put("your_rank", String.valueOf(yourRank));
-        placeholders.put("total_players", String.valueOf(totalPlayers));
-        placeholders.put("percentile", String.valueOf(percentile));
-        placeholders.put("comparison_text", comparisonText);
-
-        placeholders.put("most_active_friend", mostActiveFriendName);
-        placeholders.put("activity_vs_most_active", String.valueOf(activityVsMostActive));
-        placeholders.put("position_in_group", positionInGroup);
-        placeholders.put("excellence_area_1", excellenceArea1);
-        placeholders.put("excellence_area_2", excellenceArea2);
-
-        placeholders.put("insights_count", String.valueOf(insightsCount));
-        placeholders.put("last_analysis", lastAnalysis);
-        placeholders.put("recommendation_1", recommendation1);
-        placeholders.put("recommendation_2", recommendation2);
-        placeholders.put("recommendation_3", recommendation3);
-
-        placeholders.put("active_suggestions", String.valueOf(activeSuggestions));
-        placeholders.put("recommended_goals", String.valueOf(Math.max(1, recommendedGoals)));
-        placeholders.put("priority_1", priority1);
-        placeholders.put("priority_2", priority2);
-        placeholders.put("estimated_impact", estimatedImpact);
-
-        placeholders.put("last_update", lastUpdate);
-        placeholders.put("calculation_time", String.valueOf(calculationTime));
-        placeholders.put("privacy_level", privacyLevel);
-        placeholders.put("historical_months", String.valueOf(Math.max(1, historicalMonths)));
-        placeholders.put("first_record", firstRecord);
-
-        return placeholders;
-    }
-
-    private double computeMonthsSince(final FriendData friend) {
-        if (friend == null || friend.getFriendshipDate() == null) {
-            return 0;
-        }
-        final Instant start = friend.getFriendshipDate().toInstant();
-        final Instant now = Instant.now();
-        final long days = ChronoUnit.DAYS.between(start, now);
-        return Math.max(0, days / 30.0);
-    }
-
-    private String pickPeakChatTime(final Random random) {
-        final String[] periods = {"18h-20h", "20h-22h", "16h-18h", "14h-16h"};
-        return periods[random.nextInt(periods.length)];
-    }
-
-    private String pickFavoriteActivity(final Random random) {
-        final String[] activities = {"Mini-jeux", "SkyWars", "BedWars", "Créatif", "Aventures"};
-        return activities[random.nextInt(activities.length)];
-    }
-
-    private String formatDuration(final long minutes) {
-        if (minutes <= 0) {
-            return "0m";
-        }
-        final long hours = minutes / 60;
-        final long remaining = minutes % 60;
-        if (hours <= 0) {
-            return remaining + "m";
-        }
-        return hours + "h " + remaining + "m";
-    }
-
-    private String resolveSocialRank(final int points) {
-        if (points >= 5000) {
-            return "Maître Social";
-        }
-        if (points >= 3000) {
-            return "Expert";
-        }
-        if (points >= 2000) {
-            return "Avancé";
-        }
-        if (points >= 1000) {
-            return "Intermédiaire";
-        }
-        return "Débutant";
-    }
-
     private String apply(final String input, final Map<String, String> placeholders) {
         if (input == null) {
             return "";
@@ -472,6 +190,9 @@ public final class FriendStatisticsMenu implements Listener {
             result = result.replace("{" + entry.getKey() + "}", entry.getValue());
         }
         return result;
+    }
+
+    private record StatisticsData(List<FriendData> friends, List<FriendRequest> requests) {
     }
 
     @EventHandler
@@ -565,6 +286,7 @@ public final class FriendStatisticsMenu implements Listener {
             case "export_statistics" -> handleExport();
             case "refresh_statistics" -> handleRefresh();
             case "back_to_main" -> handleBackToMain();
+            case "close_menu" -> player.closeInventory();
             case "share_statistics" -> handleShare();
             case "view_historical_data" -> sendDetailMessages("§7📚 Données historiques:",
                     "§7- Historique complet disponible",

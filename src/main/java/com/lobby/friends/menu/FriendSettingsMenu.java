@@ -26,6 +26,10 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
 
     private static final String INVENTORY_TITLE = "§8» §6Paramètres d'Amitié";
     private static final int INVENTORY_SIZE = 54;
+    private static final int SAVE_SLOT = 40;
+    private static final int RESET_SLOT = 42;
+    private static final int BACK_SLOT = 45;
+    private static final int CLOSE_SLOT = 53;
 
     private Inventory inventory;
     private FriendSettings settings;
@@ -107,8 +111,8 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private void fillFrame() {
-        final ItemStack glass = createItem(Material.YELLOW_STAINED_GLASS_PANE, " ");
-        final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 18, 26, 27, 35, 36, 44, 45, 53};
+        final ItemStack glass = createItem(Material.ORANGE_STAINED_GLASS_PANE, " ");
+        final int[] goldSlots = {0, 1, 2, 6, 7, 8, 9, 17, 36, 44, 45, 46, 52, 53};
         for (int slot : goldSlots) {
             inventory.setItem(slot, glass);
         }
@@ -275,7 +279,19 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
     }
 
     private void setupNavigation() {
-        final ItemStack reset = createItem(Material.TNT, "§c🔄 Réinitialiser");
+        final ItemStack save = createItem(Material.EMERALD, "§a💾 Sauvegarder");
+        final ItemMeta saveMeta = save.getItemMeta();
+        if (saveMeta != null) {
+            saveMeta.setLore(Arrays.asList(
+                    "§7Sauvegarder vos paramètres actuels",
+                    "",
+                    "§8» §aCliquez pour sauvegarder"
+            ));
+            save.setItemMeta(saveMeta);
+        }
+        inventory.setItem(SAVE_SLOT, save);
+
+        final ItemStack reset = createItem(Material.REDSTONE, "§c🔄 Réinitialiser");
         final ItemMeta resetMeta = reset.getItemMeta();
         if (resetMeta != null) {
             resetMeta.setLore(Arrays.asList(
@@ -288,21 +304,31 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
             ));
             reset.setItemMeta(resetMeta);
         }
-        inventory.setItem(48, reset);
+        inventory.setItem(RESET_SLOT, reset);
 
-        final ItemStack back = createItem(Material.BARRIER, "§e🏠 Retour Menu Principal");
+        final ItemStack back = createItem(Material.ARROW, "§c« Retour");
         final ItemMeta backMeta = back.getItemMeta();
         if (backMeta != null) {
             backMeta.setLore(Arrays.asList(
                     "§7Revenir au menu principal des amis",
                     "",
-                    "§e▸ Modifications sauvegardées automatiquement",
-                    "",
-                    "§8» §eCliquez pour retourner"
+                    "§8» §cCliquez pour retourner"
             ));
             back.setItemMeta(backMeta);
         }
-        inventory.setItem(49, back);
+        inventory.setItem(BACK_SLOT, back);
+
+        final ItemStack close = createItem(Material.BARRIER, "§c✕ Fermer");
+        final ItemMeta closeMeta = close.getItemMeta();
+        if (closeMeta != null) {
+            closeMeta.setLore(Arrays.asList(
+                    "§7Fermer le menu",
+                    "",
+                    "§8» §cCliquez pour fermer"
+            ));
+            close.setItemMeta(closeMeta);
+        }
+        inventory.setItem(CLOSE_SLOT, close);
     }
 
     private String getSettingDisplay(final String setting) {
@@ -380,8 +406,10 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
             case 13 -> cycleSetting("sounds", Arrays.asList("ENABLED", "DISABLED"));
             case 14 -> cycleSetting("private_messages", Arrays.asList("ALL", "FRIENDS", "FAVORITES", "DISABLED"));
             case 15 -> cycleSetting("teleportation", Arrays.asList("FREE", "ASK_PERMISSION", "FAVORITES", "DISABLED"));
-            case 48 -> handleReset();
-            case 49 -> handleBack();
+            case SAVE_SLOT -> handleSave();
+            case RESET_SLOT -> handleReset();
+            case BACK_SLOT -> handleBack();
+            case CLOSE_SLOT -> handleClose();
             default -> {
             }
         }
@@ -428,6 +456,23 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
         };
     }
 
+    private void handleSave() {
+        if (settings == null) {
+            return;
+        }
+        friendsManager.saveFriendSettings(player, settings).thenAccept(success ->
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (success) {
+                        player.sendMessage("§a✓ Paramètres sauvegardés !");
+                        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.3f);
+                    } else {
+                        player.sendMessage("§cImpossible de sauvegarder pour le moment.");
+                        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0f, 1.0f);
+                    }
+                })
+        );
+    }
+
     private void handleReset() {
         friendsManager.resetFriendSettings(player).thenAccept(success -> {
             Bukkit.getScheduler().runTask(plugin, () -> {
@@ -450,6 +495,11 @@ public class FriendSettingsMenu extends BaseFriendsMenu {
         player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
         Bukkit.getScheduler().runTaskLater(plugin,
                 () -> new FriendsMainMenu(plugin, friendsManager, menuManager, player).open(), 3L);
+    }
+
+    private void handleClose() {
+        player.closeInventory();
+        player.playSound(player.getLocation(), Sound.UI_BUTTON_CLICK, 1.0f, 1.0f);
     }
 
     @Override

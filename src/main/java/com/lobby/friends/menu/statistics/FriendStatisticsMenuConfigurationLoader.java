@@ -21,14 +21,14 @@ import java.util.Map;
  */
 public final class FriendStatisticsMenuConfigurationLoader {
 
-    private static final String RESOURCE_PATH = "friends/statistics.yml";
+    private static final String RESOURCE_PATH = "friends/friends_statistics_menu.yml";
 
     private FriendStatisticsMenuConfigurationLoader() {
     }
 
     public static FriendStatisticsMenuConfiguration load(final LobbyPlugin plugin) {
         final File directory = ensureDirectory(plugin);
-        final File file = new File(directory, "statistics.yml");
+        final File file = new File(directory, "friends_statistics_menu.yml");
         ensureResource(plugin, file);
 
         final YamlConfiguration configuration = new YamlConfiguration();
