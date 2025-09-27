@@ -74,12 +74,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openFavorites(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu amis favoris ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bfavorites.yml §7disponible");
-        });
+        runLater(player, () -> new FavoriteFriendsMenu(plugin, friendsManager, player));
         return true;
     }
 
