@@ -68,12 +68,7 @@ public class DefaultFriendsMenuActionHandler implements FriendsMenuActionHandler
 
     private boolean openSettings(final Player player) {
         closeInventory(player);
-        runLater(player, () -> {
-            playSound(player, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.5f);
-            player.sendMessage("§a✓ §7Menu paramètres ouvert !");
-            player.sendMessage("§e⚠ §7En cours de développement - Configuration créée");
-            player.sendMessage("§7Fichier: §bsettings.yml §7disponible");
-        });
+        runLater(player, () -> new FriendSettingsMenu(plugin, friendsManager, player).open());
         return true;
     }
 
