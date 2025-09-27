@@ -32,16 +32,30 @@ public class FriendAddChatListener implements Listener {
     private final LobbyPlugin plugin;
     private final FriendsManager friendsManager;
     private final Map<UUID, String> pendingRequests = new ConcurrentHashMap<>();
+    private final Map<UUID, String> messageTargets = new ConcurrentHashMap<>();
 
     public FriendAddChatListener(final LobbyPlugin plugin) {
         this.plugin = plugin;
         this.friendsManager = plugin.getFriendsManager();
     }
 
+    public void activateMessageMode(final Player player, final String friendName) {
+        if (player == null || friendName == null || friendName.isBlank()) {
+            return;
+        }
+        messageTargets.put(player.getUniqueId(), friendName);
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerChat(final AsyncPlayerChatEvent event) {
         final Player player = event.getPlayer();
         final UUID playerUUID = player.getUniqueId();
+
+        if (messageTargets.containsKey(playerUUID)) {
+            event.setCancelled(true);
+            handlePrivateMessageInput(player, event.getMessage());
+            return;
+        }
 
         if (!pendingRequests.containsKey(playerUUID)) {
             return;
@@ -71,6 +85,40 @@ public class FriendAddChatListener implements Listener {
         }
 
         Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ Mode d'ajout non reconnu !"));
+    }
+
+    private void handlePrivateMessageInput(final Player player, final String rawInput) {
+        final UUID playerUuid = player.getUniqueId();
+        final String friendName = messageTargets.remove(playerUuid);
+
+        if (friendName == null) {
+            return;
+        }
+
+        final String message = rawInput == null ? "" : rawInput.trim();
+        if (message.equalsIgnoreCase("annuler") || message.equalsIgnoreCase("cancel")) {
+            Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ Message annulé"));
+            return;
+        }
+
+        if (message.isEmpty()) {
+            Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ Message vide ignoré"));
+            return;
+        }
+
+        final Player target = Bukkit.getPlayerExact(friendName);
+        if (target == null) {
+            Bukkit.getScheduler().runTask(plugin, () -> player.sendMessage("§c❌ " + friendName + " n'est plus en ligne"));
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            final String formatted = "§d✉ §5" + player.getName() + "§7: §f" + message;
+            target.sendMessage(formatted);
+            target.playSound(target.getLocation(), "entity.experience_orb.pickup", 0.6f, 1.5f);
+            player.sendMessage("§d✉ §7Vous → §5" + friendName + "§7: §f" + message);
+            player.playSound(player.getLocation(), "block.note_block.pling", 0.8f, 1.6f);
+        });
     }
 
     private void handleAddByName(final Player player, final String targetName) {

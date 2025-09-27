@@ -10,6 +10,7 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -64,6 +65,20 @@ public class FriendsManager {
         }
         return database.getFriends(uuid.toString()).thenApply(friends -> {
             friendsCache.put(uuid, friends);
+            return friends;
+        });
+    }
+
+    public CompletableFuture<List<FriendData>> getFriends(final UUID playerUuid) {
+        if (playerUuid == null) {
+            return CompletableFuture.completedFuture(Collections.emptyList());
+        }
+        final List<FriendData> cached = friendsCache.get(playerUuid);
+        if (cached != null) {
+            return CompletableFuture.completedFuture(cached);
+        }
+        return database.getFriends(playerUuid.toString()).thenApply(friends -> {
+            friendsCache.put(playerUuid, friends);
             return friends;
         });
     }
@@ -168,6 +183,53 @@ public class FriendsManager {
                     playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f);
                 }
                 return true;
+            });
+        });
+    }
+
+    public CompletableFuture<Boolean> isFavorite(final UUID playerUuid, final String friendName) {
+        if (playerUuid == null || friendName == null || friendName.isBlank()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return findFriendData(playerUuid, friendName).thenApply(friend -> friend != null && friend.isFavorite());
+    }
+
+    public CompletableFuture<Boolean> addToFavorites(final UUID playerUuid, final String friendName) {
+        if (playerUuid == null || friendName == null || friendName.isBlank()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return findFriendData(playerUuid, friendName).thenCompose(friend -> {
+            if (friend == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+            if (friend.isFavorite()) {
+                return CompletableFuture.completedFuture(true);
+            }
+            return database.setFavorite(playerUuid.toString(), friend.getUuid(), true).thenApply(success -> {
+                if (success) {
+                    friend.setFavorite(true);
+                }
+                return success;
+            });
+        });
+    }
+
+    public CompletableFuture<Boolean> removeFromFavorites(final UUID playerUuid, final String friendName) {
+        if (playerUuid == null || friendName == null || friendName.isBlank()) {
+            return CompletableFuture.completedFuture(false);
+        }
+        return findFriendData(playerUuid, friendName).thenCompose(friend -> {
+            if (friend == null) {
+                return CompletableFuture.completedFuture(false);
+            }
+            if (!friend.isFavorite()) {
+                return CompletableFuture.completedFuture(true);
+            }
+            return database.setFavorite(playerUuid.toString(), friend.getUuid(), false).thenApply(success -> {
+                if (success) {
+                    friend.setFavorite(false);
+                }
+                return success;
             });
         });
     }
@@ -373,6 +435,13 @@ public class FriendsManager {
         database.close();
         friendsCache.clear();
         requestsCache.clear();
+    }
+
+    private CompletableFuture<FriendData> findFriendData(final UUID playerUuid, final String friendName) {
+        return getFriends(playerUuid).thenApply(friends -> friends.stream()
+                .filter(data -> data.getPlayerName().equalsIgnoreCase(friendName))
+                .findFirst()
+                .orElse(null));
     }
 
     private UUID getUuidByName(final String playerName) {
