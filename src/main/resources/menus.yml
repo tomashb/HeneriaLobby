@@ -1,54 +1,52 @@
 menus:
-  # --- MENU PRINCIPAL (Nether Star) ---
   games_menu:
-    title: "&8» Menu des Jeux"
+    title: "<!italic><#444444><b>»</b> <#ffaa00><b>MENU DES JEUX</b>"
     rows: 6
     enable_frame: true
     frame_material: ORANGE_STAINED_GLASS_PANE
     items:
       bedwars:
         slot: 20
-        material: RED_BED
-        name: "&c&lBEDWARS"
+        hdb_id: "25256"
+        name: "<!italic><#ff5555><b>BEDWARS</b>"
         lore:
           - ""
-          - "&7Protégez votre lit et détruisez"
-          - "&7celui des autres équipes."
+          - "<!italic><gray>Protégez votre base à tout prix."
+          - "<!italic><gray>Détruisez les lits adverses pour gagner."
           - ""
-          - "&8» &fJoueurs: &c%bungee_bedwars%"
+          - "<!italic><dark_gray>» <white>Joueurs: <#ff5555>%bungee_bedwars%"
           - ""
-          - "&e▸ Clique pour jouer"
+          - "<!italic><yellow>▶ Clique pour rejoindre"
         action: "CONNECT: bedwars"
       nexus:
         slot: 22
-        material: BEACON
-        name: "&d&lNEXUS"
+        hdb_id: "34887"
+        name: "<!italic><#d000ff><b>NEXUS</b>"
         lore:
           - ""
-          - "&7Le cœur de notre serveur."
-          - "&7Domination et stratégie."
+          - "<!italic><gray>Le mode légendaire du serveur."
+          - "<!italic><gray>Assauts, Défense et Stratégie."
           - ""
-          - "&8» &fJoueurs: &d%bungee_nexus%"
+          - "<!italic><dark_gray>» <white>Joueurs: <#d000ff>%bungee_nexus%"
           - ""
-          - "&e▸ Clique pour jouer"
+          - "<!italic><yellow>▶ Clique pour rejoindre"
         action: "CONNECT: nexus"
       zombie:
         slot: 24
-        material: ZOMBIE_HEAD
-        name: "&2&lZOMBIE"
+        hdb_id: "236"
+        name: "<!italic><#55ff55><b>ZOMBIE</b>"
         lore:
           - ""
-          - "&7Survivez aux vagues de monstres"
-          - "&7avec vos amis."
+          - "<!italic><gray>Survivez aux vagues infinies."
+          - "<!italic><gray>Améliorez vos armes et tenez bon."
           - ""
-          - "&8» &fJoueurs: &a%bungee_zombie%"
+          - "<!italic><dark_gray>» <white>Joueurs: <#55ff55>%bungee_zombie%"
           - ""
-          - "&e▸ Clique pour jouer"
+          - "<!italic><yellow>▶ Clique pour rejoindre"
         action: "CONNECT: zombie"
 
-  # --- SÉLECTEUR DE HUB (Boussole) ---
   hub_selector:
-    title: "&8» Sélecteur de Hub"
+    title: "<!italic><#444444><b>»</b> <#00d2ff><b>SÉLECTEUR DE HUB</b>"
     rows: 6
     enable_frame: true
     frame_material: LIGHT_BLUE_STAINED_GLASS_PANE
@@ -56,15 +54,14 @@ menus:
       hub1:
         slot: 22
         material: COMPASS
-        name: "&b&lHub Principal #1"
+        name: "<!italic><#00d2ff><b>Hub Principal #1</b>"
         lore:
-          - "&7Connexion stable"
-          - "&aEn ligne"
+          - "<!italic><gray>Connexion stable"
+          - "<!italic><green>En ligne"
         action: "CONNECT: lobby1"
 
-  # --- PROFIL (Tête Joueur) ---
   profile:
-    title: "&8» Mon Profil"
+    title: "<!italic><#444444><b>»</b> <#ff9966><b>MON PROFIL</b>"
     rows: 6
     enable_frame: true
     frame_material: YELLOW_STAINED_GLASS_PANE
@@ -72,18 +69,17 @@ menus:
       stats:
         slot: 22
         use_player_head: true
-        name: "&e&lINFORMATIONS"
+        name: "<!italic><#ff9966><b>INFORMATIONS</b>"
         lore:
           - ""
-          - "&7Grade: &f%luckperms_prefix%"
-          - "&7Argent: &6%heneria_coins% ⛃"
+          - "<!italic><gray>Grade: <white>%luckperms_prefix%"
+          - "<!italic><gray>Argent: <gold>%heneria_coins% ⛃"
           - ""
-          - "&7Date d'arrivée:"
-          - "&f%player_first_join%"
+          - "<!italic><gray>Date d'arrivée:"
+          - "<!italic><white>%player_first_join%"
 
-  # --- COSMÉTIQUES (EnderChest) ---
   cosmetics:
-    title: "&8» Garde-Robe"
+    title: "<!italic><#444444><b>»</b> <#d38312><b>GARDE-ROBE</b>"
     rows: 6
     enable_frame: true
     frame_material: PURPLE_STAINED_GLASS_PANE
@@ -91,6 +87,6 @@ menus:
       info_cosmetics:
         slot: 22
         material: BOOK
-        name: "&5&lCOSMÉTIQUES"
+        name: "<!italic><#d38312><b>COSMÉTIQUES</b>"
         lore:
-          - "&7Bientôt disponible."
+          - "<!italic><gray>Bientôt disponible."

@@ -2,12 +2,18 @@ package fr.heneria.lobby.listeners;
 
 import fr.heneria.lobby.HeneriaLobby;
 import fr.heneria.lobby.manager.ItemManager;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import me.arcaniax.hdb.api.DatabaseLoadEvent;
+
+import java.util.List;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 public class PlayerJoinListener implements Listener {
 
@@ -24,7 +30,6 @@ public class PlayerJoinListener implements Listener {
 
     @EventHandler
     public void onDatabaseLoad(DatabaseLoadEvent event) {
-        // Reload items for all online players when HDB is ready
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             giveLobbyItems(player);
         }
@@ -34,12 +39,7 @@ public class PlayerJoinListener implements Listener {
         ItemManager itemManager = plugin.getItemManager();
         if (itemManager == null) return;
 
-        // Clear inventory first? Prompt implies "donne ces items", usually clear is good for lobby.
         player.getInventory().clear();
-
-        // We iterate over known keys because we need to handle specific logic for them (like visibility default)
-        // Or we just load them all.
-        // Based on the prompt, we have specific items: selector, profile, menu, cosmetics, visibility.
 
         // Selector
         setItem(player, "selector");
@@ -48,16 +48,19 @@ public class PlayerJoinListener implements Listener {
         setItem(player, "profile");
 
         // Main Menu
-        setItem(player, "menu");
+        setItem(player, "games_menu");
 
         // Cosmetics
         setItem(player, "cosmetics");
 
         // Visibility (Default ON)
-        // The prompt says "Switch". We need to decide which one to give.
-        // Assuming default is ON.
-        // We check if player has a preference? For now, just give ON.
-        setItem(player, "visibility_on");
+        // Special handling because it's not a standard key in 'hotbar_items' with one HDB ID
+        // It has on/off. Default is ON.
+        ItemStack visItem = plugin.getConfigManager().getVisibilityItem(player, true);
+        int slot = plugin.getConfigManager().getSlot("hotbar_items.visibility");
+        if (visItem != null && slot >= 0) {
+            player.getInventory().setItem(slot, visItem);
+        }
     }
 
     private void setItem(Player player, String key) {

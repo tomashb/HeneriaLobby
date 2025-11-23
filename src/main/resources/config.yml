@@ -1,49 +1,42 @@
 hotbar_items:
   selector:
     slot: 0
-    material: COMPASS
     hdb_id: "45678"
-    name: "<gradient:#ff0000:#ffff00>Sélecteur de Serveur</gradient>"
+    name: "<!italic><gradient:#00d2ff:#3a7bd5><b>Sélecteur de Hub</b></gradient>"
     lore:
-      - "&7Cliquez pour voyager"
+      - "<!italic><gray>Changez de lobby rapidement."
+      - "<!italic><gray>Cliquez pour ouvrir."
     action: "OPEN_MENU:hub_selector"
   profile:
     slot: 1
     use_player_head: true
-    material: PLAYER_HEAD
-    name: "&eProfil de %player%"
+    name: "<!italic><gradient:#ff9966:#ff5e62><b>Mon Profil</b></gradient>"
     lore:
-      - "<gray>Cliquez pour voir votre profil</gray>"
+      - "<!italic><gray>Vos statistiques et infos."
     action: "OPEN_MENU:profile"
-  menu:
+  games_menu:
     slot: 4
-    material: NETHER_STAR
     hdb_id: "9385"
-    name: "<aqua>Menu Principal</aqua>"
+    name: "<!italic><gradient:#f12711:#f5af19><b>Menu des Jeux</b></gradient>"
     lore:
-      - "&7Accéder au menu"
+      - "<!italic><gray>Accédez à tous nos modes de jeu."
+      - "<!italic><gray>Bedwars, Nexus, Zombie..."
+      - ""
+      - "<!italic><yellow>▶ Clique pour jouer !"
     action: "OPEN_MENU:games_menu"
   cosmetics:
     slot: 7
-    material: CHEST
     hdb_id: "2545"
-    name: "<light_purple>Cosmétiques</light_purple>"
+    name: "<!italic><gradient:#d38312:#a83279><b>Cosmétiques</b></gradient>"
     lore:
-      - "&7Ouvrir la garde-robe"
+      - "<!italic><gray>Particules, Gadgets, Familiers."
     action: "OPEN_MENU:cosmetics"
-  visibility_on:
+  visibility:
     slot: 8
-    material: LIME_DYE
-    hdb_id: "7890"
-    name: "<green>Visibilité: ON</green>"
+    hdb_id_on: "7890"
+    hdb_id_off: "7891"
+    name_on: "<!italic><green><b>Visibilité: ON</b>"
+    name_off: "<!italic><red><b>Visibilité: OFF</b>"
     lore:
-      - "&7Cliquez pour cacher les joueurs"
-    action: "TOGGLE_VISIBILITY"
-  visibility_off:
-    slot: 8
-    material: GRAY_DYE
-    hdb_id: "7891"
-    name: "<red>Visibilité: OFF</red>"
-    lore:
-      - "&7Cliquez pour afficher les joueurs"
+      - "<!italic><gray>Cliquez pour basculer."
     action: "TOGGLE_VISIBILITY"
