@@ -1,18 +1,23 @@
 package fr.heneria.lobby;
 
 import fr.heneria.lobby.listeners.PlayerJoinListener;
+import fr.heneria.lobby.manager.ConfigManager;
 import fr.heneria.lobby.manager.DatabaseManager;
 import fr.heneria.lobby.manager.ItemManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class HeneriaLobby extends JavaPlugin {
 
+    private ConfigManager configManager;
     private ItemManager itemManager;
     private DatabaseManager databaseManager;
 
     @Override
     public void onEnable() {
         // Initialize Managers
+        this.configManager = new ConfigManager(this);
+        this.configManager.onEnable();
+
         this.databaseManager = new DatabaseManager(this);
         this.databaseManager.onEnable();
 
@@ -35,6 +40,10 @@ public class HeneriaLobby extends JavaPlugin {
             itemManager.onDisable();
         }
         getLogger().info("HeneriaLobby has been disabled!");
+    }
+
+    public ConfigManager getConfigManager() {
+        return configManager;
     }
 
     public ItemManager getItemManager() {

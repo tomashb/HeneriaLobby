@@ -2,10 +2,10 @@ package fr.heneria.lobby.manager;
 
 import fr.heneria.lobby.HeneriaLobby;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
-import org.bukkit.entity.Player;
 
 public class ItemManager extends Manager {
 
@@ -30,18 +30,17 @@ public class ItemManager extends Manager {
             return hdbApi.getItemHead(id);
         } catch (Exception e) {
             // If the head is not found or API is not ready, we return null
-            // so the caller can use a fallback item.
             return null;
         }
     }
 
-    public ItemStack getPlayerHead(Player player) {
-        ItemStack head = new ItemStack(Material.PLAYER_HEAD);
-        SkullMeta meta = (SkullMeta) head.getItemMeta();
-        if (meta != null) {
-            meta.setOwningPlayer(player);
-            head.setItemMeta(meta);
-        }
-        return head;
+    // Helper method to get item via ConfigManager for a specific key
+    public ItemStack getConfigItem(String key, Player player) {
+        return plugin.getConfigManager().getItem("hotbar_items." + key, player);
+    }
+
+    // Helper to get slot
+    public int getConfigSlot(String key) {
+        return plugin.getConfigManager().getSlot("hotbar_items." + key);
     }
 }
