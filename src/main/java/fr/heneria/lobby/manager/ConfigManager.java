@@ -56,21 +56,24 @@ public class ConfigManager extends Manager {
      * Retrieves an ItemStack from the config (works for config.yml sections).
      * @param path The path to the item section in config (e.g. "hotbar_items.selector")
      * @param player The player for placeholders (e.g. %player%)
+     * @param itemId The logical ID of the item (e.g. "selector"), if applicable, to be stored in PDC. Can be null.
      * @return The constructed ItemStack, or null if invalid.
      */
-    public ItemStack getItem(String path, Player player) {
+    public ItemStack getItem(String path, Player player, String itemId) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
         if (section == null) return null;
-        return buildItemFromSection(section, player);
+        return buildItemFromSection(section, player, itemId);
     }
 
     public ItemStack getMenuItem(String menuId, String itemId, Player player) {
         ConfigurationSection section = getMenusConfig().getConfigurationSection("menus." + menuId + ".items." + itemId);
         if (section == null) return null;
-        return buildItemFromSection(section, player);
+        // For menu items, we don't store "item_id" (selector etc.) but we might store the action directly.
+        // The logic handles action from config.
+        return buildItemFromSection(section, player, null);
     }
 
-    private ItemStack buildItemFromSection(ConfigurationSection section, Player player) {
+    private ItemStack buildItemFromSection(ConfigurationSection section, Player player, String itemId) {
         ItemStack item;
         String hdbId = section.getString("hdb_id");
         boolean usePlayerHead = section.getBoolean("use_player_head", false);
@@ -114,10 +117,25 @@ public class ConfigManager extends Manager {
 
             item.setItemMeta(meta);
 
-            // 3. Apply Action (PersistentDataContainer)
+            // 3. Apply Action / Item ID (PersistentDataContainer)
+
+            // If itemId is provided (mostly for hotbar items), store it.
+            if (itemId != null) {
+                plugin.getItemManager().addPersistentItemId(item, itemId);
+            }
+
+            // If action string is provided (for menu items mostly, but hotbar can have it too implicitly via lookup), store it as action.
+            // The requirements say: Hotbar items use ID to lookup action. Menu items use direct Action.
+            // But if we can store action directly on hotbar items too, it's not forbidden?
+            // However, the prompt says "InteractListener... Vérifie la balise... Exécute l'action associée".
+            // And "Mapping des Actions... selector -> Ouvre le menu...".
+            // Let's store action if present in config regardless. It's safer.
+            // BUT, ticket 2 prompt specifically asked for "heneria_item_id" logic.
+            // I will store BOTH if available.
+
             String action = section.getString("action");
             if (action != null && !action.isEmpty()) {
-                plugin.getItemManager().addPersistentMeta(item, "action", action);
+                plugin.getItemManager().addPersistentAction(item, action);
             }
         }
 
