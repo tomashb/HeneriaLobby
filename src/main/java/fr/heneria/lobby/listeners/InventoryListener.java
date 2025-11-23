@@ -20,28 +20,23 @@ public class InventoryListener implements Listener {
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
+        // Global protection for all inventories for non-creative players in Lobby
+        // This covers both the Player Inventory (Hotbar protection) and Custom Menus (GUI protection).
         if (event.getWhoClicked().getGameMode() == GameMode.CREATIVE) return;
 
         // If clicked outside
         if (event.getClickedInventory() == null) return;
 
-        // If clicking in player inventory (Top or Bottom if player inventory is open, or just Bottom)
-        // We generally want to protect the Hotbar items.
-        // If the player clicks in their own inventory, we cancel.
-        if (event.getClickedInventory().getType() == InventoryType.PLAYER) {
-            event.setCancelled(true);
-            return;
-        }
+        // Cancel all clicks by default to ensure "Inamovible" behavior and Menu protection.
+        // If we want to allow specific interactions (like clicking a button), the InteractListener
+        // will handle the logic (reading the action) but the EVENT itself should be cancelled
+        // to prevent the item from being picked up.
 
-        // If shift clicking from top inventory into player inventory, we should probably prevent it if it overwrites hotbar items.
-        // But simply cancelling all clicks in Player inventory handles the "moving within player inventory" part.
-        // What if they click in Top inventory and try to move item to Bottom?
-        // Shift-click in Top:
-        if (event.getClickedInventory() != event.getWhoClicked().getInventory()) {
-             if (event.isShiftClick()) {
-                 event.setCancelled(true); // Prevent shift clicking items from Menu to Inventory
-             }
-        }
+        event.setCancelled(true);
+
+        // Note: Logic for executing actions is handled in InteractListener (which listens to the same event but focuses on the action).
+        // To avoid conflict/double handling, we can either merge them or let this one purely handle "Protection" (Cancelling).
+        // InteractListener will read the item, do the action, and since it's cancelled here, the item won't move.
     }
 
     @EventHandler

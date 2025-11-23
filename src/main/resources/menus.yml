@@ -1,0 +1,18 @@
+menus:
+  server_selector:
+    title: "&8Navigation Globale"
+    rows: 5
+    filler:
+      enabled: true
+      material: BLACK_STAINED_GLASS_PANE
+    items:
+      survival:
+        slot: 22
+        material: GRASS_BLOCK
+        hdb_id: ""
+        name: "&a&lSurvie 1.21"
+        lore:
+          - "&7Un monde vaste à explorer."
+          - ""
+          - "&eClique pour rejoindre !"
+        action: "CONNECT: survival"

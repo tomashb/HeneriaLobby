@@ -6,16 +6,21 @@ import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class ConfigManager extends Manager {
+
+    private FileConfiguration menusConfig;
+    private File menusFile;
 
     public ConfigManager(HeneriaLobby plugin) {
         super(plugin);
@@ -23,8 +28,16 @@ public class ConfigManager extends Manager {
 
     @Override
     public void onEnable() {
+        // Load config.yml
         plugin.saveDefaultConfig();
         plugin.reloadConfig();
+
+        // Load menus.yml
+        menusFile = new File(plugin.getDataFolder(), "menus.yml");
+        if (!menusFile.exists()) {
+            plugin.saveResource("menus.yml", false);
+        }
+        menusConfig = YamlConfiguration.loadConfiguration(menusFile);
     }
 
     @Override
@@ -32,8 +45,15 @@ public class ConfigManager extends Manager {
         // No specific disable logic needed
     }
 
+    public FileConfiguration getMenusConfig() {
+        if (menusConfig == null) {
+             menusConfig = YamlConfiguration.loadConfiguration(menusFile);
+        }
+        return menusConfig;
+    }
+
     /**
-     * Retrieves an ItemStack from the config.
+     * Retrieves an ItemStack from the config (works for config.yml sections).
      * @param path The path to the item section in config (e.g. "hotbar_items.selector")
      * @param player The player for placeholders (e.g. %player%)
      * @return The constructed ItemStack, or null if invalid.
@@ -41,7 +61,16 @@ public class ConfigManager extends Manager {
     public ItemStack getItem(String path, Player player) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
         if (section == null) return null;
+        return buildItemFromSection(section, player);
+    }
 
+    public ItemStack getMenuItem(String menuId, String itemId, Player player) {
+        ConfigurationSection section = getMenusConfig().getConfigurationSection("menus." + menuId + ".items." + itemId);
+        if (section == null) return null;
+        return buildItemFromSection(section, player);
+    }
+
+    private ItemStack buildItemFromSection(ConfigurationSection section, Player player) {
         ItemStack item;
         String hdbId = section.getString("hdb_id");
         boolean usePlayerHead = section.getBoolean("use_player_head", false);
@@ -57,20 +86,11 @@ public class ConfigManager extends Manager {
                 item.setItemMeta(meta);
             }
         } else if (hdbId != null && !hdbId.isEmpty()) {
-            // Delegate to ItemManager (or HDB API directly if we had access here, but let's use the HDB API wrapper)
-            // Ideally, ConfigManager shouldn't depend on ItemManager's logic, but here we need the HDB item.
-            // We can ask ItemManager to get it, or we can do it here if we move the HDB logic.
-            // Given the architecture, let's assume we try to get it from HDB, and if null, fallback to material.
-
-            // Since ItemManager holds the HDB API instance, we might want to call it.
-            // However, to avoid circular dependency if ItemManager uses ConfigManager,
-            // let's just use the HDB API if available via the plugin's ItemManager instance.
-
             item = plugin.getItemManager().getItemFromHDB(hdbId);
             if (item == null && material != null) {
                 item = new ItemStack(material);
             } else if (item == null) {
-                item = new ItemStack(Material.STONE); // Fallback
+                item = new ItemStack(Material.STONE);
             }
         } else {
             if (material == null) material = Material.STONE;
@@ -93,6 +113,12 @@ public class ConfigManager extends Manager {
             }
 
             item.setItemMeta(meta);
+
+            // 3. Apply Action (PersistentDataContainer)
+            String action = section.getString("action");
+            if (action != null && !action.isEmpty()) {
+                plugin.getItemManager().addPersistentMeta(item, "action", action);
+            }
         }
 
         return item;
@@ -102,23 +128,12 @@ public class ConfigManager extends Manager {
         return plugin.getConfig().getInt(path + ".slot", -1);
     }
 
-    private Component parseComponent(String text, Player player) {
+    public Component parseComponent(String text, Player player) {
         if (text == null) return Component.empty();
 
-        // Replace placeholders
         if (player != null) {
             text = text.replace("%player%", player.getName());
         }
-
-        // Check for Legacy colors (simple check)
-        // If it has '&', we treat it as legacy.
-        // Note: MiniMessage can also use tags.
-        // A robust way is: try MiniMessage, if it looks like it failed or we want to support both.
-        // The prompt implies we want both.
-        // We can use LegacyComponentSerializer.legacyAmpersand().deserialize(text) for legacy.
-
-        // Decision: If it starts with '<' it's likely MiniMessage. If it contains '&' it might be legacy.
-        // Or we can just deserialize with Legacy first, then convert to string? No.
 
         if (text.contains("&")) {
             return LegacyComponentSerializer.legacyAmpersand().deserialize(text);

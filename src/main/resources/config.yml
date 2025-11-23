@@ -6,6 +6,7 @@ hotbar_items:
     name: "<gradient:#ff0000:#ffff00>Sélecteur de Serveur</gradient>"
     lore:
       - "&7Cliquez pour voyager"
+    action: "OPEN_MENU:server_selector"
   profile:
     slot: 1
     use_player_head: true
@@ -13,6 +14,7 @@ hotbar_items:
     name: "&eProfil de %player%"
     lore:
       - "<gray>Cliquez pour voir votre profil</gray>"
+    action: "OPEN_MENU:profile"
   menu:
     slot: 4
     material: NETHER_STAR
@@ -20,6 +22,7 @@ hotbar_items:
     name: "<aqua>Menu Principal</aqua>"
     lore:
       - "&7Accéder au menu"
+    action: "OPEN_MENU:main"
   cosmetics:
     slot: 7
     material: CHEST
@@ -27,6 +30,7 @@ hotbar_items:
     name: "<light_purple>Cosmétiques</light_purple>"
     lore:
       - "&7Ouvrir la garde-robe"
+    action: "OPEN_MENU:cosmetics"
   visibility_on:
     slot: 8
     material: LIME_DYE
@@ -34,6 +38,7 @@ hotbar_items:
     name: "<green>Visibilité: ON</green>"
     lore:
       - "&7Cliquez pour cacher les joueurs"
+    action: "TOGGLE_VISIBILITY"
   visibility_off:
     slot: 8
     material: GRAY_DYE
@@ -41,3 +46,4 @@ hotbar_items:
     name: "<red>Visibilité: OFF</red>"
     lore:
       - "&7Cliquez pour afficher les joueurs"
+    action: "TOGGLE_VISIBILITY"
