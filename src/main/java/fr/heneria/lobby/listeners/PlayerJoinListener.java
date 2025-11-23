@@ -2,18 +2,12 @@ package fr.heneria.lobby.listeners;
 
 import fr.heneria.lobby.HeneriaLobby;
 import fr.heneria.lobby.manager.ItemManager;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 import me.arcaniax.hdb.api.DatabaseLoadEvent;
-
-import java.util.List;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 
 public class PlayerJoinListener implements Listener {
 
@@ -30,7 +24,7 @@ public class PlayerJoinListener implements Listener {
 
     @EventHandler
     public void onDatabaseLoad(DatabaseLoadEvent event) {
-        // Reload items for all online players when HDB is ready, in case they joined before it was ready
+        // Reload items for all online players when HDB is ready
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             giveLobbyItems(player);
         }
@@ -40,43 +34,39 @@ public class PlayerJoinListener implements Listener {
         ItemManager itemManager = plugin.getItemManager();
         if (itemManager == null) return;
 
-        // Slot 0: Sélecteur de Serveur (ID: 45678 - Globe/Boussole)
-        ItemStack serverSelector = itemManager.getItemFromHDB("45678");
-        if (serverSelector == null) serverSelector = new ItemStack(Material.COMPASS);
-        setDisplayName(serverSelector, Component.text("Sélecteur de Serveur", NamedTextColor.GOLD));
-        player.getInventory().setItem(0, serverSelector);
+        // Clear inventory first? Prompt implies "donne ces items", usually clear is good for lobby.
+        player.getInventory().clear();
 
-        // Slot 1: Mon Profil (Player Head)
-        ItemStack profile = itemManager.getPlayerHead(player);
-        setDisplayName(profile, Component.text("Mon Profil", NamedTextColor.YELLOW));
-        player.getInventory().setItem(1, profile);
+        // We iterate over known keys because we need to handle specific logic for them (like visibility default)
+        // Or we just load them all.
+        // Based on the prompt, we have specific items: selector, profile, menu, cosmetics, visibility.
 
-        // Slot 4: Menu Principal (ID: 9385 - Etoile/Menu)
-        ItemStack mainMenu = itemManager.getItemFromHDB("9385");
-        if (mainMenu == null) mainMenu = new ItemStack(Material.NETHER_STAR);
-        setDisplayName(mainMenu, Component.text("Menu Principal", NamedTextColor.AQUA));
-        player.getInventory().setItem(4, mainMenu);
+        // Selector
+        setItem(player, "selector");
 
-        // Slot 7: Cosmétiques (ID: 2545 - Coffre)
-        ItemStack cosmetics = itemManager.getItemFromHDB("2545");
-        if (cosmetics == null) cosmetics = new ItemStack(Material.CHEST);
-        setDisplayName(cosmetics, Component.text("Cosmétiques", NamedTextColor.LIGHT_PURPLE));
-        player.getInventory().setItem(7, cosmetics);
+        // Profile
+        setItem(player, "profile");
 
-        // Slot 8: Visibilité Joueurs (Switch) (ON default? Assuming ON)
-        // ON: 7890 (Oeil Vert)
-        ItemStack visibility = itemManager.getItemFromHDB("7890");
-        if (visibility == null) visibility = new ItemStack(Material.LIME_DYE);
-        setDisplayName(visibility, Component.text("Visibilité: ON", NamedTextColor.GREEN));
-        player.getInventory().setItem(8, visibility);
+        // Main Menu
+        setItem(player, "menu");
+
+        // Cosmetics
+        setItem(player, "cosmetics");
+
+        // Visibility (Default ON)
+        // The prompt says "Switch". We need to decide which one to give.
+        // Assuming default is ON.
+        // We check if player has a preference? For now, just give ON.
+        setItem(player, "visibility_on");
     }
 
-    private void setDisplayName(ItemStack item, Component name) {
-        if (item == null) return;
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.displayName(name);
-            item.setItemMeta(meta);
+    private void setItem(Player player, String key) {
+        ItemManager itemManager = plugin.getItemManager();
+        ItemStack item = itemManager.getConfigItem(key, player);
+        int slot = itemManager.getConfigSlot(key);
+
+        if (item != null && slot >= 0 && slot < 36) {
+            player.getInventory().setItem(slot, item);
         }
     }
 }

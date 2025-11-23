@@ -1,0 +1,43 @@
+hotbar_items:
+  selector:
+    slot: 0
+    material: COMPASS
+    hdb_id: "45678"
+    name: "<gradient:#ff0000:#ffff00>Sélecteur de Serveur</gradient>"
+    lore:
+      - "&7Cliquez pour voyager"
+  profile:
+    slot: 1
+    use_player_head: true
+    material: PLAYER_HEAD
+    name: "&eProfil de %player%"
+    lore:
+      - "<gray>Cliquez pour voir votre profil</gray>"
+  menu:
+    slot: 4
+    material: NETHER_STAR
+    hdb_id: "9385"
+    name: "<aqua>Menu Principal</aqua>"
+    lore:
+      - "&7Accéder au menu"
+  cosmetics:
+    slot: 7
+    material: CHEST
+    hdb_id: "2545"
+    name: "<light_purple>Cosmétiques</light_purple>"
+    lore:
+      - "&7Ouvrir la garde-robe"
+  visibility_on:
+    slot: 8
+    material: LIME_DYE
+    hdb_id: "7890"
+    name: "<green>Visibilité: ON</green>"
+    lore:
+      - "&7Cliquez pour cacher les joueurs"
+  visibility_off:
+    slot: 8
+    material: GRAY_DYE
+    hdb_id: "7891"
+    name: "<red>Visibilité: OFF</red>"
+    lore:
+      - "&7Cliquez pour afficher les joueurs"
