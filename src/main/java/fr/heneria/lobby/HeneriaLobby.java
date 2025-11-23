@@ -6,11 +6,14 @@ import fr.heneria.lobby.manager.DatabaseManager;
 import fr.heneria.lobby.manager.ItemManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import fr.heneria.lobby.manager.MenuManager;
+
 public class HeneriaLobby extends JavaPlugin {
 
     private ConfigManager configManager;
     private ItemManager itemManager;
     private DatabaseManager databaseManager;
+    private MenuManager menuManager;
 
     @Override
     public void onEnable() {
@@ -24,9 +27,13 @@ public class HeneriaLobby extends JavaPlugin {
         this.itemManager = new ItemManager(this);
         this.itemManager.onEnable();
 
+        this.menuManager = new MenuManager(this);
+        this.menuManager.onEnable();
+
         // Register Listeners
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(this), this);
         getServer().getPluginManager().registerEvents(new fr.heneria.lobby.listeners.InventoryListener(this), this);
+        getServer().getPluginManager().registerEvents(new fr.heneria.lobby.listeners.InteractListener(this), this);
 
         getLogger().info("HeneriaLobby has been enabled!");
     }
@@ -52,5 +59,9 @@ public class HeneriaLobby extends JavaPlugin {
 
     public DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public MenuManager getMenuManager() {
+        return menuManager;
     }
 }
