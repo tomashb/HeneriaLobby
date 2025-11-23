@@ -1,18 +1,36 @@
 menus:
-  server_selector:
-    title: "&8Navigation Globale"
-    rows: 5
-    filler:
-      enabled: true
-      material: BLACK_STAINED_GLASS_PANE
+  games_menu: # Le Menu Principal (Étoile)
+    title: "<gradient:#ffaa00:#ffff55>⚡ Menu des Jeux ⚡</gradient>"
+    rows: 6
+    frame_style: CORNERS # Applique les coins oranges auto
     items:
       survival:
         slot: 22
-        material: GRASS_BLOCK
-        hdb_id: ""
-        name: "&a&lSurvie 1.21"
+        material: GRASS_BLOCK # Ou hdb_id
+        name: "<#44ff44><b>Survie 1.21</b>"
         lore:
-          - "&7Un monde vaste à explorer."
+          - "<gray>Un monde infini à explorer."
           - ""
-          - "&eClique pour rejoindre !"
+          - "<gray>Joueurs: <#aaffaa>120/500"
+          - ""
+          - "<yellow>▶ Clique pour rejoindre !"
         action: "CONNECT: survival"
+      skyblock:
+        slot: 24
+        material: BEACON
+        name: "<#55ffff><b>SkyBlock</b>"
+        lore:
+          - "<gray>Crée ton île dans les nuages."
+          - "<yellow>▶ Clique pour rejoindre !"
+        action: "CONNECT: skyblock"
+
+  hub_selector: # Le Sélecteur de Hub (Boussole)
+    title: "<gradient:#ff0000:#ffff00>Navigation Hubs</gradient>"
+    rows: 3
+    frame_style: CORNERS
+    items:
+      hub1:
+        slot: 11
+        hdb_id: "45678" # Globe
+        name: "<green>Lobby #1"
+        action: "CONNECT: lobby1"

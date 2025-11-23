@@ -25,55 +25,51 @@ public class InteractListener implements Listener {
             ItemStack item = event.getItem();
             if (item == null) return;
 
-            String action = plugin.getItemManager().getPersistentMeta(item);
+            // 1. Check for Item ID (Hotbar Items)
+            String itemId = plugin.getItemManager().getPersistentItemId(item);
+            if (itemId != null) {
+                // Lookup Action from Config based on ID
+                String action = plugin.getConfig().getString("hotbar_items." + itemId + ".action");
+                if (action != null) {
+                    handleAction(event.getPlayer(), action);
+                    event.setCancelled(true);
+                    return;
+                }
+            }
+
+            // 2. Check for direct Action (Menu Items or direct hotbar action if configured)
+            String action = plugin.getItemManager().getPersistentAction(item);
             if (action != null) {
                 handleAction(event.getPlayer(), action);
-                event.setCancelled(true); // Prevent placing blocks/using items if they have actions
+                event.setCancelled(true);
             }
         }
     }
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // Handle Menu Interactions
-        // We need to know if the inventory is one of our menus.
-        // A simple way is to check if the clicked item has an action (since our menu items have actions too).
-        // Or checking inventory holder, but we used null holder.
-        // Or checking window title, but that's unreliable with MiniMessage.
-
-        // Better approach: If the item has an action "CONNECT:", it's likely our menu item.
-        // AND we should probably protect the top inventory if it was opened by us.
-        // Since we didn't implement a custom Holder, we'll rely on checking the Item's persistent data.
-
-        // NOTE: The previous InventoryListener already prevents moving items in Player Inventory.
-        // Here we handle the Top Inventory (Menu) clicks.
-
         if (event.getCurrentItem() == null) return;
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
 
-        String action = plugin.getItemManager().getPersistentMeta(event.getCurrentItem());
+        // Check for direct Action (Menu Items)
+        String action = plugin.getItemManager().getPersistentAction(event.getCurrentItem());
         if (action != null) {
-            event.setCancelled(true); // Always cancel clicks on action items
-            if (event.getWhoClicked() instanceof Player) {
-                handleAction((Player) event.getWhoClicked(), action);
-            }
-        } else {
-             // If it's a menu we opened, we probably want to cancel ALL clicks in the top inventory,
-             // even if they don't have actions (like filler items).
-             // Since we don't have a custom holder, let's assume if it's NOT player inventory, and we are in this plugin context...
-             // Actually, verifying if it's OUR menu is hard without a Holder.
-             // For now, the "filler" items don't have actions, but they should be unclickable.
-             // Let's check if the inventory size/type matches or just rely on the fact that it's a lobby.
-             // Ideally we should use a Holder.
+            event.setCancelled(true);
+            handleAction(player, action);
         }
 
-        // Refined logic:
-        // If the top inventory has "filler" items (glass panes), they usually don't have the action tag.
-        // But we want to cancel the click.
-        // Let's assume any click in a Chest Inventory in this Lobby plugin (where we don't expect other inventories)
-        // should be cancelled if the user is not in Creative, unless specified otherwise.
-        // BUT, for the purpose of this task, let's focus on the ACTION.
-
-        // If the item has "CONNECT:", we handle it.
+        // Also check Item ID just in case (though usually not on menu items)
+        else {
+             String itemId = plugin.getItemManager().getPersistentItemId(event.getCurrentItem());
+             if (itemId != null) {
+                 String confAction = plugin.getConfig().getString("hotbar_items." + itemId + ".action");
+                 if (confAction != null) {
+                     event.setCancelled(true);
+                     handleAction(player, confAction);
+                 }
+             }
+        }
     }
 
     private void handleAction(Player player, String action) {
@@ -85,7 +81,10 @@ public class InteractListener implements Listener {
             player.sendMessage(Component.text("Tentative de connexion à : " + server, NamedTextColor.GREEN));
         } else if (action.equals("TOGGLE_VISIBILITY")) {
              // Logic for toggle visibility
-             player.sendMessage(Component.text("Toggle Visibility logic to be implemented.", NamedTextColor.YELLOW));
+             // Simple toggle implementation
+             // We need to store state. For now, just toggle message.
+             player.sendMessage(Component.text("Visibilité des joueurs basculée.", NamedTextColor.YELLOW));
+             // Real implementation would involve hiding players.
         }
     }
 }

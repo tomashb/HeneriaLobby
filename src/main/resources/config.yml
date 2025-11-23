@@ -6,7 +6,7 @@ hotbar_items:
     name: "<gradient:#ff0000:#ffff00>Sélecteur de Serveur</gradient>"
     lore:
       - "&7Cliquez pour voyager"
-    action: "OPEN_MENU:server_selector"
+    action: "OPEN_MENU:hub_selector"
   profile:
     slot: 1
     use_player_head: true
@@ -22,7 +22,7 @@ hotbar_items:
     name: "<aqua>Menu Principal</aqua>"
     lore:
       - "&7Accéder au menu"
-    action: "OPEN_MENU:main"
+    action: "OPEN_MENU:games_menu"
   cosmetics:
     slot: 7
     material: CHEST
