@@ -52,13 +52,6 @@ public class ConfigManager extends Manager {
         return menusConfig;
     }
 
-    /**
-     * Retrieves an ItemStack from the config (works for config.yml sections).
-     * @param path The path to the item section in config (e.g. "hotbar_items.selector")
-     * @param player The player for placeholders (e.g. %player%)
-     * @param itemId The logical ID of the item (e.g. "selector"), if applicable, to be stored in PDC. Can be null.
-     * @return The constructed ItemStack, or null if invalid.
-     */
     public ItemStack getItem(String path, Player player, String itemId) {
         ConfigurationSection section = plugin.getConfig().getConfigurationSection(path);
         if (section == null) return null;
@@ -68,9 +61,51 @@ public class ConfigManager extends Manager {
     public ItemStack getMenuItem(String menuId, String itemId, Player player) {
         ConfigurationSection section = getMenusConfig().getConfigurationSection("menus." + menuId + ".items." + itemId);
         if (section == null) return null;
-        // For menu items, we don't store "item_id" (selector etc.) but we might store the action directly.
-        // The logic handles action from config.
         return buildItemFromSection(section, player, null);
+    }
+
+    /**
+     * Special method for Visibility Item which toggles.
+     * @param onState True for ON, False for OFF.
+     */
+    public ItemStack getVisibilityItem(Player player, boolean onState) {
+        ConfigurationSection section = plugin.getConfig().getConfigurationSection("hotbar_items.visibility");
+        if (section == null) return null;
+
+        String hdbIdKey = onState ? "hdb_id_on" : "hdb_id_off";
+        String nameKey = onState ? "name_on" : "name_off";
+
+        String hdbId = section.getString(hdbIdKey);
+        String name = section.getString(nameKey);
+
+        ItemStack item;
+        if (hdbId != null && !hdbId.isEmpty()) {
+            item = plugin.getItemManager().getItemFromHDB(hdbId);
+            if (item == null) {
+                item = new ItemStack(onState ? Material.LIME_DYE : Material.GRAY_DYE); // Fallback
+            }
+        } else {
+            item = new ItemStack(onState ? Material.LIME_DYE : Material.GRAY_DYE);
+        }
+
+        ItemMeta meta = item.getItemMeta();
+        if (meta != null) {
+             if (name != null) meta.displayName(parseComponent(name, player));
+
+             List<String> lore = section.getStringList("lore");
+             if (!lore.isEmpty()) {
+                meta.lore(lore.stream()
+                        .map(line -> parseComponent(line, player))
+                        .collect(Collectors.toList()));
+             }
+
+             item.setItemMeta(meta);
+
+             plugin.getItemManager().addPersistentItemId(item, "visibility");
+             plugin.getItemManager().addPersistentAction(item, "TOGGLE_VISIBILITY");
+        }
+
+        return item;
     }
 
     private ItemStack buildItemFromSection(ConfigurationSection section, Player player, String itemId) {
@@ -117,21 +152,9 @@ public class ConfigManager extends Manager {
 
             item.setItemMeta(meta);
 
-            // 3. Apply Action / Item ID (PersistentDataContainer)
-
-            // If itemId is provided (mostly for hotbar items), store it.
             if (itemId != null) {
                 plugin.getItemManager().addPersistentItemId(item, itemId);
             }
-
-            // If action string is provided (for menu items mostly, but hotbar can have it too implicitly via lookup), store it as action.
-            // The requirements say: Hotbar items use ID to lookup action. Menu items use direct Action.
-            // But if we can store action directly on hotbar items too, it's not forbidden?
-            // However, the prompt says "InteractListener... Vérifie la balise... Exécute l'action associée".
-            // And "Mapping des Actions... selector -> Ouvre le menu...".
-            // Let's store action if present in config regardless. It's safer.
-            // BUT, ticket 2 prompt specifically asked for "heneria_item_id" logic.
-            // I will store BOTH if available.
 
             String action = section.getString("action");
             if (action != null && !action.isEmpty()) {
@@ -153,9 +176,11 @@ public class ConfigManager extends Manager {
             text = text.replace("%player%", player.getName());
         }
 
-        if (text.contains("&")) {
-            return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
+        if (text.contains("&") && !text.contains("<")) {
+             // Very simple check. If it has <, assume MiniMessage.
+             return LegacyComponentSerializer.legacyAmpersand().deserialize(text);
         } else {
+            // MiniMessage handles <!italic> automatically
             return MiniMessage.miniMessage().deserialize(text);
         }
     }

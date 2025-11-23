@@ -1,6 +1,7 @@
 package fr.heneria.lobby.listeners;
 
 import fr.heneria.lobby.HeneriaLobby;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -10,10 +11,14 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
 public class InteractListener implements Listener {
 
     private final HeneriaLobby plugin;
+    private final Set<UUID> hiddenPlayers = new HashSet<>();
 
     public InteractListener(HeneriaLobby plugin) {
         this.plugin = plugin;
@@ -25,10 +30,8 @@ public class InteractListener implements Listener {
             ItemStack item = event.getItem();
             if (item == null) return;
 
-            // 1. Check for Item ID (Hotbar Items)
             String itemId = plugin.getItemManager().getPersistentItemId(item);
             if (itemId != null) {
-                // Lookup Action from Config based on ID
                 String action = plugin.getConfig().getString("hotbar_items." + itemId + ".action");
                 if (action != null) {
                     handleAction(event.getPlayer(), action);
@@ -37,7 +40,6 @@ public class InteractListener implements Listener {
                 }
             }
 
-            // 2. Check for direct Action (Menu Items or direct hotbar action if configured)
             String action = plugin.getItemManager().getPersistentAction(item);
             if (action != null) {
                 handleAction(event.getPlayer(), action);
@@ -52,14 +54,11 @@ public class InteractListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
 
-        // Check for direct Action (Menu Items)
         String action = plugin.getItemManager().getPersistentAction(event.getCurrentItem());
         if (action != null) {
             event.setCancelled(true);
             handleAction(player, action);
-        }
-        // Also check Item ID just in case
-        else {
+        } else {
              String itemId = plugin.getItemManager().getPersistentItemId(event.getCurrentItem());
              if (itemId != null) {
                  String confAction = plugin.getConfig().getString("hotbar_items." + itemId + ".action");
@@ -79,7 +78,39 @@ public class InteractListener implements Listener {
             String server = action.substring("CONNECT:".length()).trim();
             player.sendMessage(Component.text("Connecting to " + server + "...", NamedTextColor.GREEN));
         } else if (action.equals("TOGGLE_VISIBILITY")) {
-             player.sendMessage(Component.text("Visibilité des joueurs basculée.", NamedTextColor.YELLOW));
+             toggleVisibility(player);
+        }
+    }
+
+    private void toggleVisibility(Player player) {
+        boolean isHidden = hiddenPlayers.contains(player.getUniqueId());
+        if (isHidden) {
+            // Show players (Turn visibility ON)
+            hiddenPlayers.remove(player.getUniqueId());
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                player.showPlayer(plugin, online);
+            }
+            player.sendMessage(Component.text("Joueurs visibles.", NamedTextColor.GREEN));
+        } else {
+            // Hide players (Turn visibility OFF)
+            hiddenPlayers.add(player.getUniqueId());
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                player.hidePlayer(plugin, online);
+            }
+            player.sendMessage(Component.text("Joueurs masqués.", NamedTextColor.RED));
+        }
+
+        // Update Item
+        // New state is !isHidden (if it was hidden, now visible, so true)
+        updateVisibilityItem(player, isHidden);
+    }
+
+    private void updateVisibilityItem(Player player, boolean isVisible) {
+        ItemStack newItem = plugin.getConfigManager().getVisibilityItem(player, isVisible);
+        // We need to find the visibility slot. ConfigManager has it.
+        int slot = plugin.getConfigManager().getSlot("hotbar_items.visibility");
+        if (slot >= 0 && slot < 9) {
+            player.getInventory().setItem(slot, newItem);
         }
     }
 }
