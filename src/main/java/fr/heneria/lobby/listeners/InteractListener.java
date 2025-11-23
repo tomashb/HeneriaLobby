@@ -58,8 +58,7 @@ public class InteractListener implements Listener {
             event.setCancelled(true);
             handleAction(player, action);
         }
-
-        // Also check Item ID just in case (though usually not on menu items)
+        // Also check Item ID just in case
         else {
              String itemId = plugin.getItemManager().getPersistentItemId(event.getCurrentItem());
              if (itemId != null) {
@@ -78,13 +77,9 @@ public class InteractListener implements Listener {
             plugin.getMenuManager().openMenu(player, menuId);
         } else if (action.startsWith("CONNECT:")) {
             String server = action.substring("CONNECT:".length()).trim();
-            player.sendMessage(Component.text("Tentative de connexion à : " + server, NamedTextColor.GREEN));
+            player.sendMessage(Component.text("Connecting to " + server + "...", NamedTextColor.GREEN));
         } else if (action.equals("TOGGLE_VISIBILITY")) {
-             // Logic for toggle visibility
-             // Simple toggle implementation
-             // We need to store state. For now, just toggle message.
              player.sendMessage(Component.text("Visibilité des joueurs basculée.", NamedTextColor.YELLOW));
-             // Real implementation would involve hiding players.
         }
     }
 }
